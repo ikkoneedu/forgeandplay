@@ -130,6 +130,72 @@
     },
     "demo": "Demo — real-time rooms & chat go live soon (with Firebase)."
   },
+  "premium": {
+    "title": "Get Ahead with Premium",
+    "desc": "Priority AI matchmaking, an ad-free experience and premium content. Cancel anytime.",
+    "perMonth": "/mo",
+    "popular": "Most Popular",
+    "cta": "Go Premium",
+    "ctaFree": "Start Free",
+    "tiers": {
+      "free": { "name": "Free", "price": "$0", "desc": "Everything to get started", "f1": "Unlimited games", "f2": "Open & join LFG rooms", "f3": "Community chat", "f4": "Basic profile" },
+      "pro": { "name": "Pro", "price": "$4.99", "desc": "For serious players", "f1": "Priority AI matchmaking", "f2": "Ad-free experience", "f3": "Premium games", "f4": "Room boost", "f5": "Exclusive badge" },
+      "elite": { "name": "Elite", "price": "$9.99", "desc": "The top tier", "f1": "Everything in Pro", "f2": "Unlimited room boost", "f3": "Tournament priority", "f4": "Custom profile theme", "f5": "24/7 priority support" }
+    }
+  },
+  "tournaments": {
+    "title": "Tournaments",
+    "desc": "Join weekly tournaments, compete with your team, grab the prizes.",
+    "upcoming": "Upcoming Tournaments",
+    "prize": "Prize Pool",
+    "slots": "{filled}/{total} teams",
+    "join": "Join",
+    "free": "Free",
+    "premium": "Premium",
+    "empty": "No tournaments scheduled right now. Soon!",
+    "date": "Date"
+  },
+  "profile": {
+    "title": "My Profile",
+    "demo": "Demo profile — sign-in goes live with Firebase.",
+    "level": "Level",
+    "member": "Member",
+    "accounts": "Connected Accounts",
+    "connect": "Connect",
+    "badges": "Badges",
+    "wallet": "Wallet",
+    "coins": "coins",
+    "history": "Recent Activity",
+    "noHistory": "No activity yet.",
+    "stats": "Stats",
+    "matches": "Matches",
+    "wins": "Wins",
+    "friends": "Friends"
+  },
+  "auth": {
+    "loginTitle": "Sign In",
+    "registerTitle": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "name": "Username",
+    "login": "Sign In",
+    "register": "Create Account",
+    "google": "Continue with Google",
+    "or": "or",
+    "toRegister": "No account? Sign up",
+    "toLogin": "Already have an account? Sign in",
+    "notConfigured": "Sign-in goes live soon (Firebase setup pending). For now you can view the demo profile.",
+    "demoProfile": "View Demo Profile"
+  },
+  "assistant": {
+    "title": "AI Game Assistant",
+    "greeting": "Hi! Tell me what you feel like playing — I'll suggest games and teammates. 🎮",
+    "placeholder": "Ask something…",
+    "send": "Send",
+    "s1": "I have 30 minutes, what should I play?",
+    "s2": "Build me a CS2 team",
+    "demoReply": "Great choice! Plenty of rooms are open right now — head to /lfg to join a team that fits, or jump into a game at /oyunlar. (This is a demo reply; real AI activates once the Anthropic key is added.)"
+  },
   "footer": {
     "tagline": "AI-powered gaming buddy platform"
   }

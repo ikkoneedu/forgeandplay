@@ -130,6 +130,72 @@
     },
     "demo": "Demo — las salas y el chat en tiempo real llegan pronto (con Firebase)."
   },
+  "premium": {
+    "title": "Ve por Delante con Premium",
+    "desc": "Emparejamiento IA prioritario, experiencia sin anuncios y contenido premium. Cancela cuando quieras.",
+    "perMonth": "/mes",
+    "popular": "Más Popular",
+    "cta": "Hazte Premium",
+    "ctaFree": "Empezar Gratis",
+    "tiers": {
+      "free": { "name": "Gratis", "price": "$0", "desc": "Todo para empezar", "f1": "Juegos ilimitados", "f2": "Abrir y unirse a salas LFG", "f3": "Chat de comunidad", "f4": "Perfil básico" },
+      "pro": { "name": "Pro", "price": "$4.99", "desc": "Para jugadores serios", "f1": "Emparejamiento IA prioritario", "f2": "Sin anuncios", "f3": "Juegos premium", "f4": "Impulso de sala", "f5": "Insignia exclusiva" },
+      "elite": { "name": "Elite", "price": "$9.99", "desc": "El nivel máximo", "f1": "Todo lo de Pro", "f2": "Impulso de sala ilimitado", "f3": "Prioridad en torneos", "f4": "Tema de perfil personalizado", "f5": "Soporte prioritario 24/7" }
+    }
+  },
+  "tournaments": {
+    "title": "Torneos",
+    "desc": "Únete a torneos semanales, compite con tu equipo y llévate los premios.",
+    "upcoming": "Próximos Torneos",
+    "prize": "Bote de Premios",
+    "slots": "{filled}/{total} equipos",
+    "join": "Unirse",
+    "free": "Gratis",
+    "premium": "Premium",
+    "empty": "No hay torneos programados ahora. ¡Pronto!",
+    "date": "Fecha"
+  },
+  "profile": {
+    "title": "Mi Perfil",
+    "demo": "Perfil demo — el inicio de sesión llega con Firebase.",
+    "level": "Nivel",
+    "member": "Miembro",
+    "accounts": "Cuentas Conectadas",
+    "connect": "Conectar",
+    "badges": "Insignias",
+    "wallet": "Cartera",
+    "coins": "monedas",
+    "history": "Actividad Reciente",
+    "noHistory": "Aún no hay actividad.",
+    "stats": "Estadísticas",
+    "matches": "Partidas",
+    "wins": "Victorias",
+    "friends": "Amigos"
+  },
+  "auth": {
+    "loginTitle": "Iniciar Sesión",
+    "registerTitle": "Registrarse",
+    "email": "Correo",
+    "password": "Contraseña",
+    "name": "Usuario",
+    "login": "Iniciar Sesión",
+    "register": "Crear Cuenta",
+    "google": "Continuar con Google",
+    "or": "o",
+    "toRegister": "¿Sin cuenta? Regístrate",
+    "toLogin": "¿Ya tienes cuenta? Inicia sesión",
+    "notConfigured": "El inicio de sesión llega pronto (falta configurar Firebase). Por ahora puedes ver el perfil demo.",
+    "demoProfile": "Ver Perfil Demo"
+  },
+  "assistant": {
+    "title": "Asistente de Juego IA",
+    "greeting": "¡Hola! Dime a qué te apetece jugar — te sugiero juegos y compañeros. 🎮",
+    "placeholder": "Pregunta algo…",
+    "send": "Enviar",
+    "s1": "Tengo 30 minutos, ¿a qué juego?",
+    "s2": "Fórmame un equipo de CS2",
+    "demoReply": "¡Buena elección! Hay muchas salas abiertas ahora — ve a /lfg para unirte a un equipo, o juega ya en /oyunlar. (Esta es una respuesta demo; la IA real se activa al añadir la clave de Anthropic.)"
+  },
   "footer": {
     "tagline": "Plataforma de compañeros de juego con IA"
   }

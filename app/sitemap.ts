@@ -36,6 +36,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
       alternates: withAlternates("/lfg"),
     });
+    entries.push({
+      url: `${SITE_URL}/${locale}/premium`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.7,
+      alternates: withAlternates("/premium"),
+    });
+    entries.push({
+      url: `${SITE_URL}/${locale}/turnuvalar`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.75,
+      alternates: withAlternates("/turnuvalar"),
+    });
   }
 
   // LFG per-game hubs (programmatic SEO)

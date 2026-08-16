@@ -130,6 +130,72 @@
     },
     "demo": "演示 — 实时房间和聊天即将上线（通过 Firebase）。"
   },
+  "premium": {
+    "title": "开通会员，抢先一步",
+    "desc": "优先 AI 匹配、无广告体验和会员内容。随时可取消。",
+    "perMonth": "/月",
+    "popular": "最受欢迎",
+    "cta": "开通会员",
+    "ctaFree": "免费开始",
+    "tiers": {
+      "free": { "name": "免费", "price": "¥0", "desc": "开始所需的一切", "f1": "无限游戏", "f2": "创建和加入 LFG 房间", "f3": "社区聊天", "f4": "基础资料" },
+      "pro": { "name": "Pro", "price": "¥30", "desc": "为认真的玩家", "f1": "优先 AI 匹配", "f2": "无广告体验", "f3": "会员游戏", "f4": "房间置顶", "f5": "专属徽章" },
+      "elite": { "name": "Elite", "price": "¥68", "desc": "最高等级", "f1": "包含 Pro 全部", "f2": "无限房间置顶", "f3": "锦标赛优先", "f4": "自定义资料主题", "f5": "7×24 优先支持" }
+    }
+  },
+  "tournaments": {
+    "title": "锦标赛",
+    "desc": "参加每周锦标赛，与队伍竞技，赢取奖励。",
+    "upcoming": "即将开始",
+    "prize": "奖池",
+    "slots": "{filled}/{total} 支队伍",
+    "join": "加入",
+    "free": "免费",
+    "premium": "会员",
+    "empty": "目前没有安排的锦标赛。敬请期待！",
+    "date": "日期"
+  },
+  "profile": {
+    "title": "我的资料",
+    "demo": "演示资料 — 登录将随 Firebase 上线。",
+    "level": "等级",
+    "member": "会员",
+    "accounts": "已绑定账号",
+    "connect": "绑定",
+    "badges": "徽章",
+    "wallet": "钱包",
+    "coins": "金币",
+    "history": "近期动态",
+    "noHistory": "暂无动态。",
+    "stats": "统计",
+    "matches": "对局",
+    "wins": "胜场",
+    "friends": "好友"
+  },
+  "auth": {
+    "loginTitle": "登录",
+    "registerTitle": "注册",
+    "email": "邮箱",
+    "password": "密码",
+    "name": "用户名",
+    "login": "登录",
+    "register": "创建账号",
+    "google": "使用 Google 继续",
+    "or": "或",
+    "toRegister": "没有账号？注册",
+    "toLogin": "已有账号？登录",
+    "notConfigured": "登录即将上线（等待 Firebase 配置）。现在你可以查看演示资料。",
+    "demoProfile": "查看演示资料"
+  },
+  "assistant": {
+    "title": "AI 游戏助手",
+    "greeting": "你好！告诉我你想玩什么 — 我来推荐游戏和队友。🎮",
+    "placeholder": "问点什么…",
+    "send": "发送",
+    "s1": "我有 30 分钟，玩什么好？",
+    "s2": "帮我组一个 CS2 队伍",
+    "demoReply": "好选择！现在有很多房间开放 — 前往 /lfg 加入合适的队伍，或在 /oyunlar 直接开玩。（这是演示回复；添加 Anthropic 密钥后将启用真实 AI。）"
+  },
   "footer": {
     "tagline": "AI 驱动的游戏搭子平台"
   }

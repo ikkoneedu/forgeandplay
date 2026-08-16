@@ -130,6 +130,72 @@
     },
     "demo": "Demo — gerçek zamanlı odalar ve sohbet yakında aktif olacak (Firebase ile)."
   },
+  "premium": {
+    "title": "Premium ile Öne Geç",
+    "desc": "Öncelikli AI eşleştirme, reklamsız deneyim ve premium içerikler. İstediğin an iptal et.",
+    "perMonth": "/ay",
+    "popular": "En Popüler",
+    "cta": "Premium'a Geç",
+    "ctaFree": "Ücretsiz Başla",
+    "tiers": {
+      "free": { "name": "Ücretsiz", "price": "₺0", "desc": "Başlamak için gereken her şey", "f1": "Sınırsız oyun", "f2": "LFG oda aç & katıl", "f3": "Topluluk sohbeti", "f4": "Temel profil" },
+      "pro": { "name": "Pro", "price": "₺59", "desc": "Ciddi oyuncular için", "f1": "Öncelikli AI eşleştirme", "f2": "Reklamsız deneyim", "f3": "Premium oyunlar", "f4": "Oda boost", "f5": "Özel rozet" },
+      "elite": { "name": "Elite", "price": "₺129", "desc": "En üst seviye", "f1": "Pro'daki her şey", "f2": "Sınırsız oda boost", "f3": "Turnuva önceliği", "f4": "Özel profil teması", "f5": "7/24 öncelikli destek" }
+    }
+  },
+  "tournaments": {
+    "title": "Turnuvalar",
+    "desc": "Haftalık turnuvalara katıl, ekibinle yarış, ödülleri kap.",
+    "upcoming": "Yaklaşan Turnuvalar",
+    "prize": "Ödül Havuzu",
+    "slots": "{filled}/{total} takım",
+    "join": "Katıl",
+    "free": "Ücretsiz",
+    "premium": "Premium",
+    "empty": "Şu an planlanmış turnuva yok. Yakında!",
+    "date": "Tarih"
+  },
+  "profile": {
+    "title": "Profilim",
+    "demo": "Demo profil — giriş sistemi Firebase ile aktifleşecek.",
+    "level": "Seviye",
+    "member": "Üye",
+    "accounts": "Bağlı Hesaplar",
+    "connect": "Bağla",
+    "badges": "Rozetler",
+    "wallet": "Cüzdan",
+    "coins": "coin",
+    "history": "Son Etkinlik",
+    "noHistory": "Henüz etkinlik yok.",
+    "stats": "İstatistikler",
+    "matches": "Maç",
+    "wins": "Galibiyet",
+    "friends": "Arkadaş"
+  },
+  "auth": {
+    "loginTitle": "Giriş Yap",
+    "registerTitle": "Kayıt Ol",
+    "email": "E-posta",
+    "password": "Şifre",
+    "name": "Kullanıcı adı",
+    "login": "Giriş Yap",
+    "register": "Hesap Oluştur",
+    "google": "Google ile devam et",
+    "or": "veya",
+    "toRegister": "Hesabın yok mu? Kayıt ol",
+    "toLogin": "Zaten hesabın var mı? Giriş yap",
+    "notConfigured": "Giriş sistemi yakında aktif olacak (Firebase kurulumu bekleniyor). Şimdilik demo profili görebilirsin.",
+    "demoProfile": "Demo Profili Gör"
+  },
+  "assistant": {
+    "title": "AI Oyun Asistanı",
+    "greeting": "Merhaba! Ne oynamak istediğini söyle — sana oyun ve takım önereyim. 🎮",
+    "placeholder": "Bir şey sor…",
+    "send": "Gönder",
+    "s1": "30 dakikam var, ne oynasam?",
+    "s2": "CS2 için takım kur",
+    "demoReply": "Harika seçim! Şu an birçok oda açık — /lfg sayfasından sana uygun ekibe katılabilir ya da /oyunlar'dan hemen bir oyun oynayabilirsin. (Bu bir demo yanıt; gerçek AI, Anthropic anahtarı eklenince devreye girecek.)"
+  },
   "footer": {
     "tagline": "AI destekli oyun arkadaşı platformu"
   }

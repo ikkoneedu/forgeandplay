@@ -158,20 +158,23 @@ export default function Home() {
           <div className="nmenu">
             <Link href="/oyunlar">{tNav("games")}</Link>
             <Link href="/lfg">{tNav("lfg")}</Link>
-            <a href="#">{tNav("tournaments")}</a>
-            <a href="#">{tNav("store")}</a>
-            <a href="#" className="prem">
+            <Link href="/turnuvalar">{tNav("tournaments")}</Link>
+            <Link href="/premium" className="prem">
               👑 {tNav("premium")}
-            </a>
+            </Link>
           </div>
           <div className="nright">
             <span className="chip">
               <span className="live" aria-hidden="true" />
               {tNav("online", { count: 412 })}
             </span>
-            <button className="btn btn-p" style={{ padding: "10px 18px", fontSize: 13.5 }}>
+            <Link
+              href="/giris"
+              className="btn btn-p"
+              style={{ padding: "10px 18px", fontSize: 13.5 }}
+            >
               {tNav("login")}
-            </button>
+            </Link>
           </div>
         </div>
       </nav>
