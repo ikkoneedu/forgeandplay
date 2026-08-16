@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "games": "游戏",
+    "lfg": "寻找队友",
+    "tournaments": "锦标赛",
+    "store": "商店",
+    "premium": "会员",
+    "login": "登录",
+    "online": "{count} 人在线"
+  },
+  "home": {
+    "eyebrow": "AI 智能匹配",
+    "titleLine1": "几秒内找到你的",
+    "titleAccent": "完美队伍",
+    "titleLine2": "。",
+    "lead": "AI 分析你的游戏风格和段位，为你匹配契合度 90%+ 的玩家。CS2、Valorant、PS5、Xbox — 无需下载，无需等待。想休息时，即点即玩的小游戏随时待命。",
+    "ctaPrimary": "组建队伍 — 免费",
+    "ctaSecondary": "浏览游戏",
+    "stats": {
+      "today": "今日在玩",
+      "teams": "已组队伍",
+      "active": "当前活跃",
+      "members": "会员"
+    },
+    "ai": {
+      "title": "AI 智能匹配",
+      "subtitle": "正在为你组建理想队伍…",
+      "premium": "会员",
+      "match": "契合度",
+      "cta": "与该队伍开玩"
+    },
+    "games": {
+      "title": "即点即玩",
+      "subtitle": "无需下载，无需等待 — 一键畅玩。",
+      "all": "查看全部",
+      "played": "{count} 次游玩"
+    },
+    "premium": {
+      "title": "开通会员，",
+      "titleAccent": "抢先一步",
+      "titleEnd": "。",
+      "desc": "优先 AI 匹配、无广告体验、会员专属游戏和置顶房间。比所有人领先一步。",
+      "cta": "开通会员",
+      "features": {
+        "ai": "优先 AI 匹配",
+        "noads": "无广告",
+        "games": "会员游戏",
+        "boost": "房间置顶",
+        "badge": "专属徽章"
+      }
+    }
+  },
+  "footer": {
+    "tagline": "AI 驱动的游戏搭子平台"
+  }
+}

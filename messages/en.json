@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "games": "Games",
+    "lfg": "Find a Team",
+    "tournaments": "Tournaments",
+    "store": "Store",
+    "premium": "Premium",
+    "login": "Sign In",
+    "online": "{count} online"
+  },
+  "home": {
+    "eyebrow": "AI-Powered Matchmaking",
+    "titleLine1": "Find your perfect",
+    "titleAccent": "team",
+    "titleLine2": "in seconds.",
+    "lead": "AI analyzes your playstyle and rank, then matches you with players who fit 90%+. CS2, Valorant, PS5, Xbox — no downloads, no waiting. And whenever you need a break, instant games are always one click away.",
+    "ctaPrimary": "Build Your Team — Free",
+    "ctaSecondary": "Browse Games",
+    "stats": {
+      "today": "Playing Today",
+      "teams": "Teams Formed",
+      "active": "Active Now",
+      "members": "Members"
+    },
+    "ai": {
+      "title": "AI Smart Matchmaking",
+      "subtitle": "Building your ideal team…",
+      "premium": "PREMIUM",
+      "match": "Match",
+      "cta": "Play With This Team"
+    },
+    "games": {
+      "title": "Play Instantly",
+      "subtitle": "No downloads, no waiting — fun in one click.",
+      "all": "See All",
+      "played": "{count} plays"
+    },
+    "premium": {
+      "title": "Stay",
+      "titleAccent": "ahead",
+      "titleEnd": "with Premium.",
+      "desc": "Priority AI matchmaking, an ad-free experience, premium games and featured rooms. Start one step ahead of everyone else.",
+      "cta": "Go Premium",
+      "features": {
+        "ai": "Priority AI Matchmaking",
+        "noads": "Ad-Free",
+        "games": "Premium Games",
+        "boost": "Room Boost",
+        "badge": "Exclusive Badge"
+      }
+    }
+  },
+  "footer": {
+    "tagline": "AI-powered gaming buddy platform"
+  }
+}

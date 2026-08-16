@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "games": "Oyunlar",
+    "lfg": "Takım Bul",
+    "tournaments": "Turnuvalar",
+    "store": "Mağaza",
+    "premium": "Premium",
+    "login": "Giriş Yap",
+    "online": "{count} çevrimiçi"
+  },
+  "home": {
+    "eyebrow": "Yapay Zeka Destekli Eşleştirme",
+    "titleLine1": "Mükemmel",
+    "titleAccent": "takımını",
+    "titleLine2": "saniyeler içinde bul.",
+    "lead": "Yapay zeka oyun tarzını ve seviyeni analiz eder; sana %90+ uyumlu oyuncuları eşleştirir. CS2, Valorant, PS5, Xbox — indirme yok, bekleme yok. Canın sıkılınca anında oynanan oyunlar hep hazır.",
+    "ctaPrimary": "Takımını Kur — Ücretsiz",
+    "ctaSecondary": "Oyunlara Göz At",
+    "stats": {
+      "today": "Bugün Oynayan",
+      "teams": "Kurulan Takım",
+      "active": "Şu An Aktif",
+      "members": "Üye"
+    },
+    "ai": {
+      "title": "AI Akıllı Eşleştirme",
+      "subtitle": "Sana en uygun takımı kuruyor…",
+      "premium": "PREMIUM",
+      "match": "Uyum",
+      "cta": "Bu Takımla Oyna"
+    },
+    "games": {
+      "title": "Anında Oyna",
+      "subtitle": "İndirme yok, bekleme yok — tek tıkla eğlence.",
+      "all": "Tümünü Gör",
+      "played": "{count} oynandı"
+    },
+    "premium": {
+      "title": "Premium ile",
+      "titleAccent": "hep önde",
+      "titleEnd": "ol.",
+      "desc": "Öncelikli AI eşleştirme, reklamsız deneyim, premium oyunlar ve öne çıkan odalar. Kazanmaya bir adım önden başla.",
+      "cta": "Premium'a Geç",
+      "features": {
+        "ai": "Öncelikli AI Eşleştirme",
+        "noads": "Reklamsız",
+        "games": "Premium Oyunlar",
+        "boost": "Oda Boost",
+        "badge": "Özel Rozet"
+      }
+    }
+  },
+  "footer": {
+    "tagline": "AI destekli oyun arkadaşı platformu"
+  }
+}

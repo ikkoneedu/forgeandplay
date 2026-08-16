@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "games": "Juegos",
+    "lfg": "Buscar Equipo",
+    "tournaments": "Torneos",
+    "store": "Tienda",
+    "premium": "Premium",
+    "login": "Iniciar Sesión",
+    "online": "{count} en línea"
+  },
+  "home": {
+    "eyebrow": "Emparejamiento con IA",
+    "titleLine1": "Encuentra tu equipo",
+    "titleAccent": "perfecto",
+    "titleLine2": "en segundos.",
+    "lead": "La IA analiza tu estilo de juego y tu rango, y te empareja con jugadores con más del 90% de compatibilidad. CS2, Valorant, PS5, Xbox — sin descargas, sin esperas. Y cuando quieras un descanso, los juegos instantáneos están a un clic.",
+    "ctaPrimary": "Forma tu Equipo — Gratis",
+    "ctaSecondary": "Ver Juegos",
+    "stats": {
+      "today": "Jugando Hoy",
+      "teams": "Equipos Formados",
+      "active": "Activos Ahora",
+      "members": "Miembros"
+    },
+    "ai": {
+      "title": "Emparejamiento Inteligente IA",
+      "subtitle": "Formando tu equipo ideal…",
+      "premium": "PREMIUM",
+      "match": "Afinidad",
+      "cta": "Jugar con Este Equipo"
+    },
+    "games": {
+      "title": "Juega al Instante",
+      "subtitle": "Sin descargas, sin esperas — diversión en un clic.",
+      "all": "Ver Todo",
+      "played": "{count} partidas"
+    },
+    "premium": {
+      "title": "Ve siempre",
+      "titleAccent": "por delante",
+      "titleEnd": "con Premium.",
+      "desc": "Emparejamiento IA prioritario, experiencia sin anuncios, juegos premium y salas destacadas. Empieza un paso por delante de los demás.",
+      "cta": "Hazte Premium",
+      "features": {
+        "ai": "Emparejamiento IA Prioritario",
+        "noads": "Sin Anuncios",
+        "games": "Juegos Premium",
+        "boost": "Impulso de Sala",
+        "badge": "Insignia Exclusiva"
+      }
+    }
+  },
+  "footer": {
+    "tagline": "Plataforma de compañeros de juego con IA"
+  }
+}
