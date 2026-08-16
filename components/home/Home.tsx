@@ -2,11 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
 
 export default function Home() {
   const t = useTranslations("home");
   const tNav = useTranslations("nav");
   const tFooter = useTranslations("footer");
+  const tPortal = useTranslations("portal");
   const locale = useLocale();
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -154,7 +156,7 @@ export default function Home() {
             Forge<b>&amp;</b>Play
           </div>
           <div className="nmenu">
-            <a href="#">{tNav("games")}</a>
+            <Link href="/oyunlar">{tNav("games")}</Link>
             <a href="#">{tNav("lfg")}</a>
             <a href="#">{tNav("tournaments")}</a>
             <a href="#">{tNav("store")}</a>
@@ -187,9 +189,13 @@ export default function Home() {
             <p className="lead">{t("lead")}</p>
             <div className="cta">
               <button className="btn btn-p">⚡ {t("ctaPrimary")}</button>
-              <button className="btn btn-g" style={{ padding: "16px 26px" }}>
+              <Link
+                href="/oyunlar"
+                className="btn btn-g"
+                style={{ padding: "16px 26px" }}
+              >
                 ▶ {t("ctaSecondary")}
-              </button>
+              </Link>
             </div>
             <div className="platforms">
               <span className="pl">🎮 Steam</span>
@@ -285,39 +291,47 @@ export default function Home() {
               <h2>🔥 {t("games.title")}</h2>
               <p>{t("games.subtitle")}</p>
             </div>
-            <a href="#">{t("games.all")} →</a>
+            <Link href="/oyunlar">{t("games.all")} →</Link>
           </div>
           <div className="grid3" ref={gridRef}>
-            <div className="gcard">
+            <Link href="/oyna/2048" className="gcard" style={{ display: "block" }}>
               <div className="cov c1">
                 <span className="tag t-orange">#1 TREND</span>
-                <span className="lock">🔒 {t("ai.premium")}</span>
-                <h4>Neon Sürüş</h4>
+                <span className="cover-emoji" aria-hidden="true">
+                  🔢
+                </span>
+                <h4>2048</h4>
               </div>
               <div className="m">
-                <span>Yarış · Arcade</span>
-                <span className="pl">▶ {t("games.played", { count: "3.2K" })}</span>
+                <span>{tPortal("cat.puzzle")}</span>
+                <span className="pl">▶ {t("games.played", { count: "32K" })}</span>
               </div>
-            </div>
-            <div className="gcard">
+            </Link>
+            <Link href="/oyna/yilan" className="gcard" style={{ display: "block" }}>
               <div className="cov c2">
                 <span className="tag t-hot">🔥</span>
-                <h4>İsim Şehir Online</h4>
+                <span className="cover-emoji" aria-hidden="true">
+                  🐍
+                </span>
+                <h4>Yılan</h4>
               </div>
               <div className="m">
-                <span>Kelime</span>
-                <span className="pl">▶ {t("games.played", { count: "2.8K" })}</span>
+                <span>{tPortal("cat.arcade")}</span>
+                <span className="pl">▶ {t("games.played", { count: "28K" })}</span>
               </div>
-            </div>
-            <div className="gcard">
-              <div className="cov c3">
-                <h4>Blok Kırıcı X</h4>
+            </Link>
+            <Link href="/oyna/hafiza" className="gcard" style={{ display: "block" }}>
+              <div className="cov c4">
+                <span className="cover-emoji" aria-hidden="true">
+                  🧠
+                </span>
+                <h4>Hafıza Kartları</h4>
               </div>
               <div className="m">
-                <span>Arcade · Refleks</span>
-                <span className="pl">▶ {t("games.played", { count: "2.1K" })}</span>
+                <span>{tPortal("cat.puzzle")}</span>
+                <span className="pl">▶ {t("games.played", { count: "22K" })}</span>
               </div>
-            </div>
+            </Link>
           </div>
         </section>
 

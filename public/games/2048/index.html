@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>2048</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060d;color:#eef2ff;font-family:system-ui,sans-serif;display:grid;place-items:center;overflow:hidden;-webkit-user-select:none;user-select:none}
+  .wrap{width:min(92vw,420px)}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .sc{background:#141a31;border:1px solid #222a45;border-radius:12px;padding:8px 16px;text-align:center}
+  .sc small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9aa5c7}
+  .sc b{font-size:22px}
+  button{background:linear-gradient(120deg,#ffa23d,#ff3d7f);color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;font-family:inherit}
+  #board{position:relative;width:100%;aspect-ratio:1;background:#0e1224;border:1px solid #222a45;border-radius:16px;padding:10px;box-sizing:border-box}
+  .grid{position:absolute;inset:10px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:10px}
+  .cell{background:#141a31;border-radius:10px}
+  .tiles{position:absolute;inset:10px}
+  .tile{position:absolute;display:grid;place-items:center;border-radius:10px;font-weight:800;transition:all .12s ease;font-size:26px}
+  .over{position:absolute;inset:0;background:rgba(5,6,13,.86);display:none;place-items:center;flex-direction:column;border-radius:16px}
+  .over.show{display:grid}
+  .over p{font-size:26px;font-weight:800;margin:0 0 12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="sc"><small>Skor</small><b id="score">0</b></div>
+    <button id="new">Yeni Oyun</button>
+    <div class="sc"><small>En İyi</small><b id="best">0</b></div>
+  </div>
+  <div id="board">
+    <div class="grid" id="grid"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="over" id="over"><p>Oyun Bitti!</p><button id="retry">Tekrar Oyna</button></div>
+  </div>
+</div>
+<script>
+const N=4;let cells=[],score=0,best=+(localStorage.getItem('fp2048best')||0);
+const grid=document.getElementById('grid'),tilesEl=document.getElementById('tiles');
+const scoreEl=document.getElementById('score'),bestEl=document.getElementById('best'),overEl=document.getElementById('over');
+const colors={2:'#3b3f5c',4:'#4c4a7a',8:'#7c3aed',16:'#8b5cf6',32:'#a855f7',64:'#c026d3',128:'#ec4899',256:'#f43f5e',512:'#f97316',1024:'#f59e0b',2048:'#22d3ee'};
+bestEl.textContent=best;
+for(let i=0;i<16;i++){const c=document.createElement('div');c.className='cell';grid.appendChild(c);}
+function post(){parent.postMessage({type:'forgeplay:score',game:'2048',score},'*');}
+function empty(){const e=[];for(let i=0;i<16;i++)if(!cells[i])e.push(i);return e;}
+function add(){const e=empty();if(!e.length)return;const i=e[Math.floor(Math.random()*e.length)];cells[i]=Math.random()<0.9?2:4;}
+function pos(i){const r=Math.floor(i/N),c=i%N;const p=`calc(${c} * (25% + 2.5px))`;return{r,c};}
+function draw(){tilesEl.innerHTML='';for(let i=0;i<16;i++){if(!cells[i])continue;const v=cells[i];const t=document.createElement('div');t.className='tile';const c=i%N,r=Math.floor(i/N);t.style.width='calc(25% - 7.5px)';t.style.height='calc(25% - 7.5px)';t.style.left=`calc(${c} * (25% + 3.33px))`;t.style.top=`calc(${r} * (25% + 3.33px))`;t.style.background=colors[v]||'#22d3ee';t.style.fontSize=v>=1000?'20px':v>=100?'23px':'26px';t.textContent=v;tilesEl.appendChild(t);}scoreEl.textContent=score;if(score>best){best=score;bestEl.textContent=best;localStorage.setItem('fp2048best',best);}}
+function slide(row){let a=row.filter(x=>x);for(let i=0;i<a.length-1;i++){if(a[i]===a[i+1]){a[i]*=2;score+=a[i];a.splice(i+1,1);}}while(a.length<N)a.push(0);return a;}
+function move(dir){const before=cells.join(',');let g=[];for(let r=0;r<N;r++){g.push([]);for(let c=0;c<N;c++)g[r].push(cells[r*N+c]);}
+  const get=(r,c)=>g[r][c],set=(r,c,v)=>g[r][c]=v;
+  if(dir==='left'){for(let r=0;r<N;r++){const s=slide(g[r]);for(let c=0;c<N;c++)set(r,c,s[c]);}}
+  if(dir==='right'){for(let r=0;r<N;r++){const s=slide(g[r].slice().reverse()).reverse();for(let c=0;c<N;c++)set(r,c,s[c]);}}
+  if(dir==='up'){for(let c=0;c<N;c++){const col=[];for(let r=0;r<N;r++)col.push(g[r][c]);const s=slide(col);for(let r=0;r<N;r++)set(r,c,s[r]);}}
+  if(dir==='down'){for(let c=0;c<N;c++){const col=[];for(let r=0;r<N;r++)col.push(g[r][c]);const s=slide(col.reverse()).reverse();for(let r=0;r<N;r++)set(r,c,s[r]);}}
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++)cells[r*N+c]=g[r][c];
+  if(cells.join(',')!==before){add();draw();post();if(isOver())overEl.classList.add('show');}}
+function isOver(){if(empty().length)return false;for(let r=0;r<N;r++)for(let c=0;c<N;c++){const v=cells[r*N+c];if(c<N-1&&v===cells[r*N+c+1])return false;if(r<N-1&&v===cells[(r+1)*N+c])return false;}return true;}
+function reset(){cells=new Array(16).fill(0);score=0;overEl.classList.remove('show');add();add();draw();post();}
+addEventListener('keydown',e=>{const k={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'}[e.key];if(k){e.preventDefault();move(k);}});
+let sx,sy;addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+addEventListener('touchend',e=>{if(sx==null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;if(Math.abs(dx)>Math.abs(dy))move(dx>0?'right':'left');else move(dy>0?'down':'up');sx=sy=null;},{passive:true});
+document.getElementById('new').onclick=reset;document.getElementById('retry').onclick=reset;
+reset();
+</script>
+</body>
+</html>

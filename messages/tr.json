@@ -50,6 +50,31 @@
       }
     }
   },
+  "portal": {
+    "games": {
+      "title": "Anında Oynanan Oyunlar",
+      "desc": "İndirme yok, kayıt yok. Her yaşa uygun, sürekli yenilenen oyunlar — tek tıkla oyna.",
+      "search": "Oyun ara…",
+      "empty": "Aradığın oyun bulunamadı.",
+      "playNow": "Tüm Oyunlar"
+    },
+    "cat": {
+      "all": "Tümü",
+      "arcade": "Arcade",
+      "puzzle": "Bulmaca",
+      "reflex": "Refleks"
+    },
+    "play": {
+      "score": "Skorun",
+      "best": "En İyi",
+      "about": "Oyun Hakkında",
+      "related": "Benzer Oyunlar",
+      "home": "Ana Sayfa",
+      "gamesCrumb": "Oyunlar",
+      "premium": "PREMIUM",
+      "plays": "{count} kez oynandı"
+    }
+  },
   "footer": {
     "tagline": "AI destekli oyun arkadaşı platformu"
   }

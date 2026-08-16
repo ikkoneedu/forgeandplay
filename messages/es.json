@@ -50,6 +50,31 @@
       }
     }
   },
+  "portal": {
+    "games": {
+      "title": "Juegos Instantáneos",
+      "desc": "Sin descargas ni registro. Diversión para todas las edades, siempre renovada — juega en un clic.",
+      "search": "Buscar juegos…",
+      "empty": "Ningún juego coincide con tu búsqueda.",
+      "playNow": "Todos los Juegos"
+    },
+    "cat": {
+      "all": "Todos",
+      "arcade": "Arcade",
+      "puzzle": "Puzzle",
+      "reflex": "Reflejos"
+    },
+    "play": {
+      "score": "Tu Puntuación",
+      "best": "Mejor",
+      "about": "Sobre el Juego",
+      "related": "Juegos Similares",
+      "home": "Inicio",
+      "gamesCrumb": "Juegos",
+      "premium": "PREMIUM",
+      "plays": "{count} partidas"
+    }
+  },
   "footer": {
     "tagline": "Plataforma de compañeros de juego con IA"
   }

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Yılan</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060d;color:#eef2ff;font-family:system-ui,sans-serif;display:grid;place-items:center;overflow:hidden;-webkit-user-select:none;user-select:none}
+  .wrap{width:min(92vw,420px)}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .sc{background:#141a31;border:1px solid #222a45;border-radius:12px;padding:8px 16px;text-align:center}
+  .sc small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9aa5c7}
+  .sc b{font-size:22px}
+  button{background:linear-gradient(120deg,#ffa23d,#ff3d7f);color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;font-family:inherit}
+  #c{width:100%;aspect-ratio:1;background:#0e1224;border:1px solid #222a45;border-radius:16px;display:block}
+  .over{position:fixed;inset:0;background:rgba(5,6,13,.86);display:none;place-items:center;flex-direction:column}
+  .over.show{display:grid}
+  .over p{font-size:24px;font-weight:800;margin:0 0 12px}
+  .hint{text-align:center;color:#616c93;font-size:12px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="sc"><small>Skor</small><b id="score">0</b></div>
+    <button id="new">Yeni Oyun</button>
+    <div class="sc"><small>En İyi</small><b id="best">0</b></div>
+  </div>
+  <canvas id="c" width="400" height="400"></canvas>
+  <div class="hint">Ok tuşları veya kaydır · Play/Restart için butona bas</div>
+</div>
+<div class="over" id="over"><p id="ov">Oyun Bitti!</p><button id="retry">Tekrar Oyna</button></div>
+<script>
+const cv=document.getElementById('c'),x=cv.getContext('2d');const G=20,S=cv.width/G;
+let snake,dir,next,food,score,best=+(localStorage.getItem('fpsnakebest')||0),loop,alive;
+const scoreEl=document.getElementById('score'),bestEl=document.getElementById('best'),overEl=document.getElementById('over'),ov=document.getElementById('ov');
+bestEl.textContent=best;
+function post(){parent.postMessage({type:'forgeplay:score',game:'yilan',score},'*');}
+function placeFood(){food={x:Math.floor(Math.random()*G),y:Math.floor(Math.random()*G)};if(snake.some(s=>s.x===food.x&&s.y===food.y))placeFood();}
+function reset(){snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];dir={x:1,y:0};next=dir;score=0;alive=true;scoreEl.textContent=0;overEl.classList.remove('show');placeFood();clearInterval(loop);loop=setInterval(tick,110);post();}
+function tick(){if(!alive)return;dir=next;const head={x:(snake[0].x+dir.x+G)%G,y:(snake[0].y+dir.y+G)%G};
+  if(snake.some(s=>s.x===head.x&&s.y===head.y)){gameOver();return;}
+  snake.unshift(head);
+  if(head.x===food.x&&head.y===food.y){score+=10;scoreEl.textContent=score;if(score>best){best=score;bestEl.textContent=best;localStorage.setItem('fpsnakebest',best);}post();placeFood();}
+  else snake.pop();
+  render();}
+function render(){x.clearRect(0,0,cv.width,cv.height);
+  x.fillStyle='#2de2a6';x.beginPath();x.arc(food.x*S+S/2,food.y*S+S/2,S/2-2,0,7);x.fill();
+  snake.forEach((s,i)=>{x.fillStyle=i===0?'#ffa23d':`hsl(${270- i*4},70%,${60-i*0.6}%)`;const r=5;const px=s.x*S+1,py=s.y*S+1,w=S-2;x.beginPath();x.roundRect(px,py,w,w,r);x.fill();});}
+function gameOver(){alive=false;clearInterval(loop);ov.textContent='Oyun Bitti! Skor: '+score;overEl.classList.add('show');post();}
+addEventListener('keydown',e=>{const m={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0}}[e.key];if(m){e.preventDefault();if(m.x!==-dir.x&&m.y!==-dir.y)next=m;}});
+let sx,sy;cv.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+cv.addEventListener('touchend',e=>{if(sx==null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;let m;if(Math.abs(dx)>Math.abs(dy))m={x:dx>0?1:-1,y:0};else m={x:0,y:dy>0?1:-1};if(m.x!==-dir.x&&m.y!==-dir.y)next=m;sx=sy=null;},{passive:true});
+document.getElementById('new').onclick=reset;document.getElementById('retry').onclick=reset;
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);return this;};}
+reset();
+</script>
+</body>
+</html>

@@ -50,6 +50,31 @@
       }
     }
   },
+  "portal": {
+    "games": {
+      "title": "即点即玩游戏",
+      "desc": "无需下载、无需注册。适合所有年龄、持续更新 — 一键畅玩。",
+      "search": "搜索游戏…",
+      "empty": "没有匹配的游戏。",
+      "playNow": "全部游戏"
+    },
+    "cat": {
+      "all": "全部",
+      "arcade": "街机",
+      "puzzle": "益智",
+      "reflex": "反应"
+    },
+    "play": {
+      "score": "你的得分",
+      "best": "最佳",
+      "about": "游戏介绍",
+      "related": "相似游戏",
+      "home": "首页",
+      "gamesCrumb": "游戏",
+      "premium": "会员",
+      "plays": "{count} 次游玩"
+    }
+  },
   "footer": {
     "tagline": "AI 驱动的游戏搭子平台"
   }

@@ -50,6 +50,31 @@
       }
     }
   },
+  "portal": {
+    "games": {
+      "title": "Instant Play Games",
+      "desc": "No downloads, no sign-up. Fun for all ages, always fresh — play in one click.",
+      "search": "Search games…",
+      "empty": "No games match your search.",
+      "playNow": "All Games"
+    },
+    "cat": {
+      "all": "All",
+      "arcade": "Arcade",
+      "puzzle": "Puzzle",
+      "reflex": "Reflex"
+    },
+    "play": {
+      "score": "Your Score",
+      "best": "Best",
+      "about": "About the Game",
+      "related": "Similar Games",
+      "home": "Home",
+      "gamesCrumb": "Games",
+      "premium": "PREMIUM",
+      "plays": "{count} plays"
+    }
+  },
   "footer": {
     "tagline": "AI-powered gaming buddy platform"
   }

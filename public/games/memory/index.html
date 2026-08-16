@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Hafıza Kartları</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060d;color:#eef2ff;font-family:system-ui,sans-serif;display:grid;place-items:center;overflow:hidden;-webkit-user-select:none;user-select:none}
+  .wrap{width:min(92vw,440px)}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .sc{background:#141a31;border:1px solid #222a45;border-radius:12px;padding:8px 16px;text-align:center}
+  .sc small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9aa5c7}
+  .sc b{font-size:22px}
+  button{background:linear-gradient(120deg,#ffa23d,#ff3d7f);color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;font-family:inherit}
+  #board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .card{aspect-ratio:1;border-radius:12px;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .35s}
+  .card.flip{transform:rotateY(180deg)}
+  .face{position:absolute;inset:0;display:grid;place-items:center;border-radius:12px;backface-visibility:hidden;font-size:32px}
+  .back{background:#141a31;border:1px solid #222a45}
+  .front{background:linear-gradient(135deg,#7c3aed,#22d3ee);transform:rotateY(180deg)}
+  .card.done .front{opacity:.35}
+  .over{position:fixed;inset:0;background:rgba(5,6,13,.9);display:none;place-items:center;flex-direction:column}
+  .over.show{display:grid}
+  .over p{font-size:24px;font-weight:800;margin:0 0 12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="sc"><small>Hamle</small><b id="moves">0</b></div>
+    <button id="new">Yeni Oyun</button>
+    <div class="sc"><small>Skor</small><b id="score">0</b></div>
+  </div>
+  <div id="board"></div>
+</div>
+<div class="over" id="over"><p id="ov">Tebrikler!</p><button id="retry">Tekrar Oyna</button></div>
+<script>
+const EMO=['🔥','🎮','🚀','🐍','🎯','💎','⚡','👑'];
+const board=document.getElementById('board'),movesEl=document.getElementById('moves'),scoreEl=document.getElementById('score'),overEl=document.getElementById('over'),ov=document.getElementById('ov');
+let first=null,lock=false,moves=0,matched=0,score=0;
+function post(){parent.postMessage({type:'forgeplay:score',game:'hafiza',score},'*');}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function reset(){board.innerHTML='';first=null;lock=false;moves=0;matched=0;score=0;movesEl.textContent=0;scoreEl.textContent=0;overEl.classList.remove('show');
+  const deck=shuffle([...EMO,...EMO]);
+  deck.forEach(e=>{const c=document.createElement('div');c.className='card';c.dataset.e=e;
+    c.innerHTML='<div class="face back">?</div><div class="face front">'+e+'</div>';
+    c.onclick=()=>flip(c);board.appendChild(c);});
+  post();}
+function flip(c){if(lock||c.classList.contains('flip')||c.classList.contains('done'))return;c.classList.add('flip');
+  if(!first){first=c;return;}
+  moves++;movesEl.textContent=moves;lock=true;
+  if(first.dataset.e===c.dataset.e){first.classList.add('done');c.classList.add('done');matched++;score+=Math.max(20-moves,5)+10;scoreEl.textContent=score;first=null;lock=false;post();
+    if(matched===EMO.length){score+=Math.max(120-moves*4,20);scoreEl.textContent=score;post();ov.textContent='Tebrikler! '+moves+' hamlede bitirdin 🎉';overEl.classList.add('show');}}
+  else{setTimeout(()=>{first.classList.remove('flip');c.classList.remove('flip');first=null;lock=false;},700);}}
+document.getElementById('new').onclick=reset;document.getElementById('retry').onclick=reset;
+reset();
+</script>
+</body>
+</html>
