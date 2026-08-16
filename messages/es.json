@@ -75,6 +75,61 @@
       "plays": "{count} partidas"
     }
   },
+  "lfg": {
+    "index": {
+      "title": "Encuentra Equipo y Compañeros",
+      "desc": "Abre o únete a una sala de CS2, Valorant, LoL y más. Filtra, forma tu escuadra y juega ya. Emparejamiento con IA (90%+) muy pronto.",
+      "pick": "Elige un juego",
+      "players": "{count} jugadores activos",
+      "how": {
+        "title": "Cómo funciona",
+        "s1": "Elige tu juego",
+        "s2": "Abre una sala o únete a una que encaje",
+        "s3": "Chatea, forma tu equipo y juega"
+      }
+    },
+    "hub": {
+      "h1": "Encuentra Compañeros de {game}",
+      "intro": "¿Buscas compañeros de {game}? Únete abajo a una sala que coincida con tu plataforma y rango, o abre la tuya. Forma equipo con jugadores con micro, en tu idioma y nivel en segundos — sin descargas ni buscar servidores de Discord para {game}.",
+      "create": "Crear Sala",
+      "roomsTitle": "Salas Abiertas",
+      "empty": "Ninguna sala coincide con estos filtros. ¡Sé el primero en abrir una!",
+      "platform": "Plataforma",
+      "rank": "Rango",
+      "all": "Todas",
+      "join": "Unirse",
+      "full": "Llena",
+      "players": "{filled}/{cap} jugadores",
+      "mic": "Micro",
+      "related": "Otros Juegos",
+      "faqTitle": "Preguntas Frecuentes",
+      "q1": "¿Cómo encuentro compañeros de {game}?",
+      "a1": "Mira las salas abiertas de {game} y pulsa 'Unirse' en la que encaje. Si no hay ninguna adecuada, usa 'Crear Sala' y los jugadores se unirán a ti.",
+      "q2": "¿Es gratis?",
+      "a2": "Sí, abrir y unirse a salas de {game} es totalmente gratis. Premium solo añade emparejamiento prioritario y extras.",
+      "q3": "¿Qué plataformas se admiten?",
+      "a3": "Jugadores de Steam, Epic, PlayStation y Xbox pueden crear salas de {game}, y puedes filtrar por plataforma."
+    },
+    "create": {
+      "title": "Crear una Sala",
+      "mode": "Modo",
+      "platform": "Plataforma",
+      "rank": "Rango",
+      "mic": "Micro obligatorio",
+      "capacity": "Plazas",
+      "submit": "Abrir Sala",
+      "cancel": "Cancelar"
+    },
+    "room": {
+      "title": "Sala de {game}",
+      "chat": "Chat de Sala",
+      "placeholder": "Escribe un mensaje…",
+      "send": "Enviar",
+      "leave": "Salir",
+      "members": "Escuadra"
+    },
+    "demo": "Demo — las salas y el chat en tiempo real llegan pronto (con Firebase)."
+  },
   "footer": {
     "tagline": "Plataforma de compañeros de juego con IA"
   }

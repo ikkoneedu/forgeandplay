@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { LOCALES, SITE_URL } from "@/lib/site";
 import { getAllGames } from "@/lib/games";
+import { getAllLfgGames } from "@/lib/lfg";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -28,6 +29,26 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
       alternates: withAlternates("/oyunlar"),
     });
+    entries.push({
+      url: `${SITE_URL}/${locale}/lfg`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.9,
+      alternates: withAlternates("/lfg"),
+    });
+  }
+
+  // LFG per-game hubs (programmatic SEO)
+  for (const game of getAllLfgGames()) {
+    for (const locale of LOCALES) {
+      entries.push({
+        url: `${SITE_URL}/${locale}/lfg/${game.slug}`,
+        lastModified: now,
+        changeFrequency: "daily",
+        priority: 0.85,
+        alternates: withAlternates(`/lfg/${game.slug}`),
+      });
+    }
   }
 
   // Individual game pages per locale

@@ -75,6 +75,61 @@
       "plays": "{count} plays"
     }
   },
+  "lfg": {
+    "index": {
+      "title": "Find a Team & Gaming Buddy",
+      "desc": "Open or join a room for CS2, Valorant, LoL and more. Filter, build your squad, play now. AI matching with 90%+ fit coming soon.",
+      "pick": "Pick a game",
+      "players": "{count} active players",
+      "how": {
+        "title": "How it works",
+        "s1": "Choose your game",
+        "s2": "Open a room or join one that fits",
+        "s3": "Chat, build your team, play"
+      }
+    },
+    "hub": {
+      "h1": "Find {game} Teammates",
+      "intro": "Looking for {game} teammates? Join a room that matches your platform and rank below, or open your own. Team up with mic'd players in your language and skill level in seconds — no downloads, no hunting through Discord servers for {game}.",
+      "create": "Create Room",
+      "roomsTitle": "Open Rooms",
+      "empty": "No rooms match these filters. Be the first to open one!",
+      "platform": "Platform",
+      "rank": "Rank",
+      "all": "All",
+      "join": "Join",
+      "full": "Full",
+      "players": "{filled}/{cap} players",
+      "mic": "Mic",
+      "related": "Other Games",
+      "faqTitle": "Frequently Asked Questions",
+      "q1": "How do I find {game} teammates?",
+      "a1": "Browse the open {game} rooms and hit 'Join' on one that fits. If there's no suitable room, use 'Create Room' to open your own and players will join you.",
+      "q2": "Is it free?",
+      "a2": "Yes, opening and joining {game} rooms is completely free. Premium only adds priority matchmaking and extra perks.",
+      "q3": "Which platforms are supported?",
+      "a3": "Steam, Epic, PlayStation and Xbox players can host {game} rooms, and you can filter rooms by platform."
+    },
+    "create": {
+      "title": "Create a Room",
+      "mode": "Mode",
+      "platform": "Platform",
+      "rank": "Rank",
+      "mic": "Mic required",
+      "capacity": "Slots",
+      "submit": "Open Room",
+      "cancel": "Cancel"
+    },
+    "room": {
+      "title": "{game} Room",
+      "chat": "Room Chat",
+      "placeholder": "Type a message…",
+      "send": "Send",
+      "leave": "Leave Room",
+      "members": "Squad"
+    },
+    "demo": "Demo — real-time rooms & chat go live soon (with Firebase)."
+  },
   "footer": {
     "tagline": "AI-powered gaming buddy platform"
   }

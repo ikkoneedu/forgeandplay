@@ -157,7 +157,7 @@ export default function Home() {
           </div>
           <div className="nmenu">
             <Link href="/oyunlar">{tNav("games")}</Link>
-            <a href="#">{tNav("lfg")}</a>
+            <Link href="/lfg">{tNav("lfg")}</Link>
             <a href="#">{tNav("tournaments")}</a>
             <a href="#">{tNav("store")}</a>
             <a href="#" className="prem">
@@ -188,7 +188,9 @@ export default function Home() {
             </h1>
             <p className="lead">{t("lead")}</p>
             <div className="cta">
-              <button className="btn btn-p">⚡ {t("ctaPrimary")}</button>
+              <Link href="/lfg" className="btn btn-p" style={{ padding: "16px 28px" }}>
+                ⚡ {t("ctaPrimary")}
+              </Link>
               <Link
                 href="/oyunlar"
                 className="btn btn-g"
@@ -279,7 +281,9 @@ export default function Home() {
                 </div>
                 <div className="fit">%89</div>
               </div>
-              <button className="btn btn-p aic-btn">{t("ai.cta")} →</button>
+              <Link href="/lfg" className="btn btn-p aic-btn">
+                {t("ai.cta")} →
+              </Link>
             </div>
           </div>
         </section>

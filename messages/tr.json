@@ -75,6 +75,61 @@
       "plays": "{count} kez oynandı"
     }
   },
+  "lfg": {
+    "index": {
+      "title": "Oyun Arkadaşı & Takım Bul",
+      "desc": "CS2, Valorant, LoL ve daha fazlası için oda aç ya da katıl. Filtrele, ekibini kur, hemen oyna. Yakında AI ile %90+ uyumlu eşleştirme.",
+      "pick": "Bir oyun seç",
+      "players": "{count} aktif oyuncu",
+      "how": {
+        "title": "Nasıl çalışır?",
+        "s1": "Oyununu seç",
+        "s2": "Oda aç veya uygun odaya katıl",
+        "s3": "Sohbet et, ekibini kur, oyna"
+      }
+    },
+    "hub": {
+      "h1": "{game} Oyun Arkadaşı Bul",
+      "intro": "{game} için takım arkadaşı mı arıyorsun? Aşağıdan platform ve rütbene uygun bir odaya katıl ya da kendi odanı aç. Mikrofonlu, dilinde ve seviyene uygun oyuncularla saniyeler içinde {game} ekibini kur — indirme yok, Discord aramaya gerek yok.",
+      "create": "Oda Aç",
+      "roomsTitle": "Açık Odalar",
+      "empty": "Bu filtrelere uygun oda yok. İlk odayı sen aç!",
+      "platform": "Platform",
+      "rank": "Rütbe",
+      "all": "Tümü",
+      "join": "Katıl",
+      "full": "Dolu",
+      "players": "{filled}/{cap} kişi",
+      "mic": "Mikrofon",
+      "related": "Diğer Oyunlar",
+      "faqTitle": "Sıkça Sorulan Sorular",
+      "q1": "{game} takım arkadaşını nasıl bulurum?",
+      "a1": "{game} için açık odalara göz at ve sana uygun olana 'Katıl' de. Uygun oda yoksa 'Oda Aç' ile kendi odanı oluştur; oyuncular sana katılır.",
+      "q2": "Ücretsiz mi?",
+      "a2": "Evet, {game} için oda açmak ve katılmak tamamen ücretsiz. Premium yalnızca öncelikli eşleştirme ve ekstra özellikler sunar.",
+      "q3": "Hangi platformlar destekleniyor?",
+      "a3": "{game} için Steam, Epic, PlayStation ve Xbox oyuncuları oda açabilir; odaları platforma göre filtreleyebilirsin."
+    },
+    "create": {
+      "title": "Yeni Oda Aç",
+      "mode": "Mod",
+      "platform": "Platform",
+      "rank": "Rütbe",
+      "mic": "Mikrofon şart",
+      "capacity": "Kişi sayısı",
+      "submit": "Odayı Aç",
+      "cancel": "Vazgeç"
+    },
+    "room": {
+      "title": "{game} Odası",
+      "chat": "Oda Sohbeti",
+      "placeholder": "Mesaj yaz…",
+      "send": "Gönder",
+      "leave": "Odadan Çık",
+      "members": "Ekip"
+    },
+    "demo": "Demo — gerçek zamanlı odalar ve sohbet yakında aktif olacak (Firebase ile)."
+  },
   "footer": {
     "tagline": "AI destekli oyun arkadaşı platformu"
   }
