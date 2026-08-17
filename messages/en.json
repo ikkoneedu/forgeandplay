@@ -186,7 +186,12 @@
     "toRegister": "No account? Sign up",
     "toLogin": "Already have an account? Sign in",
     "notConfigured": "Sign-in goes live soon (Firebase setup pending). For now you can view the demo profile.",
-    "demoProfile": "View Demo Profile"
+    "demoProfile": "View Demo Profile",
+    "guest": "Continue as guest",
+    "logout": "Log out",
+    "guestName": "Guest",
+    "loginPrompt": "Sign in to continue.",
+    "subtitle": "You don't have to register — sign in with Google or continue as a guest."
   },
   "assistant": {
     "title": "AI Game Assistant",

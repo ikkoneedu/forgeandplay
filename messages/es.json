@@ -186,7 +186,12 @@
     "toRegister": "¿Sin cuenta? Regístrate",
     "toLogin": "¿Ya tienes cuenta? Inicia sesión",
     "notConfigured": "El inicio de sesión llega pronto (falta configurar Firebase). Por ahora puedes ver el perfil demo.",
-    "demoProfile": "Ver Perfil Demo"
+    "demoProfile": "Ver Perfil Demo",
+    "guest": "Continuar como invitado",
+    "logout": "Cerrar sesión",
+    "guestName": "Invitado",
+    "loginPrompt": "Inicia sesión para continuar.",
+    "subtitle": "No tienes que registrarte — inicia sesión con Google o continúa como invitado."
   },
   "assistant": {
     "title": "Asistente de Juego IA",

@@ -186,7 +186,12 @@
     "toRegister": "Hesabın yok mu? Kayıt ol",
     "toLogin": "Zaten hesabın var mı? Giriş yap",
     "notConfigured": "Giriş sistemi yakında aktif olacak (Firebase kurulumu bekleniyor). Şimdilik demo profili görebilirsin.",
-    "demoProfile": "Demo Profili Gör"
+    "demoProfile": "Demo Profili Gör",
+    "guest": "Misafir olarak devam et",
+    "logout": "Çıkış Yap",
+    "guestName": "Misafir",
+    "loginPrompt": "Devam etmek için giriş yap.",
+    "subtitle": "Üye olmak zorunda değilsin — Google ile giriş yap ya da misafir olarak devam et."
   },
   "assistant": {
     "title": "AI Oyun Asistanı",

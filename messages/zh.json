@@ -186,7 +186,12 @@
     "toRegister": "没有账号？注册",
     "toLogin": "已有账号？登录",
     "notConfigured": "登录即将上线（等待 Firebase 配置）。现在你可以查看演示资料。",
-    "demoProfile": "查看演示资料"
+    "demoProfile": "查看演示资料",
+    "guest": "以访客身份继续",
+    "logout": "退出登录",
+    "guestName": "访客",
+    "loginPrompt": "登录以继续。",
+    "subtitle": "无需注册 — 使用 Google 登录或以访客身份继续。"
   },
   "assistant": {
     "title": "AI 游戏助手",
