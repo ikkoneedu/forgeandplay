@@ -93,6 +93,30 @@ export async function incPlays(id: string): Promise<void> {
   }
 }
 
+// ---- Hidden built-in games (admin can remove hardcoded games too) ----
+const HKEY = "fp:hiddenBuiltins";
+
+export function getHiddenBuiltins(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(HKEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export async function hideBuiltin(slug: string): Promise<void> {
+  const set = new Set(getHiddenBuiltins());
+  set.add(slug);
+  localStorage.setItem(HKEY, JSON.stringify([...set]));
+}
+
+export async function unhideBuiltin(slug: string): Promise<void> {
+  const set = new Set(getHiddenBuiltins());
+  set.delete(slug);
+  localStorage.setItem(HKEY, JSON.stringify([...set]));
+}
+
 export async function listUserGamesByOwner(ownerId: string): Promise<UserGame[]> {
   return read()
     .filter((g) => g.ownerId === ownerId)

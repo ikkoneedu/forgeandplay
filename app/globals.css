@@ -1668,3 +1668,29 @@ a {
   outline: none;
   border-color: var(--violet2);
 }
+
+/* ---- admin delete on cards ---- */
+.gcard-wrap {
+  position: relative;
+}
+.card-del {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(5, 6, 13, 0.82);
+  border: 1px solid rgba(255, 107, 129, 0.55);
+  color: #ff6b81;
+  cursor: pointer;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+  transition: 0.15s;
+}
+.card-del:hover {
+  background: rgba(255, 107, 129, 0.9);
+  color: #fff;
+}
