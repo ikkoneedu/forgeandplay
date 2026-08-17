@@ -234,6 +234,24 @@
     }
   },
   "footer": {
-    "tagline": "AI destekli oyun arkadaşı platformu"
+    "tagline": "AI destekli oyun arkadaşı platformu",
+    "discover": "Keşfet",
+    "platform": "Platform",
+    "legal": "Yasal",
+    "privacy": "Gizlilik",
+    "terms": "Kullanım Şartları",
+    "contact": "İletişim",
+    "secure": "SSL Güvenli",
+    "verified": "Güvenli Topluluk",
+    "rights": "© 2026 Forge&Play. Tüm hakları saklıdır."
+  },
+  "legal": {
+    "privacyTitle": "Gizlilik Politikası",
+    "privacyBody": "Forge&Play olarak gizliliğine önem veriyoruz. Google ile giriş yaptığında adın, e-postan ve profil resmin; misafir girişinde ise yalnızca anonim bir kimlik saklanır. Yüklediğin oyunlar ve oda/sohbet verileri, hizmeti sağlamak amacıyla Firebase (Google) altyapısında tutulur. Verilerini silmek veya sorularınız için bizimle iletişime geçebilirsin.",
+    "termsTitle": "Kullanım Şartları",
+    "termsBody": "Forge&Play'i kullanarak bu şartları kabul edersin. Paylaştığın içerikten (yüklenen oyunlar, sohbet mesajları) sen sorumlusun; yasa dışı, zararlı veya telif hakkı ihlali içeren içerik yasaktır. Yüklenen oyunlar izole bir güvenlik ortamında (sandbox) çalışır. Hizmet 'olduğu gibi' sunulur ve kesintisizlik garanti edilmez. Kuralları ihlal eden hesaplar kısıtlanabilir.",
+    "contactTitle": "İletişim",
+    "contactBody": "Sorular, öneriler veya veri talepleri için bize ulaş. En kısa sürede geri dönüş yaparız.",
+    "email": "info@forgeandplay.com"
   }
 }

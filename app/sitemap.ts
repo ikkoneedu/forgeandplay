@@ -57,6 +57,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.75,
       alternates: withAlternates("/turnuvalar"),
     });
+    for (const p of ["/gizlilik", "/kullanim-sartlari", "/iletisim"]) {
+      entries.push({
+        url: `${SITE_URL}/${locale}${p}`,
+        lastModified: now,
+        changeFrequency: "yearly",
+        priority: 0.3,
+        alternates: withAlternates(p),
+      });
+    }
   }
 
   // LFG per-game hubs (programmatic SEO)

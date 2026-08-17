@@ -234,6 +234,24 @@
     }
   },
   "footer": {
-    "tagline": "AI-powered gaming buddy platform"
+    "tagline": "AI-powered gaming buddy platform",
+    "discover": "Discover",
+    "platform": "Platform",
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "terms": "Terms of Use",
+    "contact": "Contact",
+    "secure": "SSL Secure",
+    "verified": "Trusted Community",
+    "rights": "© 2026 Forge&Play. All rights reserved."
+  },
+  "legal": {
+    "privacyTitle": "Privacy Policy",
+    "privacyBody": "At Forge&Play we care about your privacy. When you sign in with Google we store your name, email and profile picture; guest sign-in stores only an anonymous ID. Games you upload and room/chat data are stored on Firebase (Google) to provide the service. Contact us to delete your data or with any questions.",
+    "termsTitle": "Terms of Use",
+    "termsBody": "By using Forge&Play you accept these terms. You are responsible for the content you share (uploaded games, chat messages); illegal, harmful or infringing content is prohibited. Uploaded games run in an isolated security sandbox. The service is provided 'as is' with no uptime guarantee. Accounts that break the rules may be restricted.",
+    "contactTitle": "Contact",
+    "contactBody": "For questions, feedback or data requests, get in touch. We'll get back to you as soon as we can.",
+    "email": "info@forgeandplay.com"
   }
 }

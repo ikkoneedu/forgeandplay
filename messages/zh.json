@@ -234,6 +234,24 @@
     }
   },
   "footer": {
-    "tagline": "AI 驱动的游戏搭子平台"
+    "tagline": "AI 驱动的游戏搭子平台",
+    "discover": "探索",
+    "platform": "平台",
+    "legal": "法律",
+    "privacy": "隐私",
+    "terms": "使用条款",
+    "contact": "联系我们",
+    "secure": "SSL 安全",
+    "verified": "可信社区",
+    "rights": "© 2026 Forge&Play. 保留所有权利。"
+  },
+  "legal": {
+    "privacyTitle": "隐私政策",
+    "privacyBody": "在 Forge&Play，我们重视你的隐私。使用 Google 登录时，我们会保存你的姓名、邮箱和头像；访客登录仅保存匿名 ID。你上传的游戏以及房间/聊天数据存储在 Firebase（Google）上以提供服务。如需删除数据或有任何疑问，请联系我们。",
+    "termsTitle": "使用条款",
+    "termsBody": "使用 Forge&Play 即表示你接受这些条款。你需对分享的内容（上传的游戏、聊天消息）负责；禁止违法、有害或侵权的内容。上传的游戏在隔离的安全沙箱中运行。服务按“现状”提供，不保证不中断。违规账号可能被限制。",
+    "contactTitle": "联系我们",
+    "contactBody": "如有问题、建议或数据请求，请联系我们。我们会尽快回复。",
+    "email": "info@forgeandplay.com"
   }
 }

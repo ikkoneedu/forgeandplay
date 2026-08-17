@@ -234,6 +234,24 @@
     }
   },
   "footer": {
-    "tagline": "Plataforma de compañeros de juego con IA"
+    "tagline": "Plataforma de compañeros de juego con IA",
+    "discover": "Descubre",
+    "platform": "Plataforma",
+    "legal": "Legal",
+    "privacy": "Privacidad",
+    "terms": "Términos de Uso",
+    "contact": "Contacto",
+    "secure": "SSL Seguro",
+    "verified": "Comunidad Confiable",
+    "rights": "© 2026 Forge&Play. Todos los derechos reservados."
+  },
+  "legal": {
+    "privacyTitle": "Política de Privacidad",
+    "privacyBody": "En Forge&Play nos importa tu privacidad. Al iniciar sesión con Google guardamos tu nombre, correo e imagen de perfil; el acceso como invitado solo guarda un ID anónimo. Los juegos que subes y los datos de salas/chat se almacenan en Firebase (Google) para prestar el servicio. Contáctanos para eliminar tus datos o si tienes dudas.",
+    "termsTitle": "Términos de Uso",
+    "termsBody": "Al usar Forge&Play aceptas estos términos. Eres responsable del contenido que compartes (juegos subidos, mensajes de chat); el contenido ilegal, dañino o que infrinja derechos está prohibido. Los juegos subidos se ejecutan en un sandbox de seguridad aislado. El servicio se ofrece 'tal cual', sin garantía de disponibilidad. Las cuentas que incumplan las reglas pueden ser restringidas.",
+    "contactTitle": "Contacto",
+    "contactBody": "Para preguntas, sugerencias o solicitudes de datos, escríbenos. Te responderemos lo antes posible.",
+    "email": "info@forgeandplay.com"
   }
 }

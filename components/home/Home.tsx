@@ -6,7 +6,6 @@ import { Link } from "@/i18n/navigation";
 
 export default function Home() {
   const t = useTranslations("home");
-  const tFooter = useTranslations("footer");
   const tPortal = useTranslations("portal");
   const locale = useLocale();
 
@@ -330,10 +329,6 @@ export default function Home() {
           </div>
         </section>
       </div>
-
-      <footer className="fp-footer">
-        Forge&amp;Play · {tFooter("tagline")} · forgeandplay.com
-      </footer>
     </>
   );
 }
