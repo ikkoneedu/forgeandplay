@@ -44,5 +44,12 @@ service cloud.firestore {
       allow create, delete: if isAdmin();
       allow update: if request.auth != null;
     }
+
+    // Wallets: a user reads/writes only their own doc; admin may pay out to any.
+    // NOTE: real-money integrity requires server-side (Cloud Functions) checks.
+    match /users/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow write: if request.auth != null && (request.auth.uid == uid || isAdmin());
+    }
   }
 }

@@ -9,7 +9,7 @@ import { useAuth } from "./auth/AuthProvider";
 export default function Header() {
   const tNav = useTranslations("nav");
   const tAuth = useTranslations("auth");
-  const { user, signOut } = useAuth();
+  const { user, signOut, balance } = useAuth();
   const [open, setOpen] = useState(false);
 
   const displayName =
@@ -38,6 +38,9 @@ export default function Header() {
           <div className="nav-auth">
             {user ? (
               <>
+                <Link href="/profil" className="bal-chip" title="Bakiye">
+                  ₺{balance.toLocaleString("tr-TR")}
+                </Link>
                 <Link href="/profil" className="chip" title={displayName}>
                   {user.photoURL ? (
                     // eslint-disable-next-line @next/next/no-img-element

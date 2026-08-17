@@ -12,7 +12,7 @@ export default function ProfileView() {
   const t = useTranslations("profile");
   const tAuth = useTranslations("auth");
   const tCom = useTranslations("community");
-  const { user, loading, configured, signOut } = useAuth();
+  const { user, loading, configured, signOut, balance, addBalance } = useAuth();
 
   const myId = user?.uid ?? "local";
   const [myGames, setMyGames] = useState<UserGame[]>([]);
@@ -147,7 +147,16 @@ export default function ProfileView() {
         <div>
           <div className="panel">
             <h2>{t("wallet")}</h2>
-            <div className="wallet-big">🪙 0 <span style={{ fontSize: 14, color: "var(--muted2)" }}>{t("coins")}</span></div>
+            <div className="wallet-big">₺{balance.toLocaleString("tr-TR")}</div>
+            {configured && user && (
+              <button
+                className="btn btn-g"
+                style={{ marginTop: 14, padding: "10px 16px", fontSize: 13 }}
+                onClick={() => addBalance(500)}
+              >
+                ＋ {t("topUp")}
+              </button>
+            )}
           </div>
           <div className="panel">
             <h2>{t("badges")}</h2>

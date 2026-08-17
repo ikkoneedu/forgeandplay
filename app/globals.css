@@ -1871,3 +1871,47 @@ a {
 /* extra cover palettes */
 .c5 { background: linear-gradient(135deg, #0f766e, #84cc16); }
 .c6 { background: linear-gradient(135deg, #9d174d, #f59e0b); }
+
+/* ---- tournament prize pool ---- */
+.pool-box {
+  background: linear-gradient(120deg, rgba(45, 226, 166, 0.14), rgba(34, 211, 238, 0.08));
+  border: 1px solid rgba(45, 226, 166, 0.3);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 12px 0 10px;
+  text-align: center;
+}
+.pool-box small {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pool-box b {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 28px;
+  color: var(--mint);
+}
+.winner-row {
+  margin-top: 12px;
+  background: rgba(45, 226, 166, 0.1);
+  border: 1px solid rgba(45, 226, 166, 0.3);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  text-align: center;
+}
+.bal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 226, 166, 0.35);
+  background: rgba(45, 226, 166, 0.1);
+  color: var(--mint);
+  font-variant-numeric: tabular-nums;
+}
