@@ -6,6 +6,7 @@
     "store": "Store",
     "premium": "Premium",
     "login": "Sign In",
+    "community": "Community",
     "online": "{count} online"
   },
   "home": {
@@ -218,7 +219,7 @@
       "publishing": "Publishing…",
       "errName": "Please enter a game name.",
       "errHtml": "Please paste the game HTML code.",
-      "errSize": "Code is too large (800 KB max).",
+      "errSize": "Code is too large (2 MB max).",
       "back": "Back to community games"
     }
   },

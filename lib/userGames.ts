@@ -15,7 +15,7 @@ export interface UserGame {
 }
 
 const KEY = "fp:userGames";
-const MAX_BYTES = 800 * 1024;
+const MAX_BYTES = 2 * 1024 * 1024;
 const COVERS = ["c1", "c2", "c3", "c4"];
 
 /**

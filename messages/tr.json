@@ -6,6 +6,7 @@
     "store": "Mağaza",
     "premium": "Premium",
     "login": "Giriş Yap",
+    "community": "Topluluk",
     "online": "{count} çevrimiçi"
   },
   "home": {
@@ -218,7 +219,7 @@
       "publishing": "Yayınlanıyor…",
       "errName": "Lütfen bir oyun adı gir.",
       "errHtml": "Lütfen oyun HTML kodunu yapıştır.",
-      "errSize": "Kod çok büyük (en fazla 800 KB).",
+      "errSize": "Kod çok büyük (en fazla 2 MB).",
       "back": "Topluluk oyunlarına dön"
     }
   },

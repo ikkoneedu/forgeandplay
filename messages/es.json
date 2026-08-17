@@ -6,6 +6,7 @@
     "store": "Tienda",
     "premium": "Premium",
     "login": "Iniciar Sesión",
+    "community": "Comunidad",
     "online": "{count} en línea"
   },
   "home": {
@@ -218,7 +219,7 @@
       "publishing": "Publicando…",
       "errName": "Introduce un nombre de juego.",
       "errHtml": "Pega el código HTML del juego.",
-      "errSize": "El código es demasiado grande (máx. 800 KB).",
+      "errSize": "El código es demasiado grande (máx. 2 MB).",
       "back": "Volver a los juegos de la comunidad"
     }
   },

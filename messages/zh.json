@@ -6,6 +6,7 @@
     "store": "商店",
     "premium": "会员",
     "login": "登录",
+    "community": "社区",
     "online": "{count} 人在线"
   },
   "home": {
@@ -218,7 +219,7 @@
       "publishing": "发布中…",
       "errName": "请输入游戏名称。",
       "errHtml": "请粘贴游戏 HTML 代码。",
-      "errSize": "代码过大（最多 800 KB）。",
+      "errSize": "代码过大（最多 2 MB）。",
       "back": "返回社区游戏"
     }
   },

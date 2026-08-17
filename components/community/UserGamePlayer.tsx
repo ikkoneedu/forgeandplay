@@ -5,6 +5,31 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getUserGame, incPlays, type UserGame } from "@/lib/userGames";
 
+/**
+ * Injected into every user game so that localStorage/sessionStorage calls do
+ * not throw inside the strict sandbox (opaque origin) and crash the game.
+ * The sandbox stays isolated (no allow-same-origin) — this only stubs storage.
+ */
+const STORAGE_SHIM =
+  '<script>(function(){function mem(){var s={};return{getItem:function(k){' +
+  "return Object.prototype.hasOwnProperty.call(s,k)?s[k]:null;},setItem:function(k,v){" +
+  "s[k]=String(v);},removeItem:function(k){delete s[k];},clear:function(){s={};}," +
+  "key:function(i){return Object.keys(s)[i]||null;},get length(){return Object.keys(s).length;}};}" +
+  'try{window.localStorage.getItem("_");}catch(e){try{Object.defineProperty(window,"localStorage",' +
+  "{value:mem(),configurable:true});}catch(_){}}" +
+  'try{window.sessionStorage.getItem("_");}catch(e){try{Object.defineProperty(window,"sessionStorage",' +
+  "{value:mem(),configurable:true});}catch(_){}}})();<\/script>";
+
+function wrapGame(html: string): string {
+  if (/<head[^>]*>/i.test(html)) {
+    return html.replace(/<head[^>]*>/i, (m) => m + STORAGE_SHIM);
+  }
+  if (/<html[^>]*>/i.test(html)) {
+    return html.replace(/<html[^>]*>/i, (m) => m + STORAGE_SHIM);
+  }
+  return STORAGE_SHIM + html;
+}
+
 export default function UserGamePlayer({ id }: { id: string }) {
   const t = useTranslations("community");
   const [game, setGame] = useState<UserGame | null | undefined>(undefined);
@@ -66,8 +91,8 @@ export default function UserGamePlayer({ id }: { id: string }) {
       <div className="player-frame" style={{ maxWidth: 900, margin: "0 auto" }}>
         <iframe
           title={game.title}
-          srcDoc={game.html}
-          sandbox="allow-scripts"
+          srcDoc={wrapGame(game.html)}
+          sandbox="allow-scripts allow-pointer-lock"
           referrerPolicy="no-referrer"
           loading="lazy"
         />

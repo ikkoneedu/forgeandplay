@@ -1652,3 +1652,19 @@ a {
   color: var(--text);
   border-color: var(--violet2);
 }
+
+/* ---- language selector ---- */
+.lang-sel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.lang-sel:focus {
+  outline: none;
+  border-color: var(--violet2);
+}

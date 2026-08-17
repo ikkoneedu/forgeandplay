@@ -6,7 +6,6 @@ import { Link } from "@/i18n/navigation";
 
 export default function Home() {
   const t = useTranslations("home");
-  const tNav = useTranslations("nav");
   const tFooter = useTranslations("footer");
   const tPortal = useTranslations("portal");
   const locale = useLocale();
@@ -146,38 +145,6 @@ export default function Home() {
       <div className="aurora a1" aria-hidden="true" />
       <div className="aurora a2" aria-hidden="true" />
       <div className="aurora a3" aria-hidden="true" />
-
-      <nav className="fp-nav">
-        <div className="nav-in">
-          <div className="logo">
-            <span className="mk" aria-hidden="true">
-              🔥
-            </span>
-            Forge<b>&amp;</b>Play
-          </div>
-          <div className="nmenu">
-            <Link href="/oyunlar">{tNav("games")}</Link>
-            <Link href="/lfg">{tNav("lfg")}</Link>
-            <Link href="/turnuvalar">{tNav("tournaments")}</Link>
-            <Link href="/premium" className="prem">
-              👑 {tNav("premium")}
-            </Link>
-          </div>
-          <div className="nright">
-            <span className="chip">
-              <span className="live" aria-hidden="true" />
-              {tNav("online", { count: 412 })}
-            </span>
-            <Link
-              href="/giris"
-              className="btn btn-p"
-              style={{ padding: "10px 18px", fontSize: 13.5 }}
-            >
-              {tNav("login")}
-            </Link>
-          </div>
-        </div>
-      </nav>
 
       <div className="wrap">
         {/* HERO */}

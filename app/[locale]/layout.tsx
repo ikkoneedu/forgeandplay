@@ -6,6 +6,7 @@ import { Sora, Inter } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import { LOCALES, OG_LOCALE, SITE_NAME, SITE_URL } from "@/lib/site";
 import Assistant from "@/components/ai/Assistant";
+import Header from "@/components/Header";
 import "../globals.css";
 
 const sora = Sora({
@@ -86,6 +87,7 @@ export default async function LocaleLayout({
     <html lang={locale} className={`${sora.variable} ${inter.variable}`}>
       <body>
         <NextIntlClientProvider messages={messages}>
+          <Header />
           {children}
           <Assistant />
         </NextIntlClientProvider>
