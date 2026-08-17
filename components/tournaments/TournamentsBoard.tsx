@@ -97,6 +97,7 @@ export default function TournamentsBoard() {
       mode: String(form.get("mode") || "5v5"),
       date: new Date(Date.now() + days * 86400000).toISOString(),
       slots: Number(form.get("slots")) || 10,
+      teamSize: Number(form.get("teamSize")) || 1,
       entryFee: Number(form.get("entryFee")) || 0,
       commissionPct: Number(form.get("commission")) || 10,
       premium: form.get("premium") === "on",
@@ -127,6 +128,9 @@ export default function TournamentsBoard() {
           <div className="field"><label>{t("modeField")}</label><input name="mode" defaultValue="5v5" /></div>
           <div className="field"><label>{t("slotsField")}</label>
             <select name="slots" defaultValue="10">{[2, 4, 6, 10, 16, 32].map((n) => <option key={n}>{n}</option>)}</select>
+          </div>
+          <div className="field"><label>{t("teamSizeField")}</label>
+            <select name="teamSize" defaultValue="1">{[1, 2, 3, 5].map((n) => <option key={n}>{n}</option>)}</select>
           </div>
           <div className="field"><label>{t("entryFeeField")}</label><input name="entryFee" type="number" defaultValue="200" min="0" /></div>
           <div className="field"><label>{t("commissionField")}</label><input name="commission" type="number" defaultValue="10" min="0" max="50" /></div>
@@ -175,7 +179,10 @@ export default function TournamentsBoard() {
                   <div className="trow"><span>{t("slots", { filled, total: tr.slots })}</span></div>
 
                   {finished ? (
-                    <div className="winner-row">🏆 {t("winnerLabel")}: <b>{tr.winnerName}</b> · {money(tr.payout || 0)}</div>
+                    <div className="winner-row">
+                      🏆 {t("winnersLabel")}: <b>{(tr.winners || []).map((w) => w.name).join(", ")}</b>
+                      {(tr.winners?.length || 0) > 1 ? ` · ${t("eachGets")} ${money(tr.payoutEach || 0)}` : ` · ${money(tr.payout || 0)}`}
+                    </div>
                   ) : (
                     <button
                       className="btn btn-p"
@@ -194,7 +201,7 @@ export default function TournamentsBoard() {
                   )}
 
                   {admin && live && !finished && filled > 0 && (
-                    <DeclareWinner tr={tr} label={t("declareWinner")} />
+                    <DeclareWinner tr={tr} t={t} />
                   )}
                   {admin && live && (
                     <button
@@ -216,21 +223,47 @@ export default function TournamentsBoard() {
   );
 }
 
-function DeclareWinner({ tr, label }: { tr: Tournament; label: string }) {
-  const [sel, setSel] = useState("");
+function DeclareWinner({ tr, t }: { tr: Tournament; t: ReturnType<typeof useTranslations> }) {
+  const [sel, setSel] = useState<string[]>([]);
+  const toggle = (uid: string) =>
+    setSel((s) => (s.includes(uid) ? s.filter((x) => x !== uid) : [...s, uid]));
+
   return (
-    <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-      <select className="sel" style={{ flex: 1 }} value={sel} onChange={(e) => setSel(e.target.value)}>
-        <option value="">{label}</option>
-        {tr.participants.map((p) => <option key={p.uid} value={p.uid}>{p.name}</option>)}
-      </select>
+    <div style={{ marginTop: 10, borderTop: "1px solid var(--line)", paddingTop: 10 }}>
+      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t("selectWinners")}</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+        {tr.participants.map((p) => {
+          const on = sel.includes(p.uid);
+          return (
+            <label
+              key={p.uid}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "5px 10px",
+                borderRadius: 999,
+                cursor: "pointer",
+                border: "1px solid " + (on ? "var(--mint)" : "var(--line)"),
+                background: on ? "rgba(45,226,166,.16)" : "rgba(255,255,255,.04)",
+                color: on ? "var(--mint)" : "var(--muted)",
+              }}
+            >
+              <input type="checkbox" checked={on} onChange={() => toggle(p.uid)} />
+              {p.name}
+            </label>
+          );
+        })}
+      </div>
       <button
         className="btn btn-p"
-        style={{ padding: "0 14px", fontSize: 12.5 }}
-        disabled={!sel}
-        onClick={() => sel && finishTournament(tr.id, sel)}
+        style={{ width: "100%", justifyContent: "center", padding: 9, fontSize: 13 }}
+        disabled={sel.length === 0}
+        onClick={() => sel.length && finishTournament(tr.id, sel)}
       >
-        🏆
+        🏆 {t("declareBtn")}
       </button>
     </div>
   );

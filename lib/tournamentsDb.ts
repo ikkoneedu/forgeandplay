@@ -31,9 +31,10 @@ export interface Tournament {
   ownerId: string;
   createdAt: number;
   status: "open" | "finished";
-  winnerUid?: string;
-  winnerName?: string;
+  teamSize?: number;
+  winners?: TParticipant[];
   payout?: number;
+  payoutEach?: number;
 }
 
 export function tournamentsSupported(): boolean {
@@ -102,26 +103,38 @@ export async function joinTournament(id: string, uid: string, name: string): Pro
   });
 }
 
-/** Admin: declare the winner and pay out the pool (minus commission) to them. */
-export async function finishTournament(id: string, winnerUid: string): Promise<void> {
+/**
+ * Admin: declare the winning team and split the pool (minus commission) equally
+ * among its members. Pass one uid for a solo winner, or many for a team.
+ */
+export async function finishTournament(id: string, winnerUids: string[]): Promise<void> {
   await runTransaction(getDb(), async (tx) => {
     const tRef = doc(getDb(), "tournaments", id);
     const tS = await tx.get(tRef);
     if (!tS.exists()) return;
     const t = tS.data() as Tournament;
     if (t.status === "finished") return;
-    const winner = (t.participants || []).find((p) => p.uid === winnerUid);
-    if (!winner) return;
-    const uRef = doc(getDb(), "users", winnerUid);
-    const uS = await tx.get(uRef);
-    const bal = uS.exists() ? (uS.data().balance as number) || 0 : 0;
-    const payout = winnerPayout(t);
-    tx.set(uRef, { balance: bal + payout }, { merge: true });
+
+    const winners = (t.participants || []).filter((p) => winnerUids.includes(p.uid));
+    if (winners.length === 0) return;
+
+    const total = winnerPayout(t);
+    const each = Math.floor(total / winners.length);
+
+    // All reads before any writes (Firestore transaction rule).
+    const refs = winners.map((w) => doc(getDb(), "users", w.uid));
+    const snaps = await Promise.all(refs.map((r) => tx.get(r)));
+
+    snaps.forEach((s, i) => {
+      const bal = s.exists() ? (s.data().balance as number) || 0 : 0;
+      tx.set(refs[i], { balance: bal + each }, { merge: true });
+    });
+
     tx.update(tRef, {
       status: "finished",
-      winnerUid,
-      winnerName: winner.name,
-      payout,
+      winners,
+      payout: each * winners.length,
+      payoutEach: each,
     });
   });
 }

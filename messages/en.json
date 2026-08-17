@@ -180,7 +180,12 @@
     "declareWinner": "Pick winner",
     "finishedBadge": "Finished 🏆",
     "winnerLabel": "Winner",
-    "freeEntry": "Free"
+    "freeEntry": "Free",
+    "teamSizeField": "Team size",
+    "selectWinners": "Mark the winning team",
+    "winnersLabel": "Winners",
+    "eachGets": "Each gets",
+    "declareBtn": "Pay Out"
   },
   "profile": {
     "title": "My Profile",

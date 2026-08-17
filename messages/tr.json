@@ -180,7 +180,12 @@
     "declareWinner": "Kazananı seç",
     "finishedBadge": "Bitti 🏆",
     "winnerLabel": "Kazanan",
-    "freeEntry": "Ücretsiz"
+    "freeEntry": "Ücretsiz",
+    "teamSizeField": "Takım kişi sayısı",
+    "selectWinners": "Kazanan takımı işaretle",
+    "winnersLabel": "Kazananlar",
+    "eachGets": "Kişi başı",
+    "declareBtn": "Ödülü Dağıt"
   },
   "profile": {
     "title": "Profilim",

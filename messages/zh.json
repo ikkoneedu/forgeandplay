@@ -180,7 +180,12 @@
     "declareWinner": "选择冠军",
     "finishedBadge": "已结束 🏆",
     "winnerLabel": "冠军",
-    "freeEntry": "免费"
+    "freeEntry": "免费",
+    "teamSizeField": "队伍人数",
+    "selectWinners": "勾选获胜队伍",
+    "winnersLabel": "冠军",
+    "eachGets": "每人获得",
+    "declareBtn": "发放奖励"
   },
   "profile": {
     "title": "我的资料",
