@@ -1867,3 +1867,7 @@ a {
   color: var(--muted2);
   font-size: 12.5px;
 }
+
+/* extra cover palettes */
+.c5 { background: linear-gradient(135deg, #0f766e, #84cc16); }
+.c6 { background: linear-gradient(135deg, #9d174d, #f59e0b); }

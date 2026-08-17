@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { getLiveCounts } from "@/lib/stats";
+import { getAllGames } from "@/lib/games";
 
 export default function Home() {
   const t = useTranslations("home");
   const tPortal = useTranslations("portal");
   const locale = useLocale();
+
+  const [live, setLive] = useState<{ rooms: number; games: number } | null>(null);
+
+  useEffect(() => {
+    getLiveCounts().then((c) =>
+      setLive({ rooms: c.rooms, games: getAllGames().length + c.communityGames })
+    );
+  }, []);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const tiltRef = useRef<HTMLDivElement | null>(null);
@@ -176,6 +186,12 @@ export default function Home() {
               <span className="pl">▶ PS5</span>
               <span className="pl">💻 PC</span>
             </div>
+            {live && (
+              <div className="chip" style={{ marginTop: 18 }}>
+                <span className="live" aria-hidden="true" />
+                {t("live", { rooms: live.rooms, games: live.games })}
+              </div>
+            )}
             <div className="stats" ref={statsRef}>
               <div className="stat">
                 <b data-c="1276">0</b>

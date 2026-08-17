@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>XOX</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060d;color:#eef2ff;font-family:system-ui,sans-serif;display:grid;place-items:center;overflow:hidden;-webkit-user-select:none;user-select:none}
+  .wrap{width:min(92vw,360px);text-align:center}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .sc{background:#141a31;border:1px solid #222a45;border-radius:12px;padding:8px 16px}
+  .sc small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9aa5c7}
+  .sc b{font-size:22px}
+  button{background:linear-gradient(120deg,#ffa23d,#ff3d7f);color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;font-family:inherit}
+  #board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .cell{aspect-ratio:1;background:#141a31;border:1px solid #222a45;border-radius:14px;font-size:44px;font-weight:800;display:grid;place-items:center;cursor:pointer}
+  .cell.x{color:#ffa23d}.cell.o{color:#22d3ee}
+  #msg{min-height:24px;font-weight:700;margin-bottom:10px}
+</style></head><body>
+<div class="wrap">
+  <div class="top"><div class="sc"><small>Galibiyet</small><b id="win">0</b></div>
+  <button id="new">Yeni Oyun</button>
+  <div class="sc"><small>Beraberlik</small><b id="draw">0</b></div></div>
+  <div id="board"></div>
+  <div id="msg">Sıra sende (X)</div>
+</div>
+<script>
+const B=document.getElementById('board'),msg=document.getElementById('msg');
+let cells,over,wins=0,draws=0;
+const winEl=document.getElementById('win'),drawEl=document.getElementById('draw');
+const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function post(){parent.postMessage({type:'forgeplay:score',game:'xox',score:wins*100+draws*10},'*');}
+function build(){B.innerHTML='';cells=Array(9).fill('');over=false;msg.textContent='Sıra sende (X)';
+  for(let i=0;i<9;i++){const c=document.createElement('div');c.className='cell';c.onclick=()=>play(i);B.appendChild(c);}}
+function render(){[...B.children].forEach((c,i)=>{c.textContent=cells[i];c.className='cell'+(cells[i]==='X'?' x':cells[i]==='O'?' o':'');});}
+function winner(b){for(const[a,d,e]of LINES)if(b[a]&&b[a]===b[d]&&b[a]===b[e])return b[a];return b.every(x=>x)?'draw':null;}
+function play(i){if(over||cells[i])return;cells[i]='X';render();let w=winner(cells);if(w)return end(w);
+  msg.textContent='Bilgisayar düşünüyor…';setTimeout(botMove,350);}
+function botMove(){if(over)return;const empty=cells.map((v,i)=>v?null:i).filter(v=>v!==null);
+  // basit AI: kazan, engelle, yoksa rastgele
+  const find=(who)=>{for(const[a,d,e]of LINES){const line=[cells[a],cells[d],cells[e]];if(line.filter(x=>x===who).length===2&&line.includes('')){return[a,d,e][line.indexOf('')];}}return -1;};
+  let m=find('O');if(m<0)m=find('X');if(m<0&&cells[4]==='')m=4;if(m<0)m=empty[Math.floor(Math.random()*empty.length)];
+  cells[m]='O';render();const w=winner(cells);if(w)return end(w);msg.textContent='Sıra sende (X)';}
+function end(w){over=true;if(w==='X'){wins++;winEl.textContent=wins;msg.textContent='Kazandın! 🎉';}
+  else if(w==='O'){msg.textContent='Bilgisayar kazandı 🤖';}else{draws++;drawEl.textContent=draws;msg.textContent='Berabere!';}post();}
+document.getElementById('new').onclick=()=>{build();render();};
+build();render();post();
+</script></body></html>

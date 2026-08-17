@@ -17,6 +17,7 @@
     "lead": "AI 分析你的游戏风格和段位，为你匹配契合度 90%+ 的玩家。CS2、Valorant、PS5、Xbox — 无需下载，无需等待。想休息时，即点即玩的小游戏随时待命。",
     "ctaPrimary": "组建队伍 — 免费",
     "ctaSecondary": "浏览游戏",
+    "live": "{rooms} 个活跃房间 · {games} 款游戏",
     "stats": {
       "today": "今日在玩",
       "teams": "已组队伍",
@@ -154,7 +155,19 @@
     "free": "免费",
     "premium": "会员",
     "empty": "目前没有安排的锦标赛。敬请期待！",
-    "date": "日期"
+    "date": "日期",
+    "create": "创建锦标赛",
+    "name": "锦标赛名称",
+    "gameField": "游戏",
+    "modeField": "模式",
+    "prizeField": "奖励",
+    "slotsField": "队伍名额",
+    "dateField": "几天后",
+    "premiumField": "会员锦标赛",
+    "submit": "创建",
+    "cancel": "取消",
+    "joined": "已加入 ✓",
+    "delete": "删除"
   },
   "profile": {
     "title": "我的资料",

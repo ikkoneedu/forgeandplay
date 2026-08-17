@@ -17,6 +17,7 @@
     "lead": "Yapay zeka oyun tarzını ve seviyeni analiz eder; sana %90+ uyumlu oyuncuları eşleştirir. CS2, Valorant, PS5, Xbox — indirme yok, bekleme yok. Canın sıkılınca anında oynanan oyunlar hep hazır.",
     "ctaPrimary": "Takımını Kur — Ücretsiz",
     "ctaSecondary": "Oyunlara Göz At",
+    "live": "{rooms} aktif oda · {games} oyun hazır",
     "stats": {
       "today": "Bugün Oynayan",
       "teams": "Kurulan Takım",
@@ -154,7 +155,19 @@
     "free": "Ücretsiz",
     "premium": "Premium",
     "empty": "Şu an planlanmış turnuva yok. Yakında!",
-    "date": "Tarih"
+    "date": "Tarih",
+    "create": "Turnuva Oluştur",
+    "name": "Turnuva adı",
+    "gameField": "Oyun",
+    "modeField": "Mod",
+    "prizeField": "Ödül",
+    "slotsField": "Takım sayısı",
+    "dateField": "Kaç gün sonra",
+    "premiumField": "Premium turnuva",
+    "submit": "Oluştur",
+    "cancel": "Vazgeç",
+    "joined": "Katıldın ✓",
+    "delete": "Sil"
   },
   "profile": {
     "title": "Profilim",

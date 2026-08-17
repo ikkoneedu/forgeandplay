@@ -17,6 +17,7 @@
     "lead": "La IA analiza tu estilo de juego y tu rango, y te empareja con jugadores con más del 90% de compatibilidad. CS2, Valorant, PS5, Xbox — sin descargas, sin esperas. Y cuando quieras un descanso, los juegos instantáneos están a un clic.",
     "ctaPrimary": "Forma tu Equipo — Gratis",
     "ctaSecondary": "Ver Juegos",
+    "live": "{rooms} salas activas · {games} juegos listos",
     "stats": {
       "today": "Jugando Hoy",
       "teams": "Equipos Formados",
@@ -154,7 +155,19 @@
     "free": "Gratis",
     "premium": "Premium",
     "empty": "No hay torneos programados ahora. ¡Pronto!",
-    "date": "Fecha"
+    "date": "Fecha",
+    "create": "Crear Torneo",
+    "name": "Nombre del torneo",
+    "gameField": "Juego",
+    "modeField": "Modo",
+    "prizeField": "Premio",
+    "slotsField": "Plazas de equipo",
+    "dateField": "En cuántos días",
+    "premiumField": "Torneo premium",
+    "submit": "Crear",
+    "cancel": "Cancelar",
+    "joined": "Inscrito ✓",
+    "delete": "Eliminar"
   },
   "profile": {
     "title": "Mi Perfil",

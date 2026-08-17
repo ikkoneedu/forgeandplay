@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Blok Kırıcı</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060d;color:#eef2ff;font-family:system-ui,sans-serif;display:grid;place-items:center;overflow:hidden;-webkit-user-select:none;user-select:none}
+  .wrap{width:min(92vw,420px)}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .sc{background:#141a31;border:1px solid #222a45;border-radius:12px;padding:8px 16px;text-align:center}
+  .sc small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9aa5c7}.sc b{font-size:22px}
+  button{background:linear-gradient(120deg,#ffa23d,#ff3d7f);color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;font-family:inherit}
+  #c{width:100%;aspect-ratio:3/4;background:#0e1224;border:1px solid #222a45;border-radius:16px;display:block;touch-action:none}
+  .over{position:fixed;inset:0;background:rgba(5,6,13,.86);display:none;place-items:center;flex-direction:column}
+  .over.show{display:grid}.over p{font-size:24px;font-weight:800;margin:0 0 12px}
+</style></head><body>
+<div class="wrap">
+  <div class="top"><div class="sc"><small>Skor</small><b id="score">0</b></div>
+  <button id="new">Yeni Oyun</button>
+  <div class="sc"><small>Can</small><b id="lives">3</b></div></div>
+  <canvas id="c" width="300" height="400"></canvas>
+</div>
+<div class="over" id="over"><p id="ov">Oyun Bitti!</p><button id="retry">Tekrar Oyna</button></div>
+<script>
+const cv=document.getElementById('c'),x=cv.getContext('2d');const W=300,H=400;
+const scoreEl=document.getElementById('score'),livesEl=document.getElementById('lives'),overEl=document.getElementById('over'),ov=document.getElementById('ov');
+let paddle,ball,bricks,score,lives,loop,running;
+const PW=64,PH=12,BR=6,COLS=6,ROWS=5,BW=W/COLS,BH=18;
+const colors=['#ff3d7f','#ffa23d','#22d3ee','#7c3aed','#2de2a6'];
+function post(){parent.postMessage({type:'forgeplay:score',game:'blok-kirici',score},'*');}
+function reset(){paddle=W/2-PW/2;ball={x:W/2,y:H-40,dx:2.4,dy:-2.4};score=0;lives=3;running=true;
+  scoreEl.textContent=0;livesEl.textContent=3;overEl.classList.remove('show');
+  bricks=[];for(let r=0;r<ROWS;r++)for(let cc=0;cc<COLS;cc++)bricks.push({x:cc*BW,y:40+r*BH,r,alive:true});
+  clearInterval(loop);loop=setInterval(tick,16);post();}
+function launchBall(){ball={x:paddle+PW/2,y:H-40,dx:2.4*(Math.random()<.5?1:-1),dy:-2.6};}
+function tick(){if(!running)return;ball.x+=ball.dx;ball.y+=ball.dy;
+  if(ball.x<BR||ball.x>W-BR)ball.dx*=-1;if(ball.y<BR)ball.dy*=-1;
+  if(ball.y>H-24&&ball.x>paddle&&ball.x<paddle+PW&&ball.dy>0){ball.dy*=-1;ball.dx+=(ball.x-(paddle+PW/2))/18;}
+  if(ball.y>H){lives--;livesEl.textContent=lives;if(lives<=0){return end();}launchBall();}
+  for(const b of bricks){if(!b.alive)continue;if(ball.x>b.x&&ball.x<b.x+BW-2&&ball.y>b.y&&ball.y<b.y+BH-2){b.alive=false;ball.dy*=-1;score+=10;scoreEl.textContent=score;post();break;}}
+  if(bricks.every(b=>!b.alive)){score+=50;scoreEl.textContent=score;bricks.forEach(b=>b.alive=true);post();}
+  render();}
+function render(){x.clearRect(0,0,W,H);
+  for(const b of bricks){if(!b.alive)continue;x.fillStyle=colors[b.r%colors.length];x.beginPath();x.roundRect(b.x+2,b.y+2,BW-4,BH-4,4);x.fill();}
+  x.fillStyle='#eef2ff';x.beginPath();x.roundRect(paddle,H-20,PW,PH,6);x.fill();
+  x.fillStyle='#ffa23d';x.beginPath();x.arc(ball.x,ball.y,BR,0,7);x.fill();}
+function end(){running=false;clearInterval(loop);ov.textContent='Oyun Bitti! Skor: '+score;overEl.classList.add('show');post();}
+function moveTo(clientX){const r=cv.getBoundingClientRect();const rel=(clientX-r.left)/r.width*W;paddle=Math.max(0,Math.min(W-PW,rel-PW/2));}
+cv.addEventListener('mousemove',e=>moveTo(e.clientX));
+cv.addEventListener('touchmove',e=>{moveTo(e.touches[0].clientX);e.preventDefault();},{passive:false});
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')paddle=Math.max(0,paddle-24);if(e.key==='ArrowRight')paddle=Math.min(W-PW,paddle+24);});
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);return this;};}
+document.getElementById('new').onclick=reset;document.getElementById('retry').onclick=reset;
+paddle=W/2-PW/2;reset();
+</script></body></html>

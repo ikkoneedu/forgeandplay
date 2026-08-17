@@ -17,6 +17,7 @@
     "lead": "AI analyzes your playstyle and rank, then matches you with players who fit 90%+. CS2, Valorant, PS5, Xbox — no downloads, no waiting. And whenever you need a break, instant games are always one click away.",
     "ctaPrimary": "Build Your Team — Free",
     "ctaSecondary": "Browse Games",
+    "live": "{rooms} active rooms · {games} games ready",
     "stats": {
       "today": "Playing Today",
       "teams": "Teams Formed",
@@ -154,7 +155,19 @@
     "free": "Free",
     "premium": "Premium",
     "empty": "No tournaments scheduled right now. Soon!",
-    "date": "Date"
+    "date": "Date",
+    "create": "Create Tournament",
+    "name": "Tournament name",
+    "gameField": "Game",
+    "modeField": "Mode",
+    "prizeField": "Prize",
+    "slotsField": "Team slots",
+    "dateField": "In how many days",
+    "premiumField": "Premium tournament",
+    "submit": "Create",
+    "cancel": "Cancel",
+    "joined": "Joined ✓",
+    "delete": "Delete"
   },
   "profile": {
     "title": "My Profile",

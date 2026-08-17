@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Refleks</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060d;color:#eef2ff;font-family:system-ui,sans-serif;display:grid;place-items:center;overflow:hidden;-webkit-user-select:none;user-select:none}
+  .wrap{width:min(92vw,420px);text-align:center}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .sc{background:#141a31;border:1px solid #222a45;border-radius:12px;padding:8px 16px}
+  .sc small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9aa5c7}.sc b{font-size:22px}
+  #pad{height:260px;border-radius:20px;display:grid;place-items:center;cursor:pointer;font-size:22px;font-weight:800;transition:background .1s}
+  .wait{background:#7c3aed}.ready{background:#2de2a6;color:#05060d}.early{background:#ff3d7f}.idle{background:#141a31;border:1px solid #222a45}
+  #hint{margin-top:12px;color:#9aa5c7;font-size:13px}
+</style></head><body>
+<div class="wrap">
+  <div class="top"><div class="sc"><small>Son (ms)</small><b id="last">—</b></div>
+  <div class="sc"><small>En İyi (ms)</small><b id="best">—</b></div></div>
+  <div id="pad" class="idle">Başlamak için dokun</div>
+  <div id="hint">Yeşil olunca hemen dokun!</div>
+</div>
+<script>
+const pad=document.getElementById('pad'),lastEl=document.getElementById('last'),bestEl=document.getElementById('best');
+let state='idle',t0,timer,best=+(localStorage.getItem('fpreflex')||0)||null;
+if(best)bestEl.textContent=best;
+function post(sc){parent.postMessage({type:'forgeplay:score',game:'refleks',score:sc},'*');}
+function arm(){state='wait';pad.className='wait';pad.textContent='Bekle…';
+  timer=setTimeout(()=>{state='ready';pad.className='ready';pad.textContent='DOKUN!';t0=performance.now();},900+Math.random()*2000);}
+pad.addEventListener('pointerdown',()=>{
+  if(state==='idle'){arm();return;}
+  if(state==='wait'){clearTimeout(timer);state='early';pad.className='early';pad.textContent='Çok erken! Tekrar dene';setTimeout(()=>{state='idle';pad.className='idle';pad.textContent='Başlamak için dokun';},900);return;}
+  if(state==='ready'){const ms=Math.round(performance.now()-t0);lastEl.textContent=ms;
+    if(!best||ms<best){best=ms;bestEl.textContent=best;localStorage.setItem('fpreflex',best);}
+    const score=Math.max(0,600-ms);post(score);
+    state='idle';pad.className='idle';pad.textContent=ms+' ms · tekrar için dokun';return;}
+});
+post(0);
+</script></body></html>
