@@ -1,4 +1,18 @@
 import type { GameCategory } from "@/lib/games";
+import { isFirebaseConfigured } from "./firebase";
+import { getDb } from "./db";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  updateDoc,
+  increment,
+  query,
+  where,
+} from "firebase/firestore";
 
 export interface UserGame {
   id: string;
@@ -16,16 +30,16 @@ export interface UserGame {
 }
 
 const KEY = "fp:userGames";
-const MAX_BYTES = 2 * 1024 * 1024;
+// Firestore document max is 1 MB; keep the HTML comfortably under it.
+const MAX_BYTES = 900 * 1024;
 const COVERS = ["c1", "c2", "c3", "c4"];
 
-/**
- * Demo storage backed by localStorage. When Firebase is configured this module
- * swaps to Firestore (games) + Storage (html) with server-side moderation.
- * Functions are async so that swap requires no call-site changes.
- */
+const configured = () => isFirebaseConfigured();
 
-function read(): UserGame[] {
+/* ------------------------------------------------------------------ */
+/* localStorage fallback (demo, single browser)                        */
+/* ------------------------------------------------------------------ */
+function readLocal(): UserGame[] {
   if (typeof window === "undefined") return [];
   try {
     return JSON.parse(localStorage.getItem(KEY) || "[]");
@@ -33,19 +47,33 @@ function read(): UserGame[] {
     return [];
   }
 }
-
-function write(list: UserGame[]) {
+function writeLocal(list: UserGame[]) {
   localStorage.setItem(KEY, JSON.stringify(list));
 }
 
+const byNewest = (a: UserGame, b: UserGame) => b.createdAt - a.createdAt;
+
+/* ------------------------------------------------------------------ */
+/* Public API (Firestore when configured, else localStorage)           */
+/* ------------------------------------------------------------------ */
 export async function listUserGames(): Promise<UserGame[]> {
-  return read()
+  if (configured()) {
+    const snap = await getDocs(
+      query(collection(getDb(), "games"), where("status", "==", "approved"))
+    );
+    return snap.docs.map((d) => d.data() as UserGame).sort(byNewest);
+  }
+  return readLocal()
     .filter((g) => g.status === "approved")
-    .sort((a, b) => b.createdAt - a.createdAt);
+    .sort(byNewest);
 }
 
 export async function getUserGame(id: string): Promise<UserGame | undefined> {
-  return read().find((g) => g.id === id);
+  if (configured()) {
+    const s = await getDoc(doc(getDb(), "games", id));
+    return s.exists() ? (s.data() as UserGame) : undefined;
+  }
+  return readLocal().find((g) => g.id === id);
 }
 
 export interface NewGameInput {
@@ -74,29 +102,85 @@ export async function addUserGame(input: NewGameInput): Promise<UserGame> {
     minAge: input.minAge,
     html,
     createdAt: Date.now(),
-    // Demo: auto-approved. With Firebase this starts "pending" for moderation.
     status: "approved",
     plays: 0,
   };
-  const list = read();
-  list.push(game);
-  write(list);
+
+  if (configured()) {
+    await setDoc(doc(getDb(), "games", game.id), game);
+  } else {
+    const list = readLocal();
+    list.push(game);
+    writeLocal(list);
+  }
   return game;
 }
 
 export async function incPlays(id: string): Promise<void> {
-  const list = read();
+  if (configured()) {
+    try {
+      await updateDoc(doc(getDb(), "games", id), { plays: increment(1) });
+    } catch {
+      /* non-admin writes are rejected by rules — best effort only */
+    }
+    return;
+  }
+  const list = readLocal();
   const g = list.find((x) => x.id === id);
   if (g) {
     g.plays += 1;
-    write(list);
+    writeLocal(list);
   }
 }
 
-// ---- Hidden built-in games (admin can remove hardcoded games too) ----
+export async function listUserGamesByOwner(ownerId: string): Promise<UserGame[]> {
+  if (configured()) {
+    const snap = await getDocs(
+      query(collection(getDb(), "games"), where("ownerId", "==", ownerId))
+    );
+    return snap.docs.map((d) => d.data() as UserGame).sort(byNewest);
+  }
+  return readLocal()
+    .filter((g) => g.ownerId === ownerId)
+    .sort(byNewest);
+}
+
+/** Deletes a game. Server-side security is enforced by Firestore rules. */
+export async function deleteUserGame(
+  id: string,
+  requesterId: string,
+  isAdminFlag = false
+): Promise<boolean> {
+  if (configured()) {
+    try {
+      await deleteDoc(doc(getDb(), "games", id));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  const list = readLocal();
+  const g = list.find((x) => x.id === id);
+  if (!g) return false;
+  if (g.ownerId !== requesterId && !isAdminFlag) return false;
+  writeLocal(list.filter((x) => x.id !== id));
+  return true;
+}
+
+/* ------------------------------------------------------------------ */
+/* Hidden built-in games (global config doc when Firestore is on)      */
+/* ------------------------------------------------------------------ */
 const HKEY = "fp:hiddenBuiltins";
 
-export function getHiddenBuiltins(): string[] {
+export async function getHiddenBuiltins(): Promise<string[]> {
+  if (configured()) {
+    try {
+      const s = await getDoc(doc(getDb(), "config", "games"));
+      return s.exists() ? (s.data().hiddenBuiltins as string[]) || [] : [];
+    } catch {
+      return [];
+    }
+  }
   if (typeof window === "undefined") return [];
   try {
     return JSON.parse(localStorage.getItem(HKEY) || "[]");
@@ -106,34 +190,29 @@ export function getHiddenBuiltins(): string[] {
 }
 
 export async function hideBuiltin(slug: string): Promise<void> {
-  const set = new Set(getHiddenBuiltins());
+  if (configured()) {
+    const cur = await getHiddenBuiltins();
+    const set = new Set(cur);
+    set.add(slug);
+    await setDoc(doc(getDb(), "config", "games"), { hiddenBuiltins: [...set] }, { merge: true });
+    return;
+  }
+  const set = new Set(await getHiddenBuiltins());
   set.add(slug);
   localStorage.setItem(HKEY, JSON.stringify([...set]));
 }
 
 export async function unhideBuiltin(slug: string): Promise<void> {
-  const set = new Set(getHiddenBuiltins());
+  if (configured()) {
+    const cur = await getHiddenBuiltins();
+    await setDoc(
+      doc(getDb(), "config", "games"),
+      { hiddenBuiltins: cur.filter((s) => s !== slug) },
+      { merge: true }
+    );
+    return;
+  }
+  const set = new Set(await getHiddenBuiltins());
   set.delete(slug);
   localStorage.setItem(HKEY, JSON.stringify([...set]));
 }
-
-export async function listUserGamesByOwner(ownerId: string): Promise<UserGame[]> {
-  return read()
-    .filter((g) => g.ownerId === ownerId)
-    .sort((a, b) => b.createdAt - a.createdAt);
-}
-
-/** Deletes a game if the requester owns it or is an admin. Returns true if deleted. */
-export async function deleteUserGame(
-  id: string,
-  requesterId: string,
-  isAdminFlag = false
-): Promise<boolean> {
-  const list = read();
-  const g = list.find((x) => x.id === id);
-  if (!g) return false;
-  if (g.ownerId !== requesterId && !isAdminFlag) return false;
-  write(list.filter((x) => x.id !== id));
-  return true;
-}
-

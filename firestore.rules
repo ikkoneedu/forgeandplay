@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Admin allow-list (Google sign-in provides token.email)
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in ['carkci.caner@gmail.com'];
+    }
+
+    // Community games: anyone can read & play; only admin can create/delete.
+    // Anyone signed in may increment the play counter (plays only).
+    match /games/{gameId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (request.auth != null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['plays']));
+    }
+
+    // Global config (e.g. hidden built-in games): public read, admin write.
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -19,7 +19,7 @@ export default function GamesBrowser({ games }: { games: Game[] }) {
   const [hidden, setHidden] = useState<string[]>([]);
 
   useEffect(() => {
-    setHidden(getHiddenBuiltins());
+    getHiddenBuiltins().then(setHidden);
   }, []);
 
   function removeBuiltin(slug: string) {
