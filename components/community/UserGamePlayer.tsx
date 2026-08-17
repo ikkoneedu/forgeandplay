@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { getUserGame, incPlays, type UserGame } from "@/lib/userGames";
+import { Link, useRouter } from "@/i18n/navigation";
+import { getUserGame, incPlays, deleteUserGame, type UserGame } from "@/lib/userGames";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 /**
  * Injected into every user game so that localStorage/sessionStorage calls do
@@ -32,7 +33,18 @@ function wrapGame(html: string): string {
 
 export default function UserGamePlayer({ id }: { id: string }) {
   const t = useTranslations("community");
+  const router = useRouter();
+  const { user } = useAuth();
   const [game, setGame] = useState<UserGame | null | undefined>(undefined);
+
+  const myId = user?.uid ?? "local";
+
+  async function onDelete() {
+    if (!game) return;
+    if (!window.confirm(t("deleteConfirm"))) return;
+    await deleteUserGame(game.id, myId);
+    router.push("/topluluk");
+  }
 
   useEffect(() => {
     let active = true;
@@ -86,6 +98,15 @@ export default function UserGamePlayer({ id }: { id: string }) {
         <p>
           {t("by")} {game.author}
         </p>
+        {game.ownerId === myId && (
+          <button
+            className="btn btn-g"
+            style={{ padding: "9px 16px", fontSize: 13, marginTop: 12, color: "#ff6b81", borderColor: "rgba(255,107,129,.4)" }}
+            onClick={onDelete}
+          >
+            🗑 {t("delete")}
+          </button>
+        )}
       </header>
 
       <div className="player-frame" style={{ maxWidth: 900, margin: "0 auto" }}>

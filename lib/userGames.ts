@@ -4,6 +4,7 @@ export interface UserGame {
   id: string;
   title: string;
   author: string;
+  ownerId: string;
   category: GameCategory;
   emoji: string;
   cover: string;
@@ -50,6 +51,7 @@ export async function getUserGame(id: string): Promise<UserGame | undefined> {
 export interface NewGameInput {
   title: string;
   author: string;
+  ownerId: string;
   category: GameCategory;
   emoji: string;
   minAge: number;
@@ -65,6 +67,7 @@ export async function addUserGame(input: NewGameInput): Promise<UserGame> {
     id: `u-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     title: input.title.trim().slice(0, 80),
     author: (input.author.trim() || "Anonim").slice(0, 40),
+    ownerId: input.ownerId || "local",
     category: input.category,
     emoji: input.emoji.trim().slice(0, 4) || "🎮",
     cover: COVERS[Math.floor(Math.random() * COVERS.length)],
@@ -89,3 +92,19 @@ export async function incPlays(id: string): Promise<void> {
     write(list);
   }
 }
+
+export async function listUserGamesByOwner(ownerId: string): Promise<UserGame[]> {
+  return read()
+    .filter((g) => g.ownerId === ownerId)
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** Deletes a game only if the requester owns it. Returns true if deleted. */
+export async function deleteUserGame(id: string, requesterId: string): Promise<boolean> {
+  const list = read();
+  const g = list.find((x) => x.id === id);
+  if (!g || g.ownerId !== requesterId) return false;
+  write(list.filter((x) => x.id !== id));
+  return true;
+}
+

@@ -212,6 +212,10 @@
     "plays": "{count} 次游玩",
     "safety": "安全提示：上传的游戏在隔离沙箱中运行，无法访问站点数据或 Cookie。但仍请只上传你信任的代码。",
     "howTo": "在 Gemini / ChatGPT 画布中制作游戏 → 复制 HTML → 粘贴到下方 → 发布。",
+    "delete": "删除",
+    "deleteConfirm": "确定删除这个游戏？",
+    "myGames": "我上传的游戏",
+    "noMyGames": "你还没有上传游戏。",
     "form": {
       "fname": "游戏名称",
       "fauthor": "你的昵称",

@@ -212,6 +212,10 @@
     "plays": "{count} kez oynandı",
     "safety": "Güvenlik: Yüklenen oyunlar izole bir sandbox içinde çalışır ve sitenin verilerine/çerezlerine erişemez. Yine de yalnızca güvendiğin kodu yükle.",
     "howTo": "Gemini / ChatGPT canvas'ında oyununu oluştur → HTML kodunu kopyala → aşağıya yapıştır → Yayınla.",
+    "delete": "Sil",
+    "deleteConfirm": "Bu oyunu silmek istediğine emin misin?",
+    "myGames": "Yüklediğim Oyunlar",
+    "noMyGames": "Henüz oyun yüklemedin.",
     "form": {
       "fname": "Oyun adı",
       "fauthor": "Takma adın",

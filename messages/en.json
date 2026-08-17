@@ -212,6 +212,10 @@
     "plays": "{count} plays",
     "safety": "Safety: Uploaded games run inside an isolated sandbox and cannot access the site's data or cookies. Still, only upload code you trust.",
     "howTo": "Build your game in Gemini / ChatGPT canvas → copy the HTML → paste it below → Publish.",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this game?",
+    "myGames": "My Uploaded Games",
+    "noMyGames": "You haven't uploaded a game yet.",
     "form": {
       "fname": "Game name",
       "fauthor": "Your nickname",

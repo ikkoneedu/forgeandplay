@@ -1,13 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { listUserGamesByOwner, deleteUserGame, type UserGame } from "@/lib/userGames";
 
 export default function ProfileView() {
   const t = useTranslations("profile");
   const tAuth = useTranslations("auth");
+  const tCom = useTranslations("community");
   const { user, loading, configured, signOut } = useAuth();
+
+  const myId = user?.uid ?? "local";
+  const [myGames, setMyGames] = useState<UserGame[]>([]);
+
+  useEffect(() => {
+    listUserGamesByOwner(myId).then(setMyGames);
+  }, [myId]);
+
+  async function removeGame(id: string) {
+    if (!window.confirm(tCom("deleteConfirm"))) return;
+    await deleteUserGame(id, myId);
+    setMyGames((g) => g.filter((x) => x.id !== id));
+  }
 
   const accounts = [
     { name: "Steam", icon: "🎮", connected: false },
@@ -95,6 +111,33 @@ export default function ProfileView() {
               </div>
             ))}
           </div>
+          <div className="panel">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h2 style={{ margin: 0 }}>🌟 {tCom("myGames")}</h2>
+              <Link href="/topluluk/yukle" className="btn btn-p" style={{ padding: "8px 14px", fontSize: 12.5 }}>
+                ＋ {tCom("upload")}
+              </Link>
+            </div>
+            {myGames.length === 0 ? (
+              <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>{tCom("noMyGames")}</p>
+            ) : (
+              myGames.map((g) => (
+                <div key={g.id} className="acc">
+                  <Link href={`/topluluk/${g.id}`} style={{ color: "var(--text)" }}>
+                    {g.emoji} {g.title}
+                  </Link>
+                  <button
+                    className="btn btn-g"
+                    style={{ padding: "6px 12px", fontSize: 12, color: "#ff6b81", borderColor: "rgba(255,107,129,.4)" }}
+                    onClick={() => removeGame(g.id)}
+                  >
+                    🗑 {tCom("delete")}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
           <div className="panel">
             <h2>{t("history")}</h2>
             <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>{t("noHistory")}</p>

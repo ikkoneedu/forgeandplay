@@ -5,11 +5,13 @@ import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { CATEGORIES } from "@/lib/games";
 import { addUserGame } from "@/lib/userGames";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function UploadForm() {
   const t = useTranslations("community");
   const tPortal = useTranslations("portal");
   const router = useRouter();
+  const { user } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +29,7 @@ export default function UploadForm() {
       const game = await addUserGame({
         title,
         author: String(form.get("author") || ""),
+        ownerId: user?.uid ?? "local",
         category: String(form.get("category")) as (typeof CATEGORIES)[number],
         emoji: String(form.get("emoji") || "🎮"),
         minAge: Number(form.get("age")) || 7,

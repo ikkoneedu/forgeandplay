@@ -212,6 +212,10 @@
     "plays": "{count} partidas",
     "safety": "Seguridad: los juegos subidos se ejecutan en un sandbox aislado y no pueden acceder a los datos ni las cookies del sitio. Aun así, sube solo código de confianza.",
     "howTo": "Crea tu juego en el canvas de Gemini / ChatGPT → copia el HTML → pégalo abajo → Publica.",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Eliminar este juego?",
+    "myGames": "Mis Juegos Subidos",
+    "noMyGames": "Aún no has subido ningún juego.",
     "form": {
       "fname": "Nombre del juego",
       "fauthor": "Tu apodo",
