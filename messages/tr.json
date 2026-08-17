@@ -196,6 +196,32 @@
     "s2": "CS2 için takım kur",
     "demoReply": "Harika seçim! Şu an birçok oda açık — /lfg sayfasından sana uygun ekibe katılabilir ya da /oyunlar'dan hemen bir oyun oynayabilirsin. (Bu bir demo yanıt; gerçek AI, Anthropic anahtarı eklenince devreye girecek.)"
   },
+  "community": {
+    "title": "Topluluk Oyunları",
+    "desc": "AI ile (Gemini, ChatGPT vb.) oluşturduğun HTML oyunu yükle, herkes oynasın. Kendi oyununu saniyeler içinde yayınla.",
+    "upload": "Oyun Yükle",
+    "empty": "Henüz topluluk oyunu yok. İlk oyunu sen yükle!",
+    "play": "Oyna",
+    "by": "ekleyen",
+    "plays": "{count} kez oynandı",
+    "safety": "Güvenlik: Yüklenen oyunlar izole bir sandbox içinde çalışır ve sitenin verilerine/çerezlerine erişemez. Yine de yalnızca güvendiğin kodu yükle.",
+    "howTo": "Gemini / ChatGPT canvas'ında oyununu oluştur → HTML kodunu kopyala → aşağıya yapıştır → Yayınla.",
+    "form": {
+      "fname": "Oyun adı",
+      "fauthor": "Takma adın",
+      "fcategory": "Kategori",
+      "fage": "Yaş sınırı",
+      "femoji": "Kapak emojisi",
+      "fhtml": "Oyun HTML kodu",
+      "fhtmlHint": "Tek dosyalık, kendi içinde çalışan HTML yapıştır (harici bağlantı olmadan en iyi çalışır).",
+      "submit": "Yayınla",
+      "publishing": "Yayınlanıyor…",
+      "errName": "Lütfen bir oyun adı gir.",
+      "errHtml": "Lütfen oyun HTML kodunu yapıştır.",
+      "errSize": "Kod çok büyük (en fazla 800 KB).",
+      "back": "Topluluk oyunlarına dön"
+    }
+  },
   "footer": {
     "tagline": "AI destekli oyun arkadaşı platformu"
   }

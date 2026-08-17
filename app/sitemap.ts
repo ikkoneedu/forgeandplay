@@ -30,6 +30,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: withAlternates("/oyunlar"),
     });
     entries.push({
+      url: `${SITE_URL}/${locale}/topluluk`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.7,
+      alternates: withAlternates("/topluluk"),
+    });
+    entries.push({
       url: `${SITE_URL}/${locale}/lfg`,
       lastModified: now,
       changeFrequency: "daily",

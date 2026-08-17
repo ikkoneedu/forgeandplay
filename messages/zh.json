@@ -196,6 +196,32 @@
     "s2": "帮我组一个 CS2 队伍",
     "demoReply": "好选择！现在有很多房间开放 — 前往 /lfg 加入合适的队伍，或在 /oyunlar 直接开玩。（这是演示回复；添加 Anthropic 密钥后将启用真实 AI。）"
   },
+  "community": {
+    "title": "社区游戏",
+    "desc": "上传你用 AI（Gemini、ChatGPT 等）制作的 HTML 游戏，让所有人畅玩。几秒内发布你自己的游戏。",
+    "upload": "上传游戏",
+    "empty": "还没有社区游戏。来上传第一个吧！",
+    "play": "开玩",
+    "by": "作者",
+    "plays": "{count} 次游玩",
+    "safety": "安全提示：上传的游戏在隔离沙箱中运行，无法访问站点数据或 Cookie。但仍请只上传你信任的代码。",
+    "howTo": "在 Gemini / ChatGPT 画布中制作游戏 → 复制 HTML → 粘贴到下方 → 发布。",
+    "form": {
+      "fname": "游戏名称",
+      "fauthor": "你的昵称",
+      "fcategory": "分类",
+      "fage": "年龄分级",
+      "femoji": "封面表情",
+      "fhtml": "游戏 HTML 代码",
+      "fhtmlHint": "粘贴单文件、自包含的 HTML（无外部链接时效果最佳）。",
+      "submit": "发布",
+      "publishing": "发布中…",
+      "errName": "请输入游戏名称。",
+      "errHtml": "请粘贴游戏 HTML 代码。",
+      "errSize": "代码过大（最多 800 KB）。",
+      "back": "返回社区游戏"
+    }
+  },
   "footer": {
     "tagline": "AI 驱动的游戏搭子平台"
   }

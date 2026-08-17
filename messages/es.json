@@ -196,6 +196,32 @@
     "s2": "Fórmame un equipo de CS2",
     "demoReply": "¡Buena elección! Hay muchas salas abiertas ahora — ve a /lfg para unirte a un equipo, o juega ya en /oyunlar. (Esta es una respuesta demo; la IA real se activa al añadir la clave de Anthropic.)"
   },
+  "community": {
+    "title": "Juegos de la Comunidad",
+    "desc": "Sube un juego HTML que hayas creado con IA (Gemini, ChatGPT, etc.) y deja que todos jueguen. Publica tu propio juego en segundos.",
+    "upload": "Subir Juego",
+    "empty": "Aún no hay juegos de la comunidad. ¡Sé el primero en subir uno!",
+    "play": "Jugar",
+    "by": "por",
+    "plays": "{count} partidas",
+    "safety": "Seguridad: los juegos subidos se ejecutan en un sandbox aislado y no pueden acceder a los datos ni las cookies del sitio. Aun así, sube solo código de confianza.",
+    "howTo": "Crea tu juego en el canvas de Gemini / ChatGPT → copia el HTML → pégalo abajo → Publica.",
+    "form": {
+      "fname": "Nombre del juego",
+      "fauthor": "Tu apodo",
+      "fcategory": "Categoría",
+      "fage": "Clasificación por edad",
+      "femoji": "Emoji de portada",
+      "fhtml": "Código HTML del juego",
+      "fhtmlHint": "Pega un HTML de un solo archivo y autónomo (funciona mejor sin enlaces externos).",
+      "submit": "Publicar",
+      "publishing": "Publicando…",
+      "errName": "Introduce un nombre de juego.",
+      "errHtml": "Pega el código HTML del juego.",
+      "errSize": "El código es demasiado grande (máx. 800 KB).",
+      "back": "Volver a los juegos de la comunidad"
+    }
+  },
   "footer": {
     "tagline": "Plataforma de compañeros de juego con IA"
   }

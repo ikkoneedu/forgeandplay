@@ -196,6 +196,32 @@
     "s2": "Build me a CS2 team",
     "demoReply": "Great choice! Plenty of rooms are open right now — head to /lfg to join a team that fits, or jump into a game at /oyunlar. (This is a demo reply; real AI activates once the Anthropic key is added.)"
   },
+  "community": {
+    "title": "Community Games",
+    "desc": "Upload an HTML game you built with AI (Gemini, ChatGPT, etc.) and let everyone play it. Publish your own game in seconds.",
+    "upload": "Upload Game",
+    "empty": "No community games yet. Be the first to upload one!",
+    "play": "Play",
+    "by": "by",
+    "plays": "{count} plays",
+    "safety": "Safety: Uploaded games run inside an isolated sandbox and cannot access the site's data or cookies. Still, only upload code you trust.",
+    "howTo": "Build your game in Gemini / ChatGPT canvas → copy the HTML → paste it below → Publish.",
+    "form": {
+      "fname": "Game name",
+      "fauthor": "Your nickname",
+      "fcategory": "Category",
+      "fage": "Age rating",
+      "femoji": "Cover emoji",
+      "fhtml": "Game HTML code",
+      "fhtmlHint": "Paste a single-file, self-contained HTML (works best with no external links).",
+      "submit": "Publish",
+      "publishing": "Publishing…",
+      "errName": "Please enter a game name.",
+      "errHtml": "Please paste the game HTML code.",
+      "errSize": "Code is too large (800 KB max).",
+      "back": "Back to community games"
+    }
+  },
   "footer": {
     "tagline": "AI-powered gaming buddy platform"
   }

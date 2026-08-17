@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { getAllGames } from "@/lib/games";
 import { LOCALES, SITE_NAME, SITE_URL } from "@/lib/site";
-import GamesBrowser from "@/components/games/GamesBrowser";
 import CommunityGames from "@/components/community/CommunityGames";
 
 export async function generateMetadata({
@@ -12,35 +10,28 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "portal" });
-  const title = t("games.title");
-  const description = t("games.desc");
+  const t = await getTranslations({ locale, namespace: "community" });
+  const title = t("title");
+  const description = t("desc");
   return {
     title,
     description,
     alternates: {
-      canonical: `${SITE_URL}/${locale}/oyunlar`,
-      languages: Object.fromEntries(
-        LOCALES.map((l) => [l, `${SITE_URL}/${l}/oyunlar`])
-      ),
+      canonical: `${SITE_URL}/${locale}/topluluk`,
+      languages: Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}/topluluk`])),
     },
-    openGraph: {
-      title: `${title} · ${SITE_NAME}`,
-      description,
-      url: `${SITE_URL}/${locale}/oyunlar`,
-    },
+    openGraph: { title: `${title} · ${SITE_NAME}`, description, url: `${SITE_URL}/${locale}/topluluk` },
   };
 }
 
-export default async function GamesPage({
+export default async function CommunityPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("portal");
-  const games = getAllGames();
+  const t = await getTranslations("community");
 
   return (
     <>
@@ -48,20 +39,23 @@ export default async function GamesPage({
       <div className="aurora a2" aria-hidden="true" />
       <div className="wrap">
         <nav className="breadcrumb" aria-label="breadcrumb">
-          <Link href="/">{t("play.home")}</Link>
+          <Link href="/">Forge&amp;Play</Link>
           <span>/</span>
-          <span>{t("play.gamesCrumb")}</span>
+          <span>{t("title")}</span>
         </nav>
-
         <header className="page-head">
           <h1>
-            🔥 <span className="g">{t("games.title")}</span>
+            🌟 <span className="g">{t("title")}</span>
           </h1>
-          <p>{t("games.desc")}</p>
+          <p>{t("desc")}</p>
+          <div style={{ marginTop: 18 }}>
+            <Link href="/topluluk/yukle" className="btn btn-p" style={{ padding: "13px 24px" }}>
+              ＋ {t("upload")}
+            </Link>
+          </div>
         </header>
 
-        <GamesBrowser games={games} />
-        <CommunityGames />
+        <CommunityGames showHeader={false} />
         <div style={{ height: 60 }} />
       </div>
     </>
