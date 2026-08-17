@@ -24,5 +24,18 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // LFG rooms: anyone can read; signed-in users can create/join/leave.
+    // (Guest/anonymous sign-in counts as signed in.)
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+
+      // Room chat messages: public read, signed-in create.
+      match /messages/{msgId} {
+        allow read: if true;
+        allow create: if request.auth != null;
+      }
+    }
   }
 }
