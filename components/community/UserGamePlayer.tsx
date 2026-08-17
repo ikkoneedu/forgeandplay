@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { getUserGame, incPlays, deleteUserGame, type UserGame } from "@/lib/userGames";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { isAdmin } from "@/lib/admin";
 
 /**
  * Injected into every user game so that localStorage/sessionStorage calls do
@@ -42,7 +43,7 @@ export default function UserGamePlayer({ id }: { id: string }) {
   async function onDelete() {
     if (!game) return;
     if (!window.confirm(t("deleteConfirm"))) return;
-    await deleteUserGame(game.id, myId);
+    await deleteUserGame(game.id, myId, isAdmin(user));
     router.push("/topluluk");
   }
 
@@ -98,7 +99,7 @@ export default function UserGamePlayer({ id }: { id: string }) {
         <p>
           {t("by")} {game.author}
         </p>
-        {game.ownerId === myId && (
+        {isAdmin(user) && (
           <button
             className="btn btn-g"
             style={{ padding: "9px 16px", fontSize: 13, marginTop: 12, color: "#ff6b81", borderColor: "rgba(255,107,129,.4)" }}

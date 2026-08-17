@@ -216,6 +216,7 @@
     "deleteConfirm": "Delete this game?",
     "myGames": "My Uploaded Games",
     "noMyGames": "You haven't uploaded a game yet.",
+    "adminOnly": "This page is admin-only. Sign in with the admin account (Google).",
     "form": {
       "fname": "Game name",
       "fauthor": "Your nickname",

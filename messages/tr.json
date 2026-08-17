@@ -216,6 +216,7 @@
     "deleteConfirm": "Bu oyunu silmek istediğine emin misin?",
     "myGames": "Yüklediğim Oyunlar",
     "noMyGames": "Henüz oyun yüklemedin.",
+    "adminOnly": "Bu sayfa yalnızca yöneticiye açık. Yönetici hesabıyla (Google) giriş yap.",
     "form": {
       "fname": "Oyun adı",
       "fauthor": "Takma adın",

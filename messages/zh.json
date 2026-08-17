@@ -216,6 +216,7 @@
     "deleteConfirm": "确定删除这个游戏？",
     "myGames": "我上传的游戏",
     "noMyGames": "你还没有上传游戏。",
+    "adminOnly": "此页面仅限管理员。请使用管理员账号（Google）登录。",
     "form": {
       "fname": "游戏名称",
       "fauthor": "你的昵称",

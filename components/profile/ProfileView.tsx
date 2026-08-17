@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { listUserGamesByOwner, deleteUserGame, type UserGame } from "@/lib/userGames";
+import { isAdmin } from "@/lib/admin";
+import AdminUploadButton from "@/components/community/AdminUploadButton";
 
 export default function ProfileView() {
   const t = useTranslations("profile");
@@ -21,7 +23,7 @@ export default function ProfileView() {
 
   async function removeGame(id: string) {
     if (!window.confirm(tCom("deleteConfirm"))) return;
-    await deleteUserGame(id, myId);
+    await deleteUserGame(id, myId, isAdmin(user));
     setMyGames((g) => g.filter((x) => x.id !== id));
   }
 
@@ -114,9 +116,7 @@ export default function ProfileView() {
           <div className="panel">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <h2 style={{ margin: 0 }}>🌟 {tCom("myGames")}</h2>
-              <Link href="/topluluk/yukle" className="btn btn-p" style={{ padding: "8px 14px", fontSize: 12.5 }}>
-                ＋ {tCom("upload")}
-              </Link>
+              <AdminUploadButton style={{ padding: "8px 14px", fontSize: 12.5 }} />
             </div>
             {myGames.length === 0 ? (
               <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>{tCom("noMyGames")}</p>

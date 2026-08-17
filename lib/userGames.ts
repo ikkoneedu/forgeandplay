@@ -99,11 +99,16 @@ export async function listUserGamesByOwner(ownerId: string): Promise<UserGame[]>
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
-/** Deletes a game only if the requester owns it. Returns true if deleted. */
-export async function deleteUserGame(id: string, requesterId: string): Promise<boolean> {
+/** Deletes a game if the requester owns it or is an admin. Returns true if deleted. */
+export async function deleteUserGame(
+  id: string,
+  requesterId: string,
+  isAdminFlag = false
+): Promise<boolean> {
   const list = read();
   const g = list.find((x) => x.id === id);
-  if (!g || g.ownerId !== requesterId) return false;
+  if (!g) return false;
+  if (g.ownerId !== requesterId && !isAdminFlag) return false;
   write(list.filter((x) => x.id !== id));
   return true;
 }

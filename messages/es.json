@@ -216,6 +216,7 @@
     "deleteConfirm": "¿Eliminar este juego?",
     "myGames": "Mis Juegos Subidos",
     "noMyGames": "Aún no has subido ningún juego.",
+    "adminOnly": "Esta página es solo para administradores. Inicia sesión con la cuenta de administrador (Google).",
     "form": {
       "fname": "Nombre del juego",
       "fauthor": "Tu apodo",

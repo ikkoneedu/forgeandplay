@@ -6,12 +6,15 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { CATEGORIES } from "@/lib/games";
 import { addUserGame } from "@/lib/userGames";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { isAdmin } from "@/lib/admin";
 
 export default function UploadForm() {
   const t = useTranslations("community");
   const tPortal = useTranslations("portal");
+  const tAuth = useTranslations("auth");
   const router = useRouter();
   const { user } = useAuth();
+  const admin = isAdmin(user);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +43,23 @@ export default function UploadForm() {
       setBusy(false);
       setError(err instanceof Error && err.message === "size" ? t("form.errSize") : t("form.errHtml"));
     }
+  }
+
+  if (!admin) {
+    return (
+      <div className="wrap">
+        <div className="auth-wrap" style={{ textAlign: "center" }}>
+          <h1>＋ {t("upload")}</h1>
+          <div className="auth-note" style={{ textAlign: "left" }}>🔒 {t("adminOnly")}</div>
+          <Link href="/giris" className="btn btn-p" style={{ padding: "12px 22px", justifyContent: "center", width: "100%" }}>
+            {tAuth("loginTitle")}
+          </Link>
+          <div className="auth-alt" style={{ marginTop: 14 }}>
+            <Link href="/topluluk">← {t("title")}</Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

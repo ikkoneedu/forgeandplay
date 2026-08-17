@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { LOCALES, SITE_NAME, SITE_URL } from "@/lib/site";
 import CommunityGames from "@/components/community/CommunityGames";
+import AdminUploadButton from "@/components/community/AdminUploadButton";
 
 export async function generateMetadata({
   params,
@@ -49,9 +50,7 @@ export default async function CommunityPage({
           </h1>
           <p>{t("desc")}</p>
           <div style={{ marginTop: 18 }}>
-            <Link href="/topluluk/yukle" className="btn btn-p" style={{ padding: "13px 24px" }}>
-              ＋ {t("upload")}
-            </Link>
+            <AdminUploadButton style={{ padding: "13px 24px" }} />
           </div>
         </header>
 

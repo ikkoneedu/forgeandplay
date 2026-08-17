@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { listUserGames, type UserGame } from "@/lib/userGames";
+import AdminUploadButton from "./AdminUploadButton";
 
 export default function CommunityGames({ showHeader = true }: { showHeader?: boolean }) {
   const t = useTranslations("community");
@@ -21,9 +22,7 @@ export default function CommunityGames({ showHeader = true }: { showHeader?: boo
             <h2 style={{ fontSize: 22 }}>🌟 {t("title")}</h2>
             <p>{t("desc")}</p>
           </div>
-          <Link href="/topluluk/yukle" className="btn btn-p" style={{ padding: "10px 18px", fontSize: 14 }}>
-            ＋ {t("upload")}
-          </Link>
+          <AdminUploadButton />
         </div>
       )}
 
@@ -32,9 +31,7 @@ export default function CommunityGames({ showHeader = true }: { showHeader?: boo
       ) : games.length === 0 ? (
         <div className="games-empty">
           <p>{t("empty")}</p>
-          <Link href="/topluluk/yukle" className="btn btn-p" style={{ padding: "12px 22px", marginTop: 8 }}>
-            ＋ {t("upload")}
-          </Link>
+          <AdminUploadButton style={{ padding: "12px 22px", marginTop: 8 }} />
         </div>
       ) : (
         <div className="games-grid">
