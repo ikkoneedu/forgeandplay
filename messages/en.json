@@ -7,6 +7,7 @@
     "premium": "Premium",
     "login": "Sign In",
     "community": "Community",
+    "leaderboard": "Leaderboard",
     "online": "{count} online"
   },
   "home": {
@@ -213,7 +214,8 @@
     "stats": "Stats",
     "matches": "Matches",
     "wins": "Wins",
-    "friends": "Friends"
+    "friends": "Friends",
+    "earnings": "Earnings"
   },
   "auth": {
     "loginTitle": "Sign In",
@@ -274,6 +276,15 @@
       "errSize": "Code is too large (2 MB max).",
       "back": "Back to community games"
     }
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "desc": "Top players by earnings and wins. Win tournaments and climb to the top.",
+    "rank": "Rank",
+    "player": "Player",
+    "wins": "Wins",
+    "earnings": "Earnings",
+    "empty": "No rankings yet. Be the first to win a tournament!"
   },
   "footer": {
     "tagline": "AI-powered gaming buddy platform",

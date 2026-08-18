@@ -1915,3 +1915,38 @@ a {
   color: var(--mint);
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- leaderboard ---- */
+.lb {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surf);
+}
+.lb-head, .lb-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 90px 130px;
+  align-items: center;
+  padding: 13px 18px;
+  gap: 10px;
+}
+.lb-head {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  border-bottom: 1px solid var(--line);
+}
+.lb-row {
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 14px;
+}
+.lb-row:last-child { border-bottom: 0; }
+.lb-row.top { background: linear-gradient(90deg, rgba(255,162,61,0.06), transparent 60%); }
+.lb-rank { font-family: var(--font-display), system-ui, sans-serif; font-weight: 800; font-size: 17px; }
+.lb-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-wins { color: var(--muted); font-variant-numeric: tabular-nums; }
+.lb-earn { color: var(--mint); font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+@media (max-width: 560px) {
+  .lb-head, .lb-row { grid-template-columns: 44px 1fr 60px 96px; padding: 12px; font-size: 13px; }
+}

@@ -7,6 +7,7 @@ import {
   deleteDoc,
   onSnapshot,
   runTransaction,
+  increment,
 } from "firebase/firestore";
 
 export interface TParticipant {
@@ -128,6 +129,12 @@ export async function finishTournament(id: string, winnerUids: string[]): Promis
     snaps.forEach((s, i) => {
       const bal = s.exists() ? (s.data().balance as number) || 0 : 0;
       tx.set(refs[i], { balance: bal + each }, { merge: true });
+      // public leaderboard stats (name / wins / earnings)
+      tx.set(
+        doc(getDb(), "leaderboard", winners[i].uid),
+        { name: winners[i].name, wins: increment(1), earnings: increment(each) },
+        { merge: true }
+      );
     });
 
     tx.update(tRef, {

@@ -26,6 +26,7 @@ export default function Footer() {
           <Link href="/oyunlar">{tNav("games")}</Link>
           <Link href="/lfg">{tNav("lfg")}</Link>
           <Link href="/turnuvalar">{tNav("tournaments")}</Link>
+          <Link href="/siralama">{tNav("leaderboard")}</Link>
           <Link href="/topluluk">{tNav("community")}</Link>
         </div>
 

@@ -20,6 +20,7 @@ export default function Header() {
       <Link href="/oyunlar" onClick={() => setOpen(false)}>{tNav("games")}</Link>
       <Link href="/lfg" onClick={() => setOpen(false)}>{tNav("lfg")}</Link>
       <Link href="/turnuvalar" onClick={() => setOpen(false)}>{tNav("tournaments")}</Link>
+      <Link href="/siralama" onClick={() => setOpen(false)}>{tNav("leaderboard")}</Link>
       <Link href="/topluluk" onClick={() => setOpen(false)}>{tNav("community")}</Link>
       <Link href="/premium" className="prem" onClick={() => setOpen(false)}>👑 {tNav("premium")}</Link>
     </>

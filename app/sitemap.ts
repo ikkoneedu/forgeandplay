@@ -57,6 +57,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.75,
       alternates: withAlternates("/turnuvalar"),
     });
+    entries.push({
+      url: `${SITE_URL}/${locale}/siralama`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.6,
+      alternates: withAlternates("/siralama"),
+    });
     for (const p of ["/gizlilik", "/kullanim-sartlari", "/iletisim"]) {
       entries.push({
         url: `${SITE_URL}/${locale}${p}`,

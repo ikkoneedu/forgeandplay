@@ -7,6 +7,7 @@
     "premium": "Premium",
     "login": "Iniciar Sesión",
     "community": "Comunidad",
+    "leaderboard": "Clasificación",
     "online": "{count} en línea"
   },
   "home": {
@@ -213,7 +214,8 @@
     "stats": "Estadísticas",
     "matches": "Partidas",
     "wins": "Victorias",
-    "friends": "Amigos"
+    "friends": "Amigos",
+    "earnings": "Ganancias"
   },
   "auth": {
     "loginTitle": "Iniciar Sesión",
@@ -274,6 +276,15 @@
       "errSize": "El código es demasiado grande (máx. 2 MB).",
       "back": "Volver a los juegos de la comunidad"
     }
+  },
+  "leaderboard": {
+    "title": "Clasificación",
+    "desc": "Mejores jugadores por ganancias y victorias. Gana torneos y llega a lo más alto.",
+    "rank": "Puesto",
+    "player": "Jugador",
+    "wins": "Victorias",
+    "earnings": "Ganancias",
+    "empty": "Aún no hay clasificación. ¡Sé el primero en ganar un torneo!"
   },
   "footer": {
     "tagline": "Plataforma de compañeros de juego con IA",

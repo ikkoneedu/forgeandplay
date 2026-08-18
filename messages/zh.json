@@ -7,6 +7,7 @@
     "premium": "会员",
     "login": "登录",
     "community": "社区",
+    "leaderboard": "排行榜",
     "online": "{count} 人在线"
   },
   "home": {
@@ -213,7 +214,8 @@
     "stats": "统计",
     "matches": "对局",
     "wins": "胜场",
-    "friends": "好友"
+    "friends": "好友",
+    "earnings": "收益"
   },
   "auth": {
     "loginTitle": "登录",
@@ -274,6 +276,15 @@
       "errSize": "代码过大（最多 2 MB）。",
       "back": "返回社区游戏"
     }
+  },
+  "leaderboard": {
+    "title": "排行榜",
+    "desc": "按收益和胜场排名的顶尖玩家。赢得锦标赛，登上榜首。",
+    "rank": "名次",
+    "player": "玩家",
+    "wins": "胜场",
+    "earnings": "收益",
+    "empty": "还没有排名。成为第一个赢得锦标赛的人！"
   },
   "footer": {
     "tagline": "AI 驱动的游戏搭子平台",

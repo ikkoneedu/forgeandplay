@@ -7,6 +7,7 @@
     "premium": "Premium",
     "login": "Giriş Yap",
     "community": "Topluluk",
+    "leaderboard": "Sıralama",
     "online": "{count} çevrimiçi"
   },
   "home": {
@@ -213,7 +214,8 @@
     "stats": "İstatistikler",
     "matches": "Maç",
     "wins": "Galibiyet",
-    "friends": "Arkadaş"
+    "friends": "Arkadaş",
+    "earnings": "Kazanç"
   },
   "auth": {
     "loginTitle": "Giriş Yap",
@@ -274,6 +276,15 @@
       "errSize": "Kod çok büyük (en fazla 2 MB).",
       "back": "Topluluk oyunlarına dön"
     }
+  },
+  "leaderboard": {
+    "title": "Liderlik Tablosu",
+    "desc": "En çok kazanan ve en çok galibiyet alan oyuncular. Turnuvaları kazan, zirveye çık.",
+    "rank": "Sıra",
+    "player": "Oyuncu",
+    "wins": "Galibiyet",
+    "earnings": "Kazanç",
+    "empty": "Henüz sıralama yok. İlk turnuvayı kazanan sen ol!"
   },
   "footer": {
     "tagline": "AI destekli oyun arkadaşı platformu",

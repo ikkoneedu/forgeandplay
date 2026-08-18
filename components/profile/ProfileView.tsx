@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { listUserGamesByOwner, deleteUserGame, type UserGame } from "@/lib/userGames";
+import { getMyStats, type LeaderEntry } from "@/lib/leaderboard";
 import { isAdmin } from "@/lib/admin";
 import AdminUploadButton from "@/components/community/AdminUploadButton";
 
@@ -16,10 +17,15 @@ export default function ProfileView() {
 
   const myId = user?.uid ?? "local";
   const [myGames, setMyGames] = useState<UserGame[]>([]);
+  const [stats, setStats] = useState<LeaderEntry | null>(null);
 
   useEffect(() => {
     listUserGamesByOwner(myId).then(setMyGames);
   }, [myId]);
+
+  useEffect(() => {
+    if (user) getMyStats(user.uid).then(setStats);
+  }, [user]);
 
   async function removeGame(id: string) {
     if (!window.confirm(tCom("deleteConfirm"))) return;
@@ -99,8 +105,8 @@ export default function ProfileView() {
           <div className="panel">
             <h2>{t("stats")}</h2>
             <div className="statrow">
-              <div className="s"><b>0</b><small>{t("matches")}</small></div>
-              <div className="s"><b>0</b><small>{t("wins")}</small></div>
+              <div className="s"><b>{stats?.wins ?? 0}</b><small>{t("wins")}</small></div>
+              <div className="s"><b>₺{(stats?.earnings ?? 0).toLocaleString("tr-TR")}</b><small>{t("earnings")}</small></div>
               <div className="s"><b>0</b><small>{t("friends")}</small></div>
             </div>
           </div>
