@@ -185,7 +185,17 @@
     "selectWinners": "Mark the winning team",
     "winnersLabel": "Winners",
     "eachGets": "Each gets",
-    "declareBtn": "Pay Out"
+    "declareBtn": "Pay Out",
+    "reportResult": "Report Result",
+    "reportWon": "We won",
+    "reportLost": "We lost",
+    "proofLabel": "Proof (screenshot link)",
+    "reportSubmit": "Send",
+    "reportsTitle": "Result Reports",
+    "claimWin": "won",
+    "claimLoss": "lost",
+    "proofLink": "proof",
+    "reported": "Reported ✓"
   },
   "profile": {
     "title": "My Profile",

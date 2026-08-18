@@ -43,6 +43,12 @@ service cloud.firestore {
       allow read: if true;
       allow create, delete: if isAdmin();
       allow update: if request.auth != null;
+
+      // Match result reports: public read (evidence); each user writes only their own.
+      match /reports/{uid} {
+        allow read: if true;
+        allow create, update: if request.auth != null && request.auth.uid == uid;
+      }
     }
 
     // Wallets: a user reads/writes only their own doc; admin may pay out to any.

@@ -185,7 +185,17 @@
     "selectWinners": "Marca el equipo ganador",
     "winnersLabel": "Ganadores",
     "eachGets": "Cada uno recibe",
-    "declareBtn": "Repartir Premio"
+    "declareBtn": "Repartir Premio",
+    "reportResult": "Reportar Resultado",
+    "reportWon": "Ganamos",
+    "reportLost": "Perdimos",
+    "proofLabel": "Prueba (enlace de captura)",
+    "reportSubmit": "Enviar",
+    "reportsTitle": "Reportes de Resultado",
+    "claimWin": "ganó",
+    "claimLoss": "perdió",
+    "proofLink": "prueba",
+    "reported": "Reportado ✓"
   },
   "profile": {
     "title": "Mi Perfil",

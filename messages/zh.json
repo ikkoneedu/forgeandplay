@@ -185,7 +185,17 @@
     "selectWinners": "勾选获胜队伍",
     "winnersLabel": "冠军",
     "eachGets": "每人获得",
-    "declareBtn": "发放奖励"
+    "declareBtn": "发放奖励",
+    "reportResult": "上报结果",
+    "reportWon": "我们赢了",
+    "reportLost": "我们输了",
+    "proofLabel": "证据（截图链接）",
+    "reportSubmit": "发送",
+    "reportsTitle": "结果上报",
+    "claimWin": "获胜",
+    "claimLoss": "落败",
+    "proofLink": "证据",
+    "reported": "已上报 ✓"
   },
   "profile": {
     "title": "我的资料",

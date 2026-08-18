@@ -142,3 +142,34 @@ export async function finishTournament(id: string, winnerUids: string[]): Promis
 export async function deleteTournament(id: string): Promise<void> {
   await deleteDoc(doc(getDb(), "tournaments", id));
 }
+
+/* ---- Match result reports (evidence for winner verification) ---- */
+export interface MatchReport {
+  uid: string;
+  name: string;
+  claimWin: boolean;
+  proof: string;
+  createdAt: number;
+}
+
+export function listenReports(tid: string, cb: (r: MatchReport[]) => void): () => void {
+  return onSnapshot(
+    collection(getDb(), "tournaments", tid, "reports"),
+    (snap) => {
+      const list = snap.docs.map((d) => d.data() as MatchReport);
+      list.sort((a, b) => b.createdAt - a.createdAt);
+      cb(list);
+    },
+    () => cb([])
+  );
+}
+
+export async function submitReport(
+  tid: string,
+  r: Omit<MatchReport, "createdAt">
+): Promise<void> {
+  await setDoc(doc(getDb(), "tournaments", tid, "reports", r.uid), {
+    ...r,
+    createdAt: Date.now(),
+  });
+}

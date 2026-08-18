@@ -16,8 +16,11 @@ import {
   finishTournament,
   deleteTournament,
   winnerPayout,
+  submitReport,
+  listenReports,
   JoinError,
   type Tournament,
+  type MatchReport,
 } from "@/lib/tournamentsDb";
 
 const money = (n: number) => "₺" + (n || 0).toLocaleString("tr-TR");
@@ -200,6 +203,10 @@ export default function TournamentsBoard() {
                     </div>
                   )}
 
+                  {joined && !finished && live && user && (
+                    <ReportResult tid={tr.id} uid={user.uid} name={user.displayName || "Oyuncu"} t={t} />
+                  )}
+
                   {admin && live && !finished && filled > 0 && (
                     <DeclareWinner tr={tr} t={t} />
                   )}
@@ -223,13 +230,115 @@ export default function TournamentsBoard() {
   );
 }
 
+function ReportResult({
+  tid,
+  uid,
+  name,
+  t,
+}: {
+  tid: string;
+  uid: string;
+  name: string;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [won, setWon] = useState<boolean | null>(null);
+  const [proof, setProof] = useState("");
+  const [done, setDone] = useState(false);
+
+  async function submit() {
+    if (won === null) return;
+    await submitReport(tid, { uid, name, claimWin: won, proof: proof.trim() });
+    setDone(true);
+    setOpen(false);
+  }
+
+  if (done) {
+    return (
+      <div style={{ marginTop: 8, fontSize: 13, color: "var(--mint)", textAlign: "center" }}>
+        {t("reported")}
+      </div>
+    );
+  }
+
+  if (!open) {
+    return (
+      <button
+        className="btn btn-g"
+        style={{ width: "100%", justifyContent: "center", marginTop: 8, padding: 9, fontSize: 13 }}
+        onClick={() => setOpen(true)}
+      >
+        🚩 {t("reportResult")}
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+        <button
+          type="button"
+          className={`btn ${won === true ? "btn-p" : "btn-g"}`}
+          style={{ flex: 1, justifyContent: "center", padding: 9, fontSize: 13 }}
+          onClick={() => setWon(true)}
+        >
+          {t("reportWon")}
+        </button>
+        <button
+          type="button"
+          className={`btn ${won === false ? "btn-p" : "btn-g"}`}
+          style={{ flex: 1, justifyContent: "center", padding: 9, fontSize: 13 }}
+          onClick={() => setWon(false)}
+        >
+          {t("reportLost")}
+        </button>
+      </div>
+      <input
+        className="search-inp"
+        style={{ width: "100%", margin: "0 0 8px", minWidth: 0 }}
+        placeholder={t("proofLabel")}
+        value={proof}
+        onChange={(e) => setProof(e.target.value)}
+      />
+      <button
+        className="btn btn-p"
+        style={{ width: "100%", justifyContent: "center", padding: 9, fontSize: 13 }}
+        disabled={won === null}
+        onClick={submit}
+      >
+        {t("reportSubmit")}
+      </button>
+    </div>
+  );
+}
+
 function DeclareWinner({ tr, t }: { tr: Tournament; t: ReturnType<typeof useTranslations> }) {
   const [sel, setSel] = useState<string[]>([]);
+  const [reports, setReports] = useState<MatchReport[]>([]);
   const toggle = (uid: string) =>
     setSel((s) => (s.includes(uid) ? s.filter((x) => x !== uid) : [...s, uid]));
 
+  useEffect(() => listenReports(tr.id, setReports), [tr.id]);
+
   return (
     <div style={{ marginTop: 10, borderTop: "1px solid var(--line)", paddingTop: 10 }}>
+      {reports.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t("reportsTitle")}</div>
+          {reports.map((r) => (
+            <div key={r.uid} style={{ fontSize: 12.5, marginBottom: 4, display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <span style={{ color: r.claimWin ? "var(--mint)" : "var(--muted2)" }}>
+                {r.claimWin ? "🏆" : "▫️"} <b>{r.name}</b> · {r.claimWin ? t("claimWin") : t("claimLoss")}
+              </span>
+              {r.proof && (
+                <a href={r.proof} target="_blank" rel="noreferrer" style={{ color: "var(--violet2)" }}>
+                  {t("proofLink")} ↗
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t("selectWinners")}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
         {tr.participants.map((p) => {
