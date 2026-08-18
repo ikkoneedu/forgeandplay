@@ -129,7 +129,11 @@
       "placeholder": "输入消息…",
       "send": "发送",
       "leave": "离开房间",
-      "members": "队伍"
+      "members": "队伍",
+      "mic": "说话",
+      "speak": "朗读",
+      "listening": "聆听中…",
+      "notSupported": "你的浏览器不支持语音识别。请使用 Chrome。"
     },
     "demo": "演示 — 实时房间和聊天即将上线（通过 Firebase）。"
   },

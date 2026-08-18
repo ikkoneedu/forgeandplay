@@ -41,6 +41,8 @@ export interface ChatMessage {
   color: string;
   text: string;
   createdAt: number;
+  /** BCP-47 base language of the message (for auto-translation), e.g. "tr". */
+  lang?: string;
 }
 
 export function roomsSupported(): boolean {

@@ -129,7 +129,11 @@
       "placeholder": "Escribe un mensaje…",
       "send": "Enviar",
       "leave": "Salir",
-      "members": "Escuadra"
+      "members": "Escuadra",
+      "mic": "Hablar",
+      "speak": "Voz",
+      "listening": "Escuchando…",
+      "notSupported": "Tu navegador no admite reconocimiento de voz. Prueba Chrome."
     },
     "demo": "Demo — las salas y el chat en tiempo real llegan pronto (con Firebase)."
   },

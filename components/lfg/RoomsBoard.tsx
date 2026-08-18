@@ -19,6 +19,7 @@ import {
   type RoomMember,
   type ChatMessage,
 } from "@/lib/lfgRooms";
+import { translateText, speakText, toBcp47 } from "@/lib/translate";
 
 const YOU: Record<string, string> = { tr: "Sen", en: "You", es: "Tú", zh: "你" };
 const AV = ["a-o", "a-v", "a-c"];
@@ -304,12 +305,18 @@ function RoomChat({
   tAuth: ReturnType<typeof useTranslations>;
   ensureUser: () => Promise<{ uid: string; name: string }>;
 }) {
-  const [localMsgs, setLocalMsgs] = useState(
-    seeded.map((m, i) => ({ id: `s${i}`, uid: `seed-${i}`, name: m.user, color: m.color, text: m.text, createdAt: i }))
+  const locale = useLocale() as Locale;
+  const [localMsgs, setLocalMsgs] = useState<ChatMessage[]>(
+    seeded.map((m, i) => ({ id: `s${i}`, uid: `seed-${i}`, name: m.user, color: m.color, text: m.text, createdAt: i, lang: locale }))
   );
   const [liveMsgs, setLiveMsgs] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [micOn, setMicOn] = useState(false);
+  const [speakOn, setSpeakOn] = useState(false);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recRef = useRef<any>(null);
+  const micOnRef = useRef(false);
 
   useEffect(() => {
     if (!live) return;
@@ -322,19 +329,68 @@ function RoomChat({
     requestAnimationFrame(() => bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight }));
   }, [msgs.length]);
 
+  useEffect(
+    () => () => {
+      micOnRef.current = false;
+      try { recRef.current?.stop(); } catch {}
+    },
+    []
+  );
+
+  async function pushMessage(text: string) {
+    if (!text) return;
+    if (live) {
+      const u = await ensureUser();
+      await sendMessage(room.id, { uid: u.uid, name: u.name, color: "a-v", text, lang: locale });
+    } else {
+      setLocalMsgs((m) => [
+        ...m,
+        { id: `l${Date.now()}`, uid: me?.uid || "me", name: you, color: "a-v", text, createdAt: Date.now(), lang: locale },
+      ]);
+    }
+  }
+
   async function send() {
     const text = input.trim();
     if (!text) return;
     setInput("");
-    if (live) {
-      const u = await ensureUser();
-      await sendMessage(room.id, { uid: u.uid, name: u.name, color: "a-v", text });
-    } else {
-      setLocalMsgs((m) => [
-        ...m,
-        { id: `l${Date.now()}`, uid: "me", name: you, color: "a-v", text, createdAt: Date.now() },
-      ]);
+    await pushMessage(text);
+  }
+
+  function toggleMic() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      alert(t("room.notSupported"));
+      return;
     }
+    if (micOn) {
+      micOnRef.current = false;
+      try { recRef.current?.stop(); } catch {}
+      setMicOn(false);
+      return;
+    }
+    const r = new SR();
+    r.lang = toBcp47(locale);
+    r.continuous = true;
+    r.interimResults = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    r.onresult = (e: any) => {
+      const res = e.results[e.results.length - 1];
+      if (res && res.isFinal) {
+        const txt = String(res[0].transcript || "").trim();
+        if (txt) pushMessage(txt);
+      }
+    };
+    r.onend = () => {
+      if (micOnRef.current) {
+        try { r.start(); } catch {}
+      }
+    };
+    try { r.start(); } catch {}
+    recRef.current = r;
+    micOnRef.current = true;
+    setMicOn(true);
   }
 
   return (
@@ -356,16 +412,31 @@ function RoomChat({
         </div>
         <div className="drawer-body" ref={bodyRef}>
           {msgs.map((m) => (
-            <div key={m.id} className={`msg ${me && m.uid === me.uid ? "me" : ""}`}>
-              <div className={`av ${m.color}`}>{m.name[0]}</div>
-              <div className="bubble">
-                <div className="u">{m.name}</div>
-                {m.text}
-              </div>
-            </div>
+            <ChatBubble key={m.id} m={m} locale={locale} me={me} speak={speakOn} />
           ))}
         </div>
+        {micOn && (
+          <div style={{ textAlign: "center", fontSize: 12, color: "var(--magenta)", padding: "4px 0" }}>
+            🎙 {t("room.listening")}
+          </div>
+        )}
         <div className="chat-input">
+          <button
+            className="iconbtn"
+            title={t("room.mic")}
+            onClick={toggleMic}
+            style={{ color: micOn ? "var(--magenta)" : "var(--muted)" }}
+          >
+            🎤
+          </button>
+          <button
+            className="iconbtn"
+            title={t("room.speak")}
+            onClick={() => setSpeakOn((s) => !s)}
+            style={{ color: speakOn ? "var(--mint)" : "var(--muted)" }}
+          >
+            🔊
+          </button>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -377,6 +448,61 @@ function RoomChat({
             {t("room.send")}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ChatBubble({
+  m,
+  locale,
+  me,
+  speak,
+}: {
+  m: ChatMessage;
+  locale: Locale;
+  me: { uid: string; name: string } | null;
+  speak: boolean;
+}) {
+  const [tr, setTr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const foreign = !!m.lang && m.lang !== locale && !!m.text;
+    const doSpeak = (out: string) => {
+      if (speak && me && m.uid !== me.uid && out) speakText(out, locale);
+    };
+    if (foreign) {
+      translateText(m.text, m.lang as string, locale).then((out) => {
+        if (!alive) return;
+        if (out && out !== m.text) setTr(out);
+        doSpeak(out || m.text);
+      });
+    } else {
+      doSpeak(m.text);
+    }
+    return () => {
+      alive = false;
+    };
+    // run once per message
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isMe = !!me && m.uid === me.uid;
+  return (
+    <div className={`msg ${isMe ? "me" : ""}`}>
+      <div className={`av ${m.color}`}>{m.name[0]}</div>
+      <div className="bubble">
+        <div className="u">
+          {m.name}
+          {m.lang && m.lang !== locale ? ` · ${m.lang.toUpperCase()}` : ""}
+        </div>
+        {tr || m.text}
+        {tr && (
+          <div style={{ fontSize: 11, color: "var(--muted2)", marginTop: 3, fontStyle: "italic" }}>
+            {m.text}
+          </div>
+        )}
       </div>
     </div>
   );

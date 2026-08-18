@@ -129,7 +129,11 @@
       "placeholder": "Type a message…",
       "send": "Send",
       "leave": "Leave Room",
-      "members": "Squad"
+      "members": "Squad",
+      "mic": "Talk",
+      "speak": "Speak",
+      "listening": "Listening…",
+      "notSupported": "Your browser doesn't support speech recognition. Try Chrome."
     },
     "demo": "Demo — real-time rooms & chat go live soon (with Firebase)."
   },

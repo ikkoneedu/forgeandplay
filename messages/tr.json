@@ -129,7 +129,11 @@
       "placeholder": "Mesaj yaz…",
       "send": "Gönder",
       "leave": "Odadan Çık",
-      "members": "Ekip"
+      "members": "Ekip",
+      "mic": "Konuş",
+      "speak": "Seslendir",
+      "listening": "Dinleniyor…",
+      "notSupported": "Tarayıcın sesli tanımayı desteklemiyor. Chrome ile dene."
     },
     "demo": "Demo — gerçek zamanlı odalar ve sohbet yakında aktif olacak (Firebase ile)."
   },
