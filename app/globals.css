@@ -1950,3 +1950,74 @@ a {
 @media (max-width: 560px) {
   .lb-head, .lb-row { grid-template-columns: 44px 1fr 60px 96px; padding: 12px; font-size: 13px; }
 }
+
+/* ============ MOBILE POLISH ============ */
+/* faster taps, no accidental zoom on controls */
+button, a, .btn, select, input { touch-action: manipulation; }
+
+/* game player: touches control the game, not the page scroll */
+.player-frame { touch-action: none; }
+.player-frame iframe { touch-action: none; }
+
+@media (max-width: 700px) {
+  .game-stage { gap: 16px; }
+  .player-frame { aspect-ratio: 1 / 1; max-height: none; border-radius: 16px; }
+  .game-side { position: static; }
+  .score-panel { margin: 12px 0 4px; }
+}
+
+/* ---- mobile bottom navigation (native-app feel) ---- */
+.bottom-nav { display: none; }
+@media (max-width: 820px) {
+  .bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    background: rgba(8, 11, 20, 0.94);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px 4px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  .bottom-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted2);
+    padding: 4px 0;
+  }
+  .bottom-nav a .bn-ic { font-size: 20px; line-height: 1; }
+  .bottom-nav a.on { color: var(--orange2); }
+  .bottom-nav a.on .bn-ic { filter: drop-shadow(0 2px 8px rgba(255, 122, 26, 0.5)); }
+  /* keep content clear of the bottom bar + floating assistant */
+  body { padding-bottom: 66px; }
+  .asst-fab { bottom: 78px; }
+  .asst-panel { bottom: 146px; }
+}
+
+/* ---- general mobile spacing / no horizontal overflow ---- */
+@media (max-width: 560px) {
+  .wrap { padding: 0 16px; }
+  .page-head { padding: 30px 0 6px; }
+  .page-head h1 { font-size: clamp(26px, 8vw, 36px); }
+  .sec { padding: 40px 0 6px; }
+  .sec-h { flex-wrap: wrap; gap: 10px; }
+  .premium { padding: 30px 22px; }
+  .create-panel { padding: 16px; }
+  .drawer { width: 100%; }
+  .games-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .gcard .cov { height: 130px; }
+  .cover-emoji { font-size: 48px; }
+}
+/* stat row wraps cleanly on very small screens */
+@media (max-width: 420px) {
+  .stats { gap: 16px; }
+  .stat b { font-size: 24px; }
+  .statrow { flex-wrap: wrap; }
+}

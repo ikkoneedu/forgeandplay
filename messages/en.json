@@ -8,6 +8,7 @@
     "login": "Sign In",
     "community": "Community",
     "leaderboard": "Leaderboard",
+    "home": "Home",
     "online": "{count} online"
   },
   "home": {

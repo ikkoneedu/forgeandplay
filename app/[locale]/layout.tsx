@@ -8,6 +8,7 @@ import { LOCALES, OG_LOCALE, SITE_NAME, SITE_URL } from "@/lib/site";
 import Assistant from "@/components/ai/Assistant";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import BottomNav from "@/components/BottomNav";
 import AuthProvider from "@/components/auth/AuthProvider";
 import "../globals.css";
 
@@ -93,6 +94,7 @@ export default async function LocaleLayout({
             <Header />
             {children}
             <Footer />
+            <BottomNav />
             <Assistant />
           </AuthProvider>
         </NextIntlClientProvider>
