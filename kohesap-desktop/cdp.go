@@ -167,6 +167,37 @@ type cdpBrowser struct {
 	lastUse time.Time
 }
 
+// isChallenge: sitenin bot / DDoS koruma ara sayfası mı?
+func isChallenge(html string) bool {
+	if len(html) > 20000 {
+		return false
+	}
+	for _, k := range []string{"DDoS_Protection", "challenge-platform", "cf-chl", "Just a moment", "Checking your browser", "cf_chl_opt"} {
+		if strings.Contains(html, k) {
+			return true
+		}
+	}
+	return false
+}
+
+// brHeadful: koruma ekranı gizli modda geçilemezse görünür (ekran dışı) moda geçilir.
+var brHeadful bool
+
+func switchToHeadful() bool {
+	brMu.Lock()
+	defer brMu.Unlock()
+	if brHeadful {
+		return false
+	}
+	brHeadful = true
+	if brCurrent != nil {
+		go brCurrent.close()
+		brCurrent = nil
+	}
+	log.Println("koruma ekranı: görünür (ekran dışı) tarayıcıya geçiliyor")
+	return true
+}
+
 var (
 	brMu      sync.Mutex
 	brCurrent *cdpBrowser
@@ -190,8 +221,13 @@ func startBrowser() (*cdpBrowser, error) {
 	_ = os.MkdirAll(profile, 0o755)
 	portFile := filepath.Join(profile, "DevToolsActivePort")
 	os.Remove(portFile)
+	mode := "--headless=new"
+	if brHeadful {
+		// koruma sayfasını geçemeyince: normal (görünür) tarayıcı, ekranın dışında
+		mode = "--window-position=-32000,-32000"
+	}
 	args := []string{
-		"--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+		mode, "--disable-blink-features=AutomationControlled", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
 		"--disable-extensions", "--mute-audio", "--hide-scrollbars", "--window-size=1366,900",
 		"--remote-debugging-port=0", "--remote-allow-origins=*",
 		"--user-data-dir=" + profile, "--user-agent=" + browserUA, "--lang=tr-TR",
@@ -380,12 +416,15 @@ func renderPage(u string, waitMs int) (string, []netReq, error) {
 		waitMs = 15000
 	}
 	var lastErr error
-	for attempt := 0; attempt < 2; attempt++ {
+	for attempt := 0; attempt < 3; attempt++ {
 		b, err := getBrowser()
 		if err != nil {
 			return "", nil, err
 		}
 		html, reqs, err := b.render(u, time.Duration(waitMs)*time.Millisecond)
+		if err == nil && isChallenge(html) && switchToHeadful() {
+			continue
+		}
 		if err == nil {
 			return html, reqs, nil
 		}
@@ -542,19 +581,25 @@ func (b *cdpBrowser) render(u string, maxWait time.Duration) (string, []netReq, 
 			break
 		}
 	}
-	r, err := b.call(sid, "Runtime.evaluate", map[string]any{
-		"expression":    "document.documentElement.outerHTML",
-		"returnByValue": true,
-	}, 10*time.Second)
-	if err != nil {
-		return "", nil, err
-	}
 	var ev struct {
 		Result struct {
 			Value string `json:"value"`
 		} `json:"result"`
 	}
-	json.Unmarshal(r, &ev)
+	for i := 0; i < 16; i++ { // koruma ekranındaysak geçmesini bekle
+		r, err := b.call(sid, "Runtime.evaluate", map[string]any{
+			"expression":    "document.documentElement.outerHTML",
+			"returnByValue": true,
+		}, 10*time.Second)
+		if err != nil {
+			return "", nil, err
+		}
+		json.Unmarshal(r, &ev)
+		if !isChallenge(ev.Result.Value) {
+			break
+		}
+		time.Sleep(time.Second)
+	}
 	if strings.TrimSpace(ev.Result.Value) == "" {
 		return "", nil, errors.New("gizli tarayıcı boş sayfa döndürdü")
 	}
@@ -657,6 +702,19 @@ func jsString(s string) string {
 func renderPages(u string, maxPages int) ([]string, error) {
 	pageMu.Lock()
 	defer pageMu.Unlock()
+	pages, err := renderPagesOnce(u, maxPages)
+	if err == errChallenge && switchToHeadful() {
+		pages, err = renderPagesOnce(u, maxPages)
+	}
+	if err == errChallenge {
+		err = errors.New("sitenin bot koruması geçilemedi; biraz sonra tekrar deneyin")
+	}
+	return pages, err
+}
+
+var errChallenge = errors.New("koruma ekranı")
+
+func renderPagesOnce(u string, maxPages int) ([]string, error) {
 	if maxPages < 1 {
 		maxPages = 1
 	}
@@ -711,6 +769,18 @@ func renderPages(u string, maxPages int) ([]string, error) {
 		}
 	}
 	time.Sleep(800 * time.Millisecond)
+	if eval(sig, 5*time.Second) == "" {
+		// tablo yok: koruma ekranında mıyız? biraz daha bekle
+		for i := 0; i < 15; i++ {
+			if !isChallenge(eval("document.documentElement.outerHTML", 5*time.Second)) && eval(sig, 5*time.Second) != "" {
+				break
+			}
+			time.Sleep(time.Second)
+		}
+		if isChallenge(eval("document.documentElement.outerHTML", 5*time.Second)) {
+			return nil, errChallenge
+		}
+	}
 	grab := `(() => [...document.querySelectorAll('table')].map(t => t.outerHTML).join('\n'))()`
 	next := `(() => {
 	  const vis = e => e && e.offsetParent !== null && !e.disabled && !/disabled/i.test(e.className + ' ' + (e.parentElement ? e.parentElement.className : '')) && e.getAttribute('aria-disabled') !== 'true';

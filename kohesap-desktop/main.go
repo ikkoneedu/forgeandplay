@@ -13,6 +13,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -28,7 +29,7 @@ var webFS embed.FS
 
 const (
 	appName    = "KO Hesap"
-	appVersion = "0.5.2"
+	appVersion = "0.6.0"
 	port       = 47811
 )
 
@@ -40,7 +41,7 @@ var (
 	saveMu    sync.Mutex
 	lastPing  time.Time
 	pingMu    sync.Mutex
-	httpCli   = &http.Client{Timeout: 20 * time.Second}
+	httpCli   = newHTTPClient()
 	tagRe     = regexp.MustCompile(`(?s)<[^>]*>`)
 	scriptRe  = regexp.MustCompile(`(?is)<(script|style|noscript)[^>]*>.*?</(script|style|noscript)>`)
 	spaceRe   = regexp.MustCompile(`[ \t\r\f\v]+`)
@@ -267,17 +268,12 @@ func handleFetch(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]any{"ok": true, "status": 200, "html": html, "text": htmlToText(html), "mode": "tarayici", "requests": reqs, "time": time.Now().Format(time.RFC3339)})
 		return
 	}
-	hr, _ := http.NewRequest("GET", u.String(), nil)
-	hr.Header.Set("User-Agent", browserUA)
-	hr.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-	hr.Header.Set("Accept-Language", "tr-TR,tr;q=0.9,en;q=0.8")
-	resp, err := httpCli.Do(hr)
+	status, body, err := fetchPassing(u.String())
 	if err != nil {
 		writeJSON(w, map[string]any{"ok": false, "error": "Bağlantı hatası: " + err.Error()})
 		return
 	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	resp := struct{ StatusCode int }{status}
 	html := string(body)
 	log.Printf("fetch %s: %d, %d bayt", u, resp.StatusCode, len(body))
 	writeJSON(w, map[string]any{
@@ -404,4 +400,52 @@ func handleSiteConfig(w http.ResponseWriter, r *http.Request) {
 		msg += ": " + lastErr.Error()
 	}
 	http.Error(w, msg, 502)
+}
+
+func newHTTPClient() *http.Client {
+	jar, _ := cookiejar.New(nil)
+	return &http.Client{Timeout: 20 * time.Second, Jar: jar}
+}
+
+var (
+	jsCookieRe   = regexp.MustCompile(`document\.cookie\s*=\s*["']([^=;"']+)=([^;"']*)`)
+	jsLocationRe = regexp.MustCompile(`location\.href\s*=\s*["']([^"']+)["']`)
+)
+
+// fetchPassing: sayfayı indirir. Site "DDoS koruması" ara sayfası gönderirse
+// (JavaScript ile çerez yazıp yönlendiren sayfa) çerezi kendisi ekleyip
+// gerçek sayfayı ister. Çerezler program açık kaldıkça saklanır.
+func fetchPassing(raw string) (int, []byte, error) {
+	cur := raw
+	for hop := 0; hop < 3; hop++ {
+		req, _ := http.NewRequest("GET", cur, nil)
+		req.Header.Set("User-Agent", browserUA)
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+		req.Header.Set("Accept-Language", "tr-TR,tr;q=0.9,en;q=0.8")
+		resp, err := httpCli.Do(req)
+		if err != nil {
+			return 0, nil, err
+		}
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+		resp.Body.Close()
+		if len(body) > 6000 {
+			return resp.StatusCode, body, nil
+		}
+		ck := jsCookieRe.FindSubmatch(body)
+		loc := jsLocationRe.FindSubmatch(body)
+		if ck == nil {
+			return resp.StatusCode, body, nil
+		}
+		base, _ := url.Parse(cur)
+		httpCli.Jar.SetCookies(base, []*http.Cookie{{Name: strings.TrimSpace(string(ck[1])), Value: strings.TrimSpace(string(ck[2])), Path: "/"}})
+		next := cur
+		if loc != nil {
+			if nu, err := base.Parse(string(loc[1])); err == nil {
+				next = nu.String()
+			}
+		}
+		log.Printf("koruma sayfası geçiliyor: %s → %s", cur, next)
+		cur = next
+	}
+	return 0, nil, errors.New("sitenin koruma sayfası geçilemedi")
 }

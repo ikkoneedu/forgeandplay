@@ -32,3 +32,13 @@ cd kohesap-desktop && ./build.sh   # Go 1.24+ ve Node gerekir
 
 `public/kohesap-app/firebase.js`, `firebase@11.3.0` paketinden esbuild ile tek dosya olarak üretilmiştir
 (auth + firestore; uygulama çevrimdışı da açılabilsin diye CDN yerine gömülü).
+
+## Admin paneli
+
+`public/kohesap-app/cloud.js` içindeki `ADMIN_EMAILS` listesindeki Google hesabı (şu an `carkci.caner@gmail.com`) uygulamada **Yönetim** sayfasını görür:
+
+- **Veri kaynakları:** GB / canlı pazar / event sayfa adresleri ve yenileme süreleri → "Herkese kaydet" ile `config/kohesap` belgesine yazılır, tüm kullanıcılar kullanır. Diğer kullanıcılar adresleri, teşhisi ve "yeniden keşfet"i görmez.
+- **İçerik yayını:** Event Takvimi ve PUS Hesabı sayfalarındaki "Herkese yayınla" → `config/kohesapContent`. Kullanıcılar bir sonraki girişte alır; kendi eklediği event / özel PUS itemleri korunur.
+- **Durum:** Paylaşılan canlı pazar (exe'nin son paylaşımı), yayınlanan içerik ve merkezi ayar durumu.
+
+Firestore kuralı: `config/*` herkese okunur, yalnızca `isAdmin()` yazar (mevcut kural).

@@ -11,6 +11,61 @@ const SITE = 'https://forgeandplay.com';
 const CLOUD = { ready: false, user: null, db: null, auth: null, cfg: null, last: { shared: '', chars: {} }, unsub: [], saving: false, imported: 0 };
 let LOCAL_DB = null; // exe: bu bilgisayardaki eski (yerel hesaplı) veri
 
+/* ---------- admin ve merkezi veri kaynakları ----------
+   Site adresleri (GB, pazar, event) yalnızca admin tarafından config/kohesap
+   belgesinde tutulur; tüm kullanıcıların uygulaması bunları kullanır, ama
+   arayüzde yalnızca admin görür. (Kurallar: config herkese okunur, admin yazar.) */
+const ADMIN_EMAILS = ['carkci.caner@gmail.com'];
+const GLOBAL_KEYS = ['gbUrl', 'gbUrl2', 'marketUrl', 'eventsUrl', 'marketMaxPages', 'marketRefreshSec', 'gbRefreshMin'];
+const isAdmin = () => !!(typeof CLOUD !== 'undefined' && CLOUD.user && ADMIN_EMAILS.includes(String(CLOUD.user.email || '').toLowerCase()));
+async function loadGlobalConfig() {
+  try {
+    const snap = await FB.getDoc(FB.doc(CLOUD.db, 'config', 'kohesap'));
+    const g = snap.exists() ? (snap.data().sources || {}) : {};
+    GLOBAL_KEYS.forEach(k => { if (g[k] != null && g[k] !== '') DB.shared.settings[k] = g[k]; });
+    CLOUD.global = g;
+  } catch (e) { console.warn('merkezi ayarlar okunamadı', e); }
+}
+/* Admin'in "herkese yayınla" dediği içerik: event takvimi ve PUS fiyat listesi.
+   Kullanıcının kendi eklediği eventler / özel PUS itemleri korunur. */
+async function loadGlobalContent() {
+  try {
+    const snap = await FB.getDoc(FB.doc(CLOUD.db, 'config', 'kohesapContent'));
+    if (!snap.exists()) return;
+    const g = snap.data(); CLOUD.content = g;
+    const v = g.v || 0;
+    if (v <= (DB.shared.contentV || 0)) return;
+    if (Array.isArray(g.events) && g.events.length) {
+      DB.shared.events = DB.shared.events.filter(e => e.src !== 'usko' && e.src !== 'global')
+        .concat(g.events.map(e => ({ ...e, id: uid(), src: 'global', off: false })));
+    }
+    if (Array.isArray(g.pusCatalog) && g.pusCatalog.length) {
+      DB.shared.pusCatalog = DB.shared.pusCatalog.filter(x => x.custom).concat(g.pusCatalog.map(x => ({ ...x, custom: false })));
+    }
+    DB.shared.contentV = v;
+    CLOUD.contentApplied = true;
+  } catch (e) { console.warn('yayınlanan içerik okunamadı', e); }
+}
+async function publishContent(kind) {
+  if (!isAdmin()) return;
+  const ref = FB.doc(CLOUD.db, 'config', 'kohesapContent');
+  const cur = CLOUD.content || {};
+  const body = { events: cur.events || [], pusCatalog: cur.pusCatalog || [], v: Date.now(), by: CLOUD.user.email, updatedAt: FB.serverTimestamp() };
+  if (kind === 'events') body.events = strip(S.events.filter(e => !e.off).map(({ id, src, off, ...e }) => e));
+  if (kind === 'pus') body.pusCatalog = strip(S.pus.catalog.map(({ custom, ...x }) => x));
+  await FB.setDoc(ref, body);
+  CLOUD.content = body;
+  DB.shared.contentV = body.v;
+  if (kind === 'events') S.events.forEach(e => { e.src = 'global'; });
+  save();
+}
+async function saveGlobalConfig() {
+  if (!isAdmin()) return;
+  const g = {}; GLOBAL_KEYS.forEach(k => { g[k] = S.settings[k]; });
+  await FB.setDoc(FB.doc(CLOUD.db, 'config', 'kohesap'), { sources: g, updatedAt: FB.serverTimestamp(), by: CLOUD.user.email });
+  CLOUD.global = g;
+}
+
 const strip = o => JSON.parse(JSON.stringify(o ?? null));
 function sharedForCloud() {
   const sh = { ...DB.shared };
@@ -84,6 +139,8 @@ async function cloudLoad(user) {
   CLOUD.last.chars = {};
   if (!CLOUD.imported) CUR.acc.chars.forEach(c => { CLOUD.last.chars[c.id] = JSON.stringify({ ...charMeta(c), data: c.data }); });
   CLOUD.user = user;
+  await loadGlobalConfig();
+  await loadGlobalContent();
   if (!mainSnap.exists()) await cloudSave(true);
   watchRemote(uid);
 }

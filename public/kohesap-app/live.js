@@ -237,7 +237,7 @@ VIEWS.gb = () => {
     <span class="spacer"></span>
     <span>${gbBusy ? `<span data-gbstatus class="gold">${esc(ui.gbStatus || 'yenileniyor…')}</span> · ` : ''}Site güncellemesi: ${esc(m.updated || '—')} · Çekildi: ${esc(m.time)} (${m.mode === 'tarayici' ? 'gizli tarayıcı' : 'doğrudan'})${st.gbAuto ? ` · ${st.gbRefreshMin} dk'da bir otomatik` : ''}</span>
   </div>
-  ${ui.gbErr ? `<div class="callout" style="margin-top:12px"><span class="neg">Son deneme başarısız</span> — ekrandaki veriler en son başarılı çekimden. <a href="#" class="gold" data-act="diag" data-url="${esc(st.gbUrl)}">Teşhis</a></div>` : ''}`;
+  ${ui.gbErr ? `<div class="callout" style="margin-top:12px"><span class="neg">Son deneme başarısız</span> — ekrandaki veriler en son başarılı çekimden.${isAdmin() ? ` <a href="#" class="gold" data-act="diag" data-url="${esc(st.gbUrl)}">Teşhis</a>` : ''}</div>` : ''}`;
 };
 
 /* ---------- CANLI PAZAR ---------- */
@@ -356,9 +356,10 @@ VIEWS.event = () => {
   const top = `<div class="row" style="margin-bottom:16px">
     <label class="check"><input type="checkbox" data-set-check="eventNotify" ${S.settings.eventNotify ? 'checked' : ''}> ${S.settings.eventNotifyMin} dk önce hatırlat</label>
     <div class="spacer"></div>
-    <span class="hint">${esc(USKO_EVENTS_INFO)}</span>
-    <button class="btn" data-act="ev-preset">${ICON.refresh} Güncel USKO takvimini yükle</button>
-    <button class="btn" data-act="ev-import">${ICON.dl} Siteden içe aktar</button>
+    <span class="hint">USKO takvimi · Ekim 2026</span>
+    <button class="btn" data-act="ev-preset">${ICON.refresh} Güncel takvimi yükle</button>
+    ${isAdmin() ? `<button class="btn" data-act="pub-events" title="Bu takvimi tüm kullanıcılara gönder">📢 Herkese yayınla</button>` : ''}
+    ${isAdmin() ? `<button class="btn" data-act="ev-import">${ICON.dl} Siteden içe aktar</button>` : ''}
     <button class="btn pri" data-act="ev-add">${ICON.plus} Event ekle</button></div>`;
   if (!S.events.length) return top + `<div class="card">${empty('Takvim boş', 'Event adlarını, günlerini ve saatlerini ekleyin; sıradaki event için geri sayım ve hatırlatma çalışır. “Siteden içe aktar” ile event sayfasındaki saatleri okumayı deneyebilirsiniz.')}</div>`;
   const chip = o => `<span class="badge" style="background:${o.e.color || 'var(--panel2)'}22;color:${o.e.color || 'var(--tx2)'}">${o.t}</span>`;
@@ -503,7 +504,7 @@ VIEWS.pus = () => {
       <div style="padding:16px 18px 12px" class="stack">
         <div class="row"><h3 style="margin:0;font:600 15px var(--head)">PUS item fiyatları</h3><span class="mut">${P.catalog.length} item</span><span class="spacer"></span>
           <label class="search" style="width:230px"><input class="inp" placeholder="Item ara" data-fk="pusQ" data-bind-ui="pusQ" value="${esc(ui.pusQ || '')}"></label>
-          <button class="btn sm" data-act="pusc-add">${ICON.plus} Özel item</button></div>
+          <button class="btn sm" data-act="pusc-add">${ICON.plus} Özel item</button>${isAdmin() ? '<button class="btn sm" data-act="pub-pus" title="KC fiyatlarını tüm kullanıcılara gönder">📢 Herkese yayınla</button>' : ''}</div>
         <div class="seg" style="flex-wrap:wrap;align-self:flex-start">${[['all', 'Tümü'], ...cats.map(c => [c, c])].map(([v, l]) => `<button class="${cat === v ? 'on' : ''}" data-act="set" data-k="pusCat" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>
       </div>
       <div class="tbl-wrap" style="border:0;border-radius:0;border-top:1px solid var(--line);max-height:520px"><table>
@@ -546,6 +547,7 @@ VIEWS.pus = () => {
 
 /* ---------- teşhis ---------- */
 function errBox(title, err, url) {
+  if (!(typeof isAdmin === 'function' && isAdmin())) return empty(title, 'Veri şu an alınamıyor; program birazdan kendiliğinden tekrar deneyecek.');
   return `<div class="empty"><b>${esc(title)}</b>
     <div class="stack" style="gap:4px;margin:10px auto;max-width:760px;text-align:left">${String(err).split(' · ').map(x => `<div class="hint">• ${esc(x)}</div>`).join('')}</div>
     <div class="row" style="justify-content:center;margin-top:12px"><button class="btn" data-act="diag" data-url="${esc(url)}">Teşhis raporu oluştur</button><button class="btn ghost" data-act="go" data-id="ayar">Adresleri düzenle</button></div></div>`;
@@ -555,12 +557,13 @@ async function runDiag(url) {
   $('#modalFoot').innerHTML = `<button class="btn ghost" data-act="modal-close">Kapat</button><button class="btn" data-act="diag-save">${ICON.dl} Rapor dosyasını kaydet</button><button class="btn pri" data-act="diag-copy">${ICON.copy} Kopyala</button>`;
   let rep = `KO Hesap teşhis — ${new Date().toLocaleString('tr-TR')}\nAdres: ${url}\n`;
   const full = [];
-  for (const render of [false, true]) {
+  if (!serverMode) rep += 'Not: Bu rapor web sürümünden alındı (sitenin sunucusu üzerinden, gizli tarayıcı yok). Arka plan adresleri için raporu Windows uygulamasında alın.\n';
+  for (const render of serverMode ? [false, true] : [false]) {
     const t0 = Date.now();
     try {
       const d = await rawFetch(url, render);
       const doc = d.html ? parseDoc(d.html) : null;
-      rep += `\n[${render ? 'GİZLİ TARAYICI' : 'DOĞRUDAN'}] durum: ${d.status || '-'} ok: ${d.ok} süre: ${Date.now() - t0} ms boyut: ${(d.html || '').length}${d.error ? ' hata: ' + d.error : ''}\n`;
+      rep += `\n[${render ? 'GİZLİ TARAYICI' : serverMode ? 'DOĞRUDAN' : 'WEB SUNUCUSU'}] durum: ${d.status || '-'} ok: ${d.ok} süre: ${Date.now() - t0} ms boyut: ${(d.html || '').length}${d.error ? ' hata: ' + d.error : ''}\n`;
       if (doc) {
         rep += `başlık: ${doc.title} | tablo: ${doc.querySelectorAll('table').length} | script: ${doc.querySelectorAll('script').length}\n`;
         const apis = [...new Set((d.html.match(/https?:\/\/[^"'\s<>]+(api|json|graphql|socket)[^"'\s<>]*/gi) || []).concat(d.html.match(/["'](\/api\/[^"']+)["']/gi) || []))].slice(0, 25);
@@ -576,7 +579,8 @@ async function runDiag(url) {
 }
 /* ---------- olaylar ---------- */
 Object.assign(ACTIONS, {
-  diag: el => runDiag(el.dataset.url),
+  diag: el => { if (isAdmin()) runDiag(el.dataset.url); },
+  'mk-rediscover-go': () => { if (!isAdmin()) return; S.settings.marketApi = null; save(); ui.page = 'pazar'; MK.items = []; MK.err = ''; render(); loadMarket({ rediscover: true }); },
   'diag-copy': async () => { try { await navigator.clipboard.writeText(ui.diag.rep); toast('Rapor kopyalandı', 'ok'); } catch { toast('Kopyalanamadı', 'err'); } },
   'diag-save': () => { if (ui.diag) download('kohesap-teshis-' + localDate() + '.txt', ui.diag.full, 'text/plain'); },
   'gb-refresh': () => { toast('GB fiyatları çekiliyor…'); refreshGB(false); },
@@ -585,13 +589,15 @@ Object.assign(ACTIONS, {
   'ev-add': () => eventForm(null),
   'ev-edit': el => eventForm(S.events.find(e => e.id === el.dataset.id)),
   'ev-del': el => confirmBox('Event sil', 'Bu event silinsin mi?', 'Sil', () => { S.events = S.events.filter(e => e.id !== el.dataset.id); save(); render(); }),
-  'ev-import': importEvents,
-  'ev-preset': () => confirmBox('Güncel USKO takvimi', 'Hazır USKO etkinlik saatleri yüklensin mi? Daha önce yüklenen hazır eventler güncellenir, kendi eklediğin eventlere dokunulmaz.', 'Yükle', () => {
-    const fresh = presetEvents();
-    S.events = S.events.filter(e => e.src !== 'usko').concat(fresh);
-    save(); render(); toast('USKO takvimi yüklendi', 'ok');
+  'ev-import': () => { if (isAdmin()) importEvents(); },
+  'ev-preset': () => confirmBox('Güncel USKO takvimi', 'Güncel etkinlik saatleri yüklensin mi? Hazır eventler güncellenir, kendi eklediğin eventlere dokunulmaz.', 'Yükle', () => {
+    const pub = CLOUD.content && Array.isArray(CLOUD.content.events) && CLOUD.content.events.length ? CLOUD.content.events.map(e => ({ ...e, id: uid(), src: 'global', off: false })) : null;
+    S.events = S.events.filter(e => e.src !== 'usko' && e.src !== 'global').concat(pub || presetEvents());
+    save(); render(); toast('Güncel takvim yüklendi', 'ok');
   }),
   'ev-import-run': runEventImport,
+  'pub-events': () => confirmBox('Takvimi herkese yayınla', `Şu anki <b>${S.events.filter(e => !e.off).length} event</b> tüm kullanıcıların takvimine gönderilecek. Kullanıcıların kendi eklediği eventler korunur.`, 'Yayınla', () => publishContent('events').then(() => { render(); toast('Takvim yayınlandı', 'ok'); }).catch(e => toast('Yayınlanamadı: ' + e.message, 'err'))),
+  'pub-pus': () => confirmBox('PUS fiyatlarını yayınla', `Şu anki <b>${S.pus.catalog.length} item</b> ve KC fiyatları tüm kullanıcılara gönderilecek. Kullanıcıların özel itemleri korunur.`, 'Yayınla', () => publishContent('pus').then(() => { render(); toast('PUS fiyatları yayınlandı', 'ok'); }).catch(e => toast('Yayınlanamadı: ' + e.message, 'err'))),
   'ev-cand': el => { const c = candToEvent(ui.evCands[+el.dataset.i]); eventForm(null, c); },
   'cart-add': el => { const c = S.pus.cart.find(x => x.id === el.dataset.id); if (c) c.qty++; else S.pus.cart.push({ id: el.dataset.id, qty: 1 }); save(); render(); },
   'cart-del': el => { S.pus.cart = S.pus.cart.filter(x => x.id !== el.dataset.id); save(); render(); },

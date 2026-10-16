@@ -406,7 +406,7 @@ VIEWS.pazar = () => {
     <span class="mut" data-mcd></span>` : `<span class="badge g">canlı</span><span class="mut">${MK.webAt ? 'Windows uygulamasından ' + agoText(Date.now() - MK.webAt) + ' paylaşıldı' : ''}</span>`}
     <div class="spacer"></div>
     <span class="gold" data-mkprog>${esc(MK.progress)}</span>
-    ${serverMode ? `<button class="btn" data-act="mk-rediscover" title="Sitenin veri adresini yeniden bul">${ICON.refresh} Yeniden keşfet</button>
+    ${serverMode ? `${isAdmin() ? `<button class="btn" data-act="mk-rediscover" title="Sitenin veri adresini yeniden bul">${ICON.refresh} Yeniden keşfet</button>` : ''}
     <button class="btn pri" data-act="mk-refresh" ${MK.busy ? 'disabled' : ''}>${ICON.refresh} Yenile</button>` : ''}
   </div>`;
   if (!MK.items.length) {
@@ -431,7 +431,7 @@ VIEWS.pazar = () => {
     ${stat('Son güncelleme', esc(MK.time), MK.err ? '<span class="neg">son deneme başarısız</span>' : (serverMode ? 'otomatik yenileme ' + (ui.marketAuto !== false ? 'açık' : 'kapalı') : 'yeni veri gelince kendiliğinden yenilenir'), 'var(--violet)')}
   </div>
   ${!serverMode && MK.webAt && Date.now() - MK.webAt > 30 * 60000 ? `<div class="callout y" style="margin-bottom:12px">Bu liste ${agoText(Date.now() - MK.webAt)} güncellendi; şu an Windows uygulamasında pazarı açık tutan kimse yok. Güncel liste için uygulamayı açabilirsin.</div>` : ''}
-  ${MK.err && MK.err !== 'WEB_NO_API' ? `<div class="callout" style="margin-bottom:12px"><span class="neg">Son yenileme başarısız:</span> ${esc(MK.err)} — gösterilen veriler ${esc(MK.time)} tarihli.</div>` : ''}
+  ${MK.err && MK.err !== 'WEB_NO_API' ? `<div class="callout" style="margin-bottom:12px"><span class="neg">Son yenileme başarısız</span>${isAdmin() ? ': ' + esc(MK.err) : ''} — gösterilen veriler ${esc(MK.time)} tarihli.</div>` : ''}
   <div class="card" style="padding:0;overflow:hidden">
     <div class="tbl-wrap" style="border:0;border-radius:0;max-height:calc(100vh - 360px)"><table>
       <thead><tr>${MK.cols.map(c => `<th class="sortable ${MK.items.slice(0, 20).every(o => typeof o[c] === 'number' || o[c] === '') ? 'num' : ''}" data-act="mk-sort" data-c="${esc(c)}">${esc(colLabel(c))}${MK.sort && MK.sort.col === c ? (MK.sort.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}<th></th></tr></thead>
@@ -440,12 +440,12 @@ VIEWS.pazar = () => {
     </table></div>
     ${pager()}
   </div>
-  <div class="hint" style="margin-top:8px">Kaynak: ${esc(S.settings.marketUrl)}${MK.cfg ? ` · veri adresi: <span class="mono">${esc(new URL(MK.cfg.url).pathname)}</span>${MK.cfg.pageParam || MK.cfg.offsetParam || MK.cfg.pathPage ? ' · sayfalama: ' + esc(MK.cfg.pageParam || MK.cfg.offsetParam || MK.cfg.pathPage) : ''}${MK.cfg.serverParam ? ' · sunucu parametresi: ' + esc(MK.cfg.serverParam) : ''}` : ''} · en fazla ${S.settings.marketMaxPages || 30} site sayfası çekilir (Ayarlar).</div>`;
+  ${isAdmin() ? `<div class="hint" style="margin-top:8px">Kaynak: ${esc(S.settings.marketUrl)}${MK.cfg ? ` · veri adresi: <span class="mono">${esc(new URL(MK.cfg.url).pathname)}</span>${MK.cfg.pageParam || MK.cfg.offsetParam || MK.cfg.pathPage ? ' · sayfalama: ' + esc(MK.cfg.pageParam || MK.cfg.offsetParam || MK.cfg.pathPage) : ''}${MK.cfg.serverParam ? ' · sunucu parametresi: ' + esc(MK.cfg.serverParam) : ''}` : ''} · en fazla ${S.settings.marketMaxPages || 30} site sayfası çekilir (Ayarlar).</div>` : ''}`;
 };
 
 Object.assign(ACTIONS, {
   'mk-refresh': () => loadMarket({}),
-  'mk-rediscover': () => { S.settings.marketApi = null; save(); loadMarket({ rediscover: true }); },
+  'mk-rediscover': () => { if (!isAdmin()) return; S.settings.marketApi = null; save(); loadMarket({ rediscover: true }); },
   'mk-page': el => { MK.page = +el.dataset.p; render(); const w = document.querySelector('.content .tbl-wrap'); if (w) w.scrollTop = 0; },
   'mk-sort': el => { const c = el.dataset.c; MK.sort = MK.sort && MK.sort.col === c ? (MK.sort.dir > 0 ? { col: c, dir: -1 } : null) : { col: c, dir: 1 }; render(); },
   'mk-toprice': el => {

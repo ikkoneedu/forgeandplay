@@ -270,20 +270,21 @@ const PAGES = [
   { id: 'exp', t: 'EXP Hesabı', d: 'Seviye süresi, mob sayısı ve oturum takibi' },
   { sec: 'Veri' },
   { id: 'fiyat', t: 'Fiyat Listesi', d: 'Item pazar fiyatları' },
-  { id: 'internet', t: 'Web Kaynakları', d: 'Kur, GB fiyatı ve özel web kaynakları' },
+  { id: 'internet', t: 'Yönetim', d: 'Veri kaynakları, web kaynakları ve teşhis (yalnızca admin)', admin: true },
   { id: 'ayar', t: 'Ayarlar', d: 'Oranlar, kategoriler ve yedekleme' },
 ];
 
 function renderNav() {
-  $('#nav').innerHTML = PAGES.map(p => p.sec
+  const admin = typeof isAdmin === 'function' && isAdmin();
+  $('#nav').innerHTML = PAGES.filter(p => !p.admin || admin).map(p => p.sec
     ? `<div class="nav-sec">${p.sec}</div>`
     : `<button class="nav-btn ${ui.page === p.id ? 'on' : ''}" data-act="go" data-id="${p.id}">${ICON[p.id]}<span>${p.t}</span></button>`).join('');
 }
 function renderTicker() {
   const st = S.settings;
   $('#ticker').innerHTML = `
-    <span class="tick" data-act="go" data-id="internet" title="1 Gold Bar fiyatı">1 GB<b>${st.gbTL ? fmtTL(st.gbTL) : 'girilmedi'}</b></span>
-    <span class="tick" data-act="go" data-id="internet" title="Dolar kuru">USD<b>${st.usdTL ? '₺' + nf2.format(st.usdTL) : '—'}</b></span>`;
+    <span class="tick" data-act="go" data-id="gb" title="1 Gold Bar fiyatı">1 GB<b>${st.gbTL ? fmtTL(st.gbTL) : 'girilmedi'}</b></span>
+    <span class="tick" data-act="go" data-id="gb" title="Dolar kuru">USD<b>${st.usdTL ? '₺' + nf2.format(st.usdTL) : '—'}</b></span>`;
   const bs = $('#brandSub'); if (bs) bs.textContent = [st.charName, st.server].filter(Boolean).join(' · ') || 'Knight Online defteri';
 }
 
@@ -291,6 +292,7 @@ function render() {
   // odaktaki alanı koru (yeniden çizimden sonra geri ver)
   const a = document.activeElement, fk = a && a.dataset && a.dataset.fk;
   let selS = null; try { selS = a.selectionStart; } catch { }
+  if ((PAGES.find(x => x.id === ui.page) || {}).admin && !(typeof isAdmin === 'function' && isAdmin())) ui.page = 'panel';
   const p = PAGES.find(x => x.id === ui.page);
   $('#pageTitle').textContent = p.t;
   $('#pageSub').textContent = p.d;
@@ -954,7 +956,42 @@ function priceForm(p) {
 const TARGETS = () => [['gbTL', '1 GB fiyatı (TL)'], ['kcTL', '1 KC fiyatı (TL)'], ['none', 'Sadece göster']].concat(S.prices.map(p => ['price:' + p.id, 'Fiyat listesi: ' + p.name]));
 VIEWS.internet = () => {
   const st = S.settings;
+  if (!ui.adm) { ui.adm = {}; FB.getDoc(FB.doc(CLOUD.db, 'kohesapMarket', 'latest')).then(m => { ui.adm.market = m.exists() ? m.data() : null; if (ui.page === 'internet') render(); }).catch(() => { }); }
   return `
+  <div class="card" style="margin-bottom:16px;border-color:rgba(227,181,84,.4)">
+    <div class="card-h"><div><h3>Veri kaynakları <span class="badge y">admin</span></h3><div class="sub">Burada yaptığın değişiklikler <b>tüm kullanıcılar</b> için geçerli olur; diğer kullanıcılar bu adresleri görmez.</div></div>${CLOUD.global && CLOUD.global.gbUrl ? '<span class="badge g">merkezi ayar kayıtlı</span>' : ''}</div>
+    <div class="form">
+      <label class="f full">GB fiyat sayfası<input class="inp" data-fk="s-gburl" data-set="gbUrl" value="${esc(st.gbUrl)}"></label>
+      <label class="f full">Yedek GB sayfası (ilki açılmazsa)<input class="inp" data-fk="s-gburl2" data-set="gbUrl2" value="${esc(st.gbUrl2)}"></label>
+      <label class="f full">Canlı pazar sayfası<input class="inp" data-fk="s-mkurl" data-set="marketUrl" value="${esc(st.marketUrl)}"></label>
+      <label class="f full">Event sayfası<input class="inp" data-fk="s-evurl" data-set="eventsUrl" value="${esc(st.eventsUrl)}"></label>
+      <label class="f">GB yenileme (dakika)<input class="inp num" data-fk="s-gbr" data-set="gbRefreshMin" data-num="1" value="${st.gbRefreshMin}"></label>
+      <label class="f">Pazar yenileme (saniye)<input class="inp num" data-fk="s-mkr" data-set="marketRefreshSec" data-num="1" value="${st.marketRefreshSec}"></label>
+      <label class="f">Pazarda en fazla sayfa<input class="inp num" data-fk="s-mkp" data-set="marketMaxPages" data-num="1" value="${st.marketMaxPages || 30}"></label>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn pri" data-act="adm-save-sources" ${ui.admDirty ? '' : 'disabled'}>📢 Herkese kaydet</button>
+      ${ui.admDirty ? '<span class="gold">Kaydedilmemiş değişiklik var</span>' : ''}
+      <button class="btn" data-act="adm-refresh">${ICON.refresh} Durumu yenile</button>
+      <button class="btn" data-act="diag" data-url="${esc(st.marketUrl)}">Canlı pazar teşhisi</button>
+      <button class="btn" data-act="diag" data-url="${esc(st.gbUrl)}">GB sayfası teşhisi</button>
+      ${serverMode ? '<button class="btn" data-act="mk-rediscover-go">Pazar kaynağını yeniden keşfet</button>' : '<span class="hint">Arka plan veri adreslerini görmek için teşhisi Windows uygulamasında çalıştır.</span>'}
+    </div>
+  </div>
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-h"><h3>Paylaşılan canlı pazar</h3></div>
+      ${ui.adm && ui.adm.market ? `<div class="kv"><span class="k">İlan</span><span class="v">${fmtN(ui.adm.market.count)}</span><span class="k">Son paylaşım</span><span class="v">${agoText(Date.now() - ui.adm.market.at)}</span><span class="k">Kaynak</span><span class="v">${esc(ui.adm.market.app || '')}</span></div>` : '<div class="mut">Henüz paylaşım yok. Exe\'de Canlı Pazar açılınca oluşur.</div>'}
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Yayınlanan içerik</h3></div>
+      ${CLOUD.content ? `<div class="kv"><span class="k">Event</span><span class="v">${(CLOUD.content.events || []).length}</span><span class="k">PUS item</span><span class="v">${(CLOUD.content.pusCatalog || []).length}</span><span class="k">Son yayın</span><span class="v">${CLOUD.content.v ? agoText(Date.now() - CLOUD.content.v) : '—'}</span></div>` : '<div class="mut">Henüz yayın yok. Event Takvimi ve PUS Hesabı sayfalarındaki “Herkese yayınla” ile gönderebilirsin.</div>'}
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Merkezi kaynak ayarı</h3></div>
+      ${CLOUD.global && CLOUD.global.gbUrl ? '<div class="kv"><span class="k">Durum</span><span class="v pos">kayıtlı</span><span class="k">Kapsam</span><span class="v">tüm kullanıcılar</span></div>' : '<div class="mut">Henüz kaydedilmedi; kullanıcılar varsayılan adresleri kullanıyor. Yukarıdaki bir alanı değiştirince kaydedilir.</div>'}
+    </div>
+  </div>
   <div class="grid g3" style="margin-bottom:16px">
     <div class="card">
       <div class="card-h"><h3>1 GB fiyatı</h3><span class="sub">${st.gbTime ? 'güncelleme: ' + esc(st.gbTime) : ''}</span></div>
@@ -1123,15 +1160,9 @@ VIEWS.ayar = () => {
       <div class="hint" style="margin-top:10px">Kayıtların Google hesabına bağlı olarak saklanır; ${serverMode ? 'web sürümünde (forgeandplay.com/tr/kohesap)' : 'Windows uygulamasında'} aynı hesapla girince hepsi gelir.</div>
     </div>
     <div class="card">
-      <div class="card-h"><h3>Canlı veri</h3></div>
+      <div class="card-h"><h3>Bildirim ve güncelleme</h3></div>
       <div class="form">
-        <label class="f full">GB fiyat sayfası<input class="inp" data-fk="s-gburl" data-set="gbUrl" value="${esc(st.gbUrl)}"></label>
-        <label class="f full">Yedek GB sayfası (ilki açılmazsa)<input class="inp" data-fk="s-gburl2" data-set="gbUrl2" value="${esc(st.gbUrl2)}"></label>
-        <label class="f full">Canlı pazar sayfası<input class="inp" data-fk="s-mkurl" data-set="marketUrl" value="${esc(st.marketUrl)}"></label>
-        <label class="f full">Event sayfası<input class="inp" data-fk="s-evurl" data-set="eventsUrl" value="${esc(st.eventsUrl)}"></label>
-        <label class="f">GB yenileme (dakika)<input class="inp num" data-fk="s-gbr" data-set="gbRefreshMin" data-num="1" value="${st.gbRefreshMin}"></label>
-        <label class="f">Pazar yenileme (saniye)<input class="inp num" data-fk="s-mkr" data-set="marketRefreshSec" data-num="1" value="${st.marketRefreshSec}"></label>
-        <label class="f">Pazarda en fazla sayfa<input class="inp num" data-fk="s-mkp" data-set="marketMaxPages" data-num="1" value="${st.marketMaxPages || 30}"></label>
+
         <label class="f">Event hatırlatma (dk önce)<input class="inp num" data-fk="s-evn" data-set="eventNotifyMin" data-num="1" value="${st.eventNotifyMin}"></label>
         <label class="f" style="justify-content:flex-end"><span class="check"><input type="checkbox" data-set-check="gbAuto" ${st.gbAuto ? 'checked' : ''}> GB fiyatını otomatik güncelle</span></label>
       </div>
@@ -1244,6 +1275,15 @@ function download(name, txt, type) {
 const ACTIONS = {
   go: el => { ui.page = el.dataset.id; document.body.classList.remove('nav-open'); closeModal(); render(); $('#content').scrollTop = 0; window.scrollTo(0, 0); },
   'nav-toggle': () => document.body.classList.toggle('nav-open'),
+  'adm-save-sources': () => confirmBox('Veri kaynaklarını kaydet', 'Bu adresler <b>tüm kullanıcıların</b> uygulamasında kullanılacak. Kaydedilsin mi?', 'Herkese kaydet', () => saveGlobalConfig().then(() => { ui.admDirty = false; render(); toast('Tüm kullanıcılar için kaydedildi', 'ok'); }).catch(e => toast('Kaydedilemedi: ' + e.message, 'err'))),
+  'adm-refresh': async () => {
+    try {
+      const m = await FB.getDoc(FB.doc(CLOUD.db, 'kohesapMarket', 'latest'));
+      const c = await FB.getDoc(FB.doc(CLOUD.db, 'config', 'kohesapContent'));
+      ui.adm = { market: m.exists() ? m.data() : null }; if (c.exists()) CLOUD.content = c.data();
+      render(); toast('Durum güncellendi', 'ok');
+    } catch (e) { toast('Okunamadı: ' + e.message, 'err'); }
+  },
   'nav-close': () => document.body.classList.remove('nav-open'),
   'month-prev': () => { ui.month = addMonth(ui.month, -1); ui.allMonths = false; render(); },
   'month-next': () => { ui.month = addMonth(ui.month, 1); ui.allMonths = false; render(); },
@@ -1351,6 +1391,13 @@ document.addEventListener('change', e => {
   if (d.act === 'toggle-all') { ui.allMonths = t.checked; render(); return; }
   if (d.act === 'member-me') return ACTIONS['member-me'](t);
   const val = () => d.money ? parseAmt(t.value) : d.num ? parseNum(t.value) : t.value;
+  if (d.set && typeof GLOBAL_KEYS !== 'undefined' && GLOBAL_KEYS.includes(d.set)) {
+    if (!(typeof isAdmin === 'function' && isAdmin())) return;
+    S.settings[d.set] = val();
+    if (d.set === 'marketUrl') S.settings.marketApi = null;
+    ui.admDirty = true; save(); render();
+    return;
+  }
   if (d.set) { S.settings[d.set] = val(); if (d.set === 'gbTL') S.settings.gbTime = new Date().toLocaleString('tr-TR'); if (d.set === 'gbNoah' && !S.settings.gbNoah) S.settings.gbNoah = 1e8; if (d.set === 'server' && typeof applyGB === 'function') applyGB(); save(); render(); }
   else if (d.setCheck) { S.settings[d.setCheck] = t.checked; save(); }
   else if (d.cats) { S.settings[d.cats] = t.value.split(',').map(x => x.trim()).filter(Boolean); save(); }

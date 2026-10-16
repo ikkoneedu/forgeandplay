@@ -313,3 +313,15 @@ a.btn{text-decoration:none}
 }
 .mk-mini{display:none;color:var(--tx2);font-size:13px;margin:-4px 0 10px}
 @media (max-width:600px){.mk-stats{display:none}.mk-mini{display:block}}
+/* taşma düzeltmeleri: ızgara/sütun içeriği kendi kutusunda kalsın, tablolar içeride kaysın */
+.grid>*,.stack>*{min-width:0}
+.tbl-wrap{max-width:100%}
+.tbl-wrap td .inp:not([type=checkbox]){min-width:84px}
+.tbl-wrap td:first-child .inp{min-width:150px}
+@media (max-width:600px){
+  .form[style*="repeat(3"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .card-h{flex-wrap:wrap}
+  .seg{flex-wrap:wrap}
+  .content .row{gap:8px}
+  .list-item .s{flex-wrap:wrap}
+}
