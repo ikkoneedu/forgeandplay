@@ -1,7 +1,7 @@
 /** KO Hesap (Knight Online defteri) — sunucu tarafı ortak sabitler. */
 
 /** public/downloads/KOHesap.exe sürümü; exe açılışta bunu görüp "yeni sürüm" uyarısı gösterir. */
-export const KOHESAP_EXE_VERSION = "0.6.1";
+export const KOHESAP_EXE_VERSION = "0.6.3";
 export const KOHESAP_EXE_URL = "/downloads/KOHesap.exe";
 export const KOHESAP_APP_URL = "/kohesap-app/index.html";
 
@@ -13,6 +13,9 @@ export const KOHESAP_PROXY_HOSTS = ["enucuzgb.com", "open.er-api.com"];
 
 export function hostAllowed(host: string): boolean {
   const h = host.toLowerCase();
+  // yerel test: KOHESAP_MARKET_ORIGIN ile verilen sahte kaynak (üretimde tanımsız)
+  const dev = process.env.KOHESAP_MARKET_ORIGIN;
+  if (dev) { try { if (new URL(dev).hostname === h) return true; } catch {} }
   return KOHESAP_PROXY_HOSTS.some((d) => h === d || h.endsWith("." + d));
 }
 

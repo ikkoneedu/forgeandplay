@@ -24,8 +24,8 @@ function keepCookies(res: Response) {
 
 export async function fetchPassing(
   start: URL,
-  opts: { accept?: string; referer?: string; xhr?: boolean } = {}
-): Promise<{ res: Response; body: string }> {
+  opts: { accept?: string; referer?: string; xhr?: boolean; binary?: boolean } = {}
+): Promise<{ res: Response; body: string; bytes?: ArrayBuffer }> {
   let url = start;
   for (let hop = 0; hop < 3; hop++) {
     const headers: Record<string, string> = {
@@ -43,9 +43,14 @@ export async function fetchPassing(
     if (ck) headers.Cookie = ck;
     const res = await fetch(url, { headers, signal: AbortSignal.timeout(20000), cache: "no-store", redirect: "follow" });
     keepCookies(res);
-    const body = await res.text();
+    let body: string, bytes: ArrayBuffer | undefined;
+    if (opts.binary) {
+      bytes = await res.arrayBuffer();
+      const html = /text\/html/i.test(res.headers.get("content-type") ?? "");
+      body = html && bytes.byteLength < 6000 ? new TextDecoder().decode(bytes) : "";
+    } else body = await res.text();
     const m = body.length < 6000 ? body.match(JS_COOKIE) : null;
-    if (!m) return { res, body };
+    if (!m) return { res, body, bytes };
     jar.set(m[1].trim(), m[2].trim());
     const loc = body.match(JS_LOCATION);
     if (loc) {

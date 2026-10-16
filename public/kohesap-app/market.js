@@ -478,12 +478,18 @@ const AR_SERVERS = [['', 'Tüm sunucular'], ['ZERO', 'Tüm Zero'], ['ZERO3', 'Ze
 const AR_GRADES = [['', 'Tüm gradeler'], ...Array.from({ length: 10 }, (_, i) => ['n' + (i + 1), 'Normal +' + (i + 1)]), ...Array.from({ length: 21 }, (_, i) => ['reb' + (i + 1), 'Rebirth +' + (i + 1)])];
 const arBase = () => { try { return new URL(S.settings.marketUrl).origin; } catch { return 'https://www.enucuzgb.com'; } };
 function arNorm(o) {
+  // enucuzgb'nin gerçek alan adları (ilk tercih), sonra genel tahmin
+  if (o && (o.ItemName != null || o.strUserName != null)) return {
+    name: o.ItemName || '', icon: o.ItemPatch || o.ItemIcon || '', seller: o.strUserName || '', server: srvPretty(o.strServerName || ''),
+    price: +o.ItemPrice || 0, x: o.PosX ?? '', z: o.PosZ ?? '', date: o.CreateTime || o.UpdateTime || '', id: o.ItemId ?? '',
+    mtype: o.MerchantType, itype: o.ItemType, raw: o,
+  };
   const f = flatObj(o), keys = Object.keys(f);
   const pick = (...res) => { for (const re of res) { const k = keys.find(k => re.test(k) && f[k] !== '' && f[k] != null); if (k) return f[k]; } return ''; };
   return {
     name: pick(/^item_?name$/i, /itemname/i, /^name$/i, /title/i, /item/i),
-    icon: pick(/icon/i, /image/i, /img/i),
-    seller: pick(/^user_?name$/i, /seller/i, /nick/i, /merchant_?name/i, /^user$/i, /owner/i),
+    icon: pick(/patch/i, /icon/i, /image/i, /img/i),
+    seller: pick(/^(str)?user_?name$/i, /seller/i, /nick/i, /merchant_?name/i, /^user$/i, /owner/i),
     server: pick(/^server$/i, /channel/i, /server/i),
     price: pick(/^price$/i, /price/i, /fiyat/i),
     x: pick(/^pos_?x$/i, /^x$/i, /coord_?x/i),
@@ -493,6 +499,7 @@ function arNorm(o) {
     raw: f,
   };
 }
+const srvPretty = v => { const m = String(v).match(/^([A-Za-z]+)-?(\d+)$/); return m ? m[1][0].toUpperCase() + m[1].slice(1).toLowerCase() + '-' + m[2] : v; };
 const arSig = r => [r.name, r.seller, r.server, r.price, r.x, r.z].join('|');
 function arPaint() { if (ui.page === 'pazar') render(); }
 async function arLoad(opts = {}) {
@@ -547,6 +554,11 @@ function arPriceCell(v) {
 }
 function arWhen(v) {
   if (!v) return '<span class="mut">—</span>';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(v))) {
+    const today = localDate(), y = new Date(Date.now() - 864e5);
+    const yest = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`;
+    return v === today ? 'Bugün' : v === yest ? 'Dün' : esc(new Date(v + 'T12:00:00').toLocaleDateString('tr-TR'));
+  }
   const d = new Date(String(v).replace(' ', 'T'));
   if (isNaN(d)) return esc(v);
   const diff = Date.now() - d.getTime();
@@ -587,7 +599,7 @@ function arView() {
     ${hasRows ? `<div class="tbl-wrap ar-wrap" style="border:0;border-radius:0"><table class="ar-table">
       <thead><tr><th>Item</th><th>Kullanıcı</th><th>Server</th><th class="num">Fiyat</th><th>Koordinat</th><th>Son güncelleme</th><th></th></tr></thead>
       <tbody>${rows.map((r, i) => { const isNew = AR.fresh.has(arSig(r)); return `<tr ${isNew ? 'class="row-new"' : ''}>
-        <td class="ar-c-item"><div class="ar-item">${r.icon ? `<img src="${esc(/^https?:/.test(r.icon) ? r.icon : arBase() + (String(r.icon).startsWith('/') ? '' : '/') + r.icon)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '<span class="ar-noicon"></span>'}<b>${esc(r.name || '—')}</b></div></td>
+        <td class="ar-c-item">${arRowItem(r, i)}</td>
         <td class="ar-c-seller">${esc(r.seller || '—')}</td>
         <td class="ar-c-srv"><span class="badge">${esc(r.server || '—')}</span></td>
         <td class="num ar-c-price">${arPriceCell(r.price)}</td>

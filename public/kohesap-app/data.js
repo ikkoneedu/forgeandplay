@@ -61,3 +61,10 @@ const RACE_DEFAULT = { karus: { warrior: 'Arch Tuarek', rogue: 'Tuarek', mage: '
 const raceOptions = (nation, cls) => cls === 'kurian' ? [nation === 'human' ? 'Porutu' : 'Kurian'] : RACES[nation] || [];
 const classLabel = (cls, nation) => cls === 'kurian' ? (nation === 'human' ? 'Porutu' : 'Kurian') : (CLASSES[cls] || {}).label || cls;
 const DEFAULT_SERVERS = ['Zero', 'Felis', 'Agartha', 'Pandora', 'Dryads', 'Destan', 'Minark', 'Oreads'];
+
+/* PUS item ikonları: katalogla aynı sırada (p0…p108), kaynak sitenin /img/pus/ klasörü */
+const PUS_ICONS = ('exp dc war platinum gold bronze switch ' +
+  'lion lion str str hp hp dex dex int int mp mp redistribution hpmaestro mpmaestro ' +
+  'res80 def150 1500 hp1000 hp500 300 def150 swift attack 60reco gladiator gladiator gladiator warrior warrior 2000 350 warrior merchant growth lesson bluepotion book spiritpunish wartattoo ' +
+  'dragonwing pathos autoloot cuff dualpathos giga krowaz oreads meni-karus meni-elmo hera-karus hera-elmo patrick-karus patrick-elmo cougar-karus cougar-elmo appearance yeniceri-armor valk-helm valk-armor gryphonhelmet gryphonarmor yeniceri-helmet crisis bahamut-armor bahamut-helm ibex minerva magpie magpie eblis astarod pidama nereids nereid-def nereid-atk ' +
+  'trina geniehammer clanname gender meni clancontrib rebirthreverse accdisa kaishan ncs karivdis teleport durat magicbag characterseal chaos ancient nts familiar npinc noah vip arrange SealExc mSealExc genie').split(' ');

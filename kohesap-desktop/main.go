@@ -29,7 +29,7 @@ var webFS embed.FS
 
 const (
 	appName    = "KO Hesap"
-	appVersion = "0.6.1"
+	appVersion = "0.6.3"
 	port       = 47811
 )
 
@@ -107,6 +107,8 @@ func main() {
 	mux.HandleFunc("/api/rates", handleRates)
 	mux.HandleFunc("/api/siteconfig", handleSiteConfig)
 	mux.HandleFunc("/api/ares", handleAres)
+	mux.HandleFunc("/api/img", handleImg)
+	mux.HandleFunc("/api/eitem", handleItem)
 	mux.HandleFunc("/api/browserfetch", handleBrowserFetch)
 	mux.HandleFunc("/api/info", handleInfo)
 	mux.HandleFunc("/api/quit", func(w http.ResponseWriter, r *http.Request) {
@@ -482,7 +484,6 @@ func handleAres(w http.ResponseWriter, r *http.Request) {
 	for _, k := range []string{"query", "minPrice", "maxPrice", "server", "grade", "type", "priceshort", "stats"} {
 		params.Set(k, q.Get(k))
 	}
-	page := base + "/canlipazar"
 	target := base + "/api/market/ares?" + params.Encode()
 	force := q.Get("force") == "1"
 
@@ -495,13 +496,34 @@ func handleAres(w http.ResponseWriter, r *http.Request) {
 		w.Write(hit.body)
 		return
 	}
+	body, via, err := apiGetVia(base, target)
+	if err != nil {
+		writeJSON(w, map[string]any{"ok": false, "error": err.Error()})
+		return
+	}
+	log.Printf("ares %s: %d bayt (%s)", params.Get("server"), len(body), via)
+	aresMu.Lock()
+	aresCache[target] = aresEntry{time.Now(), body, via}
+	if len(aresCache) > 100 {
+		for k := range aresCache {
+			delete(aresCache, k)
+			break
+		}
+	}
+	aresMu.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Via", via)
+	w.Write(body)
+}
+
+// apiGetVia: sitenin iç JSON adresini okur. Önce doğrudan (gerekirse koruma
+// çerezini alıp tekrar), olmazsa gizli tarayıcıda sitenin kendi sayfasından.
+func apiGetVia(base, target string) ([]byte, string, error) {
+	page := base + "/canlipazar"
 	isJSON := func(b []byte) bool {
 		t := strings.TrimSpace(string(b[:min(len(b), 20)]))
 		return strings.HasPrefix(t, "{") || strings.HasPrefix(t, "[")
 	}
-	var body []byte
-	via := ""
-	// 1) doğrudan
 	get := func() (int, []byte, error) {
 		req, _ := http.NewRequest("GET", target, nil)
 		req.Header.Set("User-Agent", browserUA)
@@ -525,40 +547,28 @@ func handleAres(w http.ResponseWriter, r *http.Request) {
 		st, b, err = get()
 	}
 	if err == nil && st < 400 && isJSON(b) {
-		body, via = b, "dogrudan"
+		return b, "dogrudan", nil
+	}
+	res, berr := browserFetch(page, []string{target})
+	if berr == nil && len(res) == 1 && res[0].Error == "" && res[0].Status < 400 && isJSON([]byte(res[0].Text)) {
+		return []byte(res[0].Text), "tarayici", nil
+	}
+	msg := "site adresi okunamadı"
+	if err != nil {
+		msg += ": " + err.Error()
 	} else {
-		// 2) gizli tarayıcıda sitenin kendi sayfasından
-		res, berr := browserFetch(page, []string{target})
-		if berr == nil && len(res) == 1 && res[0].Error == "" && res[0].Status < 400 && isJSON([]byte(res[0].Text)) {
-			body, via = []byte(res[0].Text), "tarayici"
-		} else {
-			msg := "canlı pazar adresi okunamadı"
-			if err != nil {
-				msg += ": " + err.Error()
-			} else {
-				msg += fmt.Sprintf(" (doğrudan %d)", st)
-			}
-			if berr != nil {
-				msg += "; tarayıcı: " + berr.Error()
-			} else if len(res) == 1 {
-				msg += fmt.Sprintf("; tarayıcı %d %s", res[0].Status, res[0].Error)
-			}
-			log.Println(msg)
-			writeJSON(w, map[string]any{"ok": false, "error": msg})
-			return
-		}
+		msg += fmt.Sprintf(" (doğrudan %d)", st)
 	}
-	log.Printf("ares %s: %d bayt (%s)", params.Get("server"), len(body), via)
-	aresMu.Lock()
-	aresCache[target] = aresEntry{time.Now(), body, via}
-	if len(aresCache) > 100 {
-		for k := range aresCache {
-			delete(aresCache, k)
-			break
-		}
+	if berr != nil {
+		msg += "; tarayıcı: " + berr.Error()
+	} else if len(res) == 1 {
+		msg += fmt.Sprintf("; tarayıcı %d %s", res[0].Status, res[0].Error)
 	}
-	aresMu.Unlock()
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Via", via)
-	w.Write(body)
+	log.Println(msg)
+	return nil, "", errors.New(msg)
+}
+
+func apiGet(base, target string) ([]byte, error) {
+	b, _, err := apiGetVia(base, target)
+	return b, err
 }
