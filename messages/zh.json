@@ -9,7 +9,8 @@
     "community": "社区",
     "leaderboard": "排行榜",
     "home": "首页",
-    "online": "{count} 人在线"
+    "online": "{count} 人在线",
+    "kohesap": "KO Hesap"
   },
   "home": {
     "eyebrow": "AI 智能匹配",
@@ -311,5 +312,32 @@
     "contactTitle": "联系我们",
     "contactBody": "如有问题、建议或数据请求，请联系我们。我们会尽快回复。",
     "email": "info@forgeandplay.com"
+  },
+  "kohesap": {
+    "title": "KO Hesap — 骑士在线收支记账工具",
+    "desc": "免费的骑士在线记账工具：物品交易、8人队伍掉落分配、实时金条价格、PUS与经验计算器、活动日历。网页与 Windows 版通过 Google 账号同步。",
+    "eyebrow": "骑士在线工具",
+    "h1": "KO Hesap",
+    "h1g": "你的骑士在线账本",
+    "lead": "在一个地方记录收入、支出、物品交易和队伍掉落。实时金条价格、PUS 与经验计算器、活动日历——通过 Google 账号在网页和 Windows 上同步。",
+    "openWeb": "在网页打开",
+    "download": "下载 Windows 版",
+    "downloadNote": "Windows 10/11 · 免安装 · v{version}",
+    "smartscreen": "首次运行如出现 Windows 警告，请点击“更多信息”→“仍要运行”。",
+    "featTitle": "功能",
+    "f1t": "收支账本",
+    "f1": "Noah 或里拉；自动月度汇总、分类和12个月图表。",
+    "f2t": "物品交易",
+    "f2": "买入卖出价、手续费、利润与回报率。",
+    "f3t": "队伍与掉落",
+    "f3": "8人队伍、物品持有人、队长分成、费用及转账结算。",
+    "f4t": "实时金条价格",
+    "f4": "按服务器显示各网站的买入 / 卖出价格。",
+    "f5t": "PUS 与经验",
+    "f5": "100+ PUS 物品购物车计算；1–83 级经验表与升级时间。",
+    "f6t": "一个账号，4个角色",
+    "f6": "Karus / Human、职业、种族、服务器；每个角色记录独立。",
+    "syncTitle": "网页与 Windows 共用记录",
+    "syncBody": "使用 Google 登录，你的角色和记录在网页、手机和 Windows 应用中同步。完整实时市场（所有页面）在 Windows 应用中读取。"
   }
 }

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KO Hesap · Forge&amp;Play</title>
+<meta name="description" content="Knight Online gelir gider tablosu, item ticareti, parti drop pay dağılımı, canlı GB fiyatları, PUS ve EXP hesaplayıcı.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <img src="icon.svg" alt="" width="34" height="34">
+      <div>
+        <div class="brand-name">KO Hesap</div>
+        <div class="brand-sub" id="brandSub">Knight Online defteri</div>
+      </div>
+    </div>
+    <nav id="nav"></nav>
+    <div id="sideExtra"></div>
+    <div class="side-foot">
+      <div class="save-state" id="saveState"><span class="dot"></span><span>Kaydedildi</span></div>
+      <div class="ver" id="ver">v0.1.0</div>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="top">
+      <div class="top-title">
+        <h1 id="pageTitle">Panel</h1>
+        <div class="top-sub" id="pageSub"></div>
+      </div>
+      <div class="top-right">
+        <div class="month-pick" id="monthPick">
+          <button class="icon-btn" data-act="month-prev" title="Önceki ay">‹</button>
+          <span id="monthLabel"></span>
+          <button class="icon-btn" data-act="month-next" title="Sonraki ay">›</button>
+        </div>
+        <div class="ticker" id="ticker"></div>
+      </div>
+    </header>
+    <section class="content" id="content"></section>
+  </main>
+</div>
+<div class="modal-back" id="modalBack" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><h2 id="modalTitle"></h2><button class="icon-btn" data-act="modal-close" title="Kapat">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+<div class="toasts" id="toasts"></div>
+<script src="firebase.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="live.js"></script>
+<script src="market.js"></script>
+<script src="cloud.js"></script>
+<script src="auth.js"></script>
+</body>
+</html>

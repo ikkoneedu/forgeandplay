@@ -44,6 +44,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: withAlternates("/lfg"),
     });
     entries.push({
+      url: `${SITE_URL}/${locale}/kohesap`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+      alternates: withAlternates("/kohesap"),
+    });
+    entries.push({
       url: `${SITE_URL}/${locale}/premium`,
       lastModified: now,
       changeFrequency: "weekly",

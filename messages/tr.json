@@ -9,7 +9,8 @@
     "community": "Topluluk",
     "leaderboard": "Sıralama",
     "home": "Ana Sayfa",
-    "online": "{count} çevrimiçi"
+    "online": "{count} çevrimiçi",
+    "kohesap": "KO Hesap"
   },
   "home": {
     "eyebrow": "Yapay Zeka Destekli Eşleştirme",
@@ -311,5 +312,32 @@
     "contactTitle": "İletişim",
     "contactBody": "Sorular, öneriler veya veri talepleri için bize ulaş. En kısa sürede geri dönüş yaparız.",
     "email": "info@forgeandplay.com"
+  },
+  "kohesap": {
+    "title": "KO Hesap — Knight Online Gelir Gider ve Hesap Defteri",
+    "desc": "Knight Online için ücretsiz gelir gider tablosu: item ticareti, 8 kişilik parti drop ve pay dağılımı, canlı GB fiyatları, PUS ve EXP hesaplayıcı, event takvimi. Web'de ve Windows'ta, Google hesabınla senkron.",
+    "eyebrow": "Knight Online aracı",
+    "h1": "KO Hesap",
+    "h1g": "Knight Online defterin",
+    "lead": "Gelirini, giderini, item ticaretini ve parti droplarını tek yerde tut. Canlı GB fiyatları, PUS ve EXP hesabı, event takvimi — hepsi Google hesabınla web'de ve Windows'ta senkron.",
+    "openWeb": "Web'de aç",
+    "download": "Windows için indir",
+    "downloadNote": "Windows 10/11 · kurulum gerektirmez · v{version}",
+    "smartscreen": "İlk açılışta Windows uyarı verirse “Ek bilgi” → “Yine de çalıştır” deyin.",
+    "featTitle": "Neler yapabilirsin?",
+    "f1t": "Gelir / gider defteri",
+    "f1": "Noah veya TL; aylık otomatik toplam, kategori dağılımı ve 12 aylık grafik.",
+    "f2t": "Item ticareti",
+    "f2": "Kaçtan aldın, kaçtan sattın; komisyon, kâr, getiri ve başa baş fiyatı.",
+    "f3t": "Parti & drop",
+    "f3": "8 kişilik parti, kimde ne var, lider payı, masraf ve kim kime ne kadar ödeyecek.",
+    "f4t": "Canlı GB fiyatları",
+    "f4": "Sunucu bazında tüm sitelerin alış / satış fiyatları; en ucuz satış otomatik.",
+    "f5t": "PUS & EXP hesabı",
+    "f5": "100+ PUS itemi ile sepet hesabı; 1–83 EXP tablosu ve seviye süresi.",
+    "f6t": "4 karakter, tek hesap",
+    "f6": "Karus / Human, sınıf, ırk, sunucu; her karakterin kayıtları ayrı.",
+    "syncTitle": "Web ve Windows aynı kayıtları kullanır",
+    "syncBody": "Google ile giriş yap; telefonda, web'de ya da Windows uygulamasında aynı karakterlerin ve kayıtların seni bekler. Canlı pazarın tamamı (tüm sayfalar) Windows uygulamasında okunur."
   }
 }

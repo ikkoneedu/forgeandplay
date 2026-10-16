@@ -9,7 +9,8 @@
     "community": "Comunidad",
     "leaderboard": "Clasificación",
     "home": "Inicio",
-    "online": "{count} en línea"
+    "online": "{count} en línea",
+    "kohesap": "KO Hesap"
   },
   "home": {
     "eyebrow": "Emparejamiento con IA",
@@ -311,5 +312,32 @@
     "contactTitle": "Contacto",
     "contactBody": "Para preguntas, sugerencias o solicitudes de datos, escríbenos. Te responderemos lo antes posible.",
     "email": "info@forgeandplay.com"
+  },
+  "kohesap": {
+    "title": "KO Hesap — Registro de ingresos y gastos de Knight Online",
+    "desc": "Registro gratuito para Knight Online: comercio de objetos, reparto de botín en grupo de 8, precios de lingotes de oro en vivo, calculadoras de PUS y EXP, calendario de eventos. Web y Windows sincronizados con tu cuenta de Google.",
+    "eyebrow": "Herramienta de Knight Online",
+    "h1": "KO Hesap",
+    "h1g": "tu libro de Knight Online",
+    "lead": "Lleva tus ingresos, gastos, comercio de objetos y botines de grupo en un solo lugar. Precios de lingotes en vivo, calculadoras de PUS y EXP y calendario de eventos, sincronizados con tu cuenta de Google.",
+    "openWeb": "Abrir en la web",
+    "download": "Descargar para Windows",
+    "downloadNote": "Windows 10/11 · sin instalación · v{version}",
+    "smartscreen": "Si Windows muestra una advertencia, pulsa “Más información” → “Ejecutar de todas formas”.",
+    "featTitle": "¿Qué puedes hacer?",
+    "f1t": "Ingresos / gastos",
+    "f1": "Noah o TRY; totales mensuales automáticos, categorías y gráfico de 12 meses.",
+    "f2t": "Comercio de objetos",
+    "f2": "Precio de compra y venta, comisión, beneficio y rentabilidad.",
+    "f3t": "Grupo y botín",
+    "f3": "Grupo de 8, quién tiene qué, parte del líder, gastos y quién paga a quién.",
+    "f4t": "Precios de lingotes en vivo",
+    "f4": "Precios de compra / venta de todos los sitios por servidor.",
+    "f5t": "PUS y EXP",
+    "f5": "Carrito con más de 100 objetos PUS; tabla de EXP 1–83 y tiempo por nivel.",
+    "f6t": "4 personajes, una cuenta",
+    "f6": "Karus / Human, clase, raza, servidor; registros separados por personaje.",
+    "syncTitle": "Web y Windows comparten los mismos registros",
+    "syncBody": "Inicia sesión con Google y tus personajes te siguen en la web, el móvil y la app de Windows. El mercado en vivo completo se lee en la app de Windows."
   }
 }

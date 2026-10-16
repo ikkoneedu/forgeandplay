@@ -9,7 +9,8 @@
     "community": "Community",
     "leaderboard": "Leaderboard",
     "home": "Home",
-    "online": "{count} online"
+    "online": "{count} online",
+    "kohesap": "KO Hesap"
   },
   "home": {
     "eyebrow": "AI-Powered Matchmaking",
@@ -311,5 +312,32 @@
     "contactTitle": "Contact",
     "contactBody": "For questions, feedback or data requests, get in touch. We'll get back to you as soon as we can.",
     "email": "info@forgeandplay.com"
+  },
+  "kohesap": {
+    "title": "KO Hesap — Knight Online Income & Expense Tracker",
+    "desc": "Free Knight Online ledger: item trading, 8-player party drop splits, live gold bar prices, PUS and EXP calculators, event calendar. Web and Windows, synced with your Google account.",
+    "eyebrow": "Knight Online tool",
+    "h1": "KO Hesap",
+    "h1g": "your Knight Online ledger",
+    "lead": "Track income, expenses, item trades and party drops in one place. Live gold bar prices, PUS and EXP calculators, event calendar — synced across web and Windows with your Google account.",
+    "openWeb": "Open on the web",
+    "download": "Download for Windows",
+    "downloadNote": "Windows 10/11 · no install · v{version}",
+    "smartscreen": "If Windows shows a warning on first launch, click “More info” → “Run anyway”.",
+    "featTitle": "What can you do?",
+    "f1t": "Income / expense ledger",
+    "f1": "Noah or TRY; automatic monthly totals, categories and a 12-month chart.",
+    "f2t": "Item trading",
+    "f2": "Buy and sell prices, fees, profit, ROI and break-even price.",
+    "f3t": "Party & drops",
+    "f3": "8-player party, who holds what, leader cut, costs and who pays whom.",
+    "f4t": "Live gold bar prices",
+    "f4": "Buy / sell prices of all sites per server; cheapest sale applied automatically.",
+    "f5t": "PUS & EXP",
+    "f5": "Cart calculator with 100+ PUS items; level 1–83 EXP table and time to level.",
+    "f6t": "4 characters, one account",
+    "f6": "Karus / Human, class, race, server; separate records per character.",
+    "syncTitle": "Web and Windows share the same records",
+    "syncBody": "Sign in with Google and your characters and records follow you on the web, on your phone and in the Windows app. The full live market (all pages) is read in the Windows app."
   }
 }
