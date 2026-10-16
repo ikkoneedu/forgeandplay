@@ -325,3 +325,32 @@ a.btn{text-decoration:none}
   .content .row{gap:8px}
   .list-item .s{flex-wrap:wrap}
 }
+/* canlı pazar (site iç adresi) */
+.ar-filters{padding:12px;display:flex;flex-direction:column;gap:10px}
+.ar-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ar-row select.inp{width:auto;min-width:150px}
+.ar-search{flex:1;min-width:200px}
+.ar-price{width:170px}
+.ar-item{display:flex;align-items:center;gap:10px;min-width:220px}
+.ar-item img,.ar-noicon{width:28px;height:28px;border-radius:6px;background:var(--bg2);border:1px solid var(--line);flex:none;object-fit:contain}
+.ar-table td{vertical-align:middle}
+.ar-pager{justify-content:center;gap:4px;padding:12px}
+@media (max-width:600px){
+  .ar-row select.inp{flex:1 1 45%;min-width:0}
+  .ar-price{flex:1 1 40%;width:auto}
+  .ar-search{flex:1 1 100%}
+  .ar-meta{flex:1}
+}
+@media (max-width:600px){
+  .ar-wrap{overflow:visible}
+  .ar-table thead{display:none}
+  .ar-table,.ar-table tbody{display:block;width:100%}
+  .ar-table tr{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .ar-table td{display:block;padding:0;border:0;min-width:0;background:none!important}
+  .ar-c-item{grid-column:1}.ar-c-price{grid-column:2;grid-row:1 / span 2;text-align:right}
+  .ar-c-seller{grid-column:1;font-size:13px;color:var(--tx2)}
+  .ar-c-srv{grid-column:1}
+  .ar-c-pos,.ar-c-date{grid-column:1;font-size:12px;display:inline}
+  .ar-c-act{grid-column:2;grid-row:3 / span 2;align-self:end;text-align:right}
+  .ar-item{min-width:0}.ar-item b{overflow:hidden;text-overflow:ellipsis}
+}

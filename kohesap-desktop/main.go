@@ -29,7 +29,7 @@ var webFS embed.FS
 
 const (
 	appName    = "KO Hesap"
-	appVersion = "0.6.0"
+	appVersion = "0.6.1"
 	port       = 47811
 )
 
@@ -106,6 +106,7 @@ func main() {
 	mux.HandleFunc("/api/fetch", handleFetch)
 	mux.HandleFunc("/api/rates", handleRates)
 	mux.HandleFunc("/api/siteconfig", handleSiteConfig)
+	mux.HandleFunc("/api/ares", handleAres)
 	mux.HandleFunc("/api/browserfetch", handleBrowserFetch)
 	mux.HandleFunc("/api/info", handleInfo)
 	mux.HandleFunc("/api/quit", func(w http.ResponseWriter, r *http.Request) {
@@ -448,4 +449,116 @@ func fetchPassing(raw string) (int, []byte, error) {
 		cur = next
 	}
 	return 0, nil, errors.New("sitenin koruma sayfası geçilemedi")
+}
+
+// ---------- canlı pazar: sitenin canlı pazar sayfasının kullandığı iç adres ----------
+
+var (
+	aresMu    sync.Mutex
+	aresCache = map[string]aresEntry{}
+)
+
+type aresEntry struct {
+	at   time.Time
+	body []byte
+	via  string
+}
+
+// handleAres: /api/market/ares'i önce doğrudan (çerez + tarayıcı başlıkları),
+// olmazsa gizli tarayıcıda sitenin kendi sayfasının içinden çağırır.
+// Cevap 60 sn önbellekte tutulur.
+func handleAres(w http.ResponseWriter, r *http.Request) {
+	base := strings.TrimRight(r.URL.Query().Get("base"), "/")
+	if base == "" {
+		base = "https://www.enucuzgb.com"
+	}
+	bu, err := url.Parse(base)
+	if err != nil || (bu.Scheme != "https" && bu.Scheme != "http") {
+		http.Error(w, "geçersiz adres", 400)
+		return
+	}
+	q := r.URL.Query()
+	params := url.Values{}
+	for _, k := range []string{"query", "minPrice", "maxPrice", "server", "grade", "type", "priceshort", "stats"} {
+		params.Set(k, q.Get(k))
+	}
+	page := base + "/canlipazar"
+	target := base + "/api/market/ares?" + params.Encode()
+	force := q.Get("force") == "1"
+
+	aresMu.Lock()
+	hit, ok := aresCache[target]
+	aresMu.Unlock()
+	if ok && !force && time.Since(hit.at) < 60*time.Second {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Via", hit.via+"-cache")
+		w.Write(hit.body)
+		return
+	}
+	isJSON := func(b []byte) bool {
+		t := strings.TrimSpace(string(b[:min(len(b), 20)]))
+		return strings.HasPrefix(t, "{") || strings.HasPrefix(t, "[")
+	}
+	var body []byte
+	via := ""
+	// 1) doğrudan
+	get := func() (int, []byte, error) {
+		req, _ := http.NewRequest("GET", target, nil)
+		req.Header.Set("User-Agent", browserUA)
+		req.Header.Set("Accept", "application/json, text/plain, */*")
+		req.Header.Set("Accept-Language", "tr-TR,tr;q=0.9")
+		req.Header.Set("Referer", page)
+		req.Header.Set("Sec-Fetch-Site", "same-origin")
+		req.Header.Set("Sec-Fetch-Mode", "cors")
+		req.Header.Set("Sec-Fetch-Dest", "empty")
+		resp, err := httpCli.Do(req)
+		if err != nil {
+			return 0, nil, err
+		}
+		defer resp.Body.Close()
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<20))
+		return resp.StatusCode, b, nil
+	}
+	st, b, err := get()
+	if err == nil && (st >= 400 || !isJSON(b)) {
+		fetchPassing(page) // koruma çerezi / oturum
+		st, b, err = get()
+	}
+	if err == nil && st < 400 && isJSON(b) {
+		body, via = b, "dogrudan"
+	} else {
+		// 2) gizli tarayıcıda sitenin kendi sayfasından
+		res, berr := browserFetch(page, []string{target})
+		if berr == nil && len(res) == 1 && res[0].Error == "" && res[0].Status < 400 && isJSON([]byte(res[0].Text)) {
+			body, via = []byte(res[0].Text), "tarayici"
+		} else {
+			msg := "canlı pazar adresi okunamadı"
+			if err != nil {
+				msg += ": " + err.Error()
+			} else {
+				msg += fmt.Sprintf(" (doğrudan %d)", st)
+			}
+			if berr != nil {
+				msg += "; tarayıcı: " + berr.Error()
+			} else if len(res) == 1 {
+				msg += fmt.Sprintf("; tarayıcı %d %s", res[0].Status, res[0].Error)
+			}
+			log.Println(msg)
+			writeJSON(w, map[string]any{"ok": false, "error": msg})
+			return
+		}
+	}
+	log.Printf("ares %s: %d bayt (%s)", params.Get("server"), len(body), via)
+	aresMu.Lock()
+	aresCache[target] = aresEntry{time.Now(), body, via}
+	if len(aresCache) > 100 {
+		for k := range aresCache {
+			delete(aresCache, k)
+			break
+		}
+	}
+	aresMu.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Via", via)
+	w.Write(body)
 }

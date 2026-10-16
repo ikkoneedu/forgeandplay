@@ -436,7 +436,7 @@ VIEWS.pazar = () => {
     <div class="tbl-wrap" style="border:0;border-radius:0;max-height:calc(100vh - 360px)"><table>
       <thead><tr>${MK.cols.map(c => `<th class="sortable ${MK.items.slice(0, 20).every(o => typeof o[c] === 'number' || o[c] === '') ? 'num' : ''}" data-act="mk-sort" data-c="${esc(c)}">${esc(colLabel(c))}${MK.sort && MK.sort.col === c ? (MK.sort.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}<th></th></tr></thead>
       <tbody>${rows.map(o => { const isNew = MK.newSig.has(JSON.stringify(o)); return `<tr ${isNew ? 'class="row-new"' : ''}>${MK.cols.map(c => `<td class="${typeof o[c] === 'number' ? 'num' : ''}">${c === nc ? '<b>' + fmtCell(c, o[c]) + '</b>' : fmtCell(c, o[c])}</td>`).join('')}
-        <td style="white-space:nowrap">${isNew ? '<span class="badge g">yeni</span> ' : ''}${pc && nc ? `<button class="icon-btn" title="Fiyat listeme ekle" data-act="mk-toprice" data-i="${MK.items.indexOf(o)}">${ICON.plus}</button>` : ''}</td></tr>`; }).join('') || `<tr><td colspan="${MK.cols.length + 1}">${empty('Sonuç yok')}</td></tr>`}</tbody>
+        <td class="ar-c-act" style="white-space:nowrap">${isNew ? '<span class="badge g">yeni</span> ' : ''}${pc && nc ? `<button class="icon-btn" title="Fiyat listeme ekle" data-act="mk-toprice" data-i="${MK.items.indexOf(o)}">${ICON.plus}</button>` : ''}</td></tr>`; }).join('') || `<tr><td colspan="${MK.cols.length + 1}">${empty('Sonuç yok')}</td></tr>`}</tbody>
     </table></div>
     ${pager()}
   </div>
@@ -465,4 +465,174 @@ document.addEventListener('change', e => {
     MK.server = e.target.value; MK.page = 1;
     if (MK.cfg && MK.cfg.serverParam) loadMarket({}); else render();
   } else if (d.mkper) { MK.per = +e.target.value; MK.page = 1; render(); }
+});
+
+/* ==========================================================================
+   BİRİNCİL YOL: sitenin canlı pazar sayfasının kullandığı iç adres
+   (exe: /api/ares → doğrudan / gizli tarayıcı; web: /api/kohesap/market).
+   Çalışmazsa yukarıdaki eski yollara (sayfa okuma / exe paylaşımı) düşülür.
+   ========================================================================== */
+const AR = { f: { server: '', type: 'sell', grade: '', query: '', priceshort: 'desc', minPrice: '', maxPrice: '' }, ok: null, all: [], items: [], total: 0, count: 0, page: 1, pages: 1, per: 50, busy: false, err: '', at: 0, prev: null, fresh: new Set() };
+ui.ar = AR;
+const AR_SERVERS = [['', 'Tüm sunucular'], ['ZERO', 'Tüm Zero'], ['ZERO3', 'Zero-3'], ['ZERO4', 'Zero-4'], ['ZERO5', 'Zero-5'], ['FELIS2', 'Felis-2'], ['AGARTHA', 'Tüm Agartha'], ['AGARTHA3', 'Agartha-3'], ['AGARTHA4', 'Agartha-4'], ['PANDORA', 'Tüm Pandora'], ['PANDORA3', 'Pandora-3'], ['PANDORA4', 'Pandora-4'], ['DRYADS2', 'Dryads-2'], ['DESTAN2', 'Destan-2'], ['MINARK2', 'Minark-2'], ['OREADS2', 'Oreads-2']];
+const AR_GRADES = [['', 'Tüm gradeler'], ...Array.from({ length: 10 }, (_, i) => ['n' + (i + 1), 'Normal +' + (i + 1)]), ...Array.from({ length: 21 }, (_, i) => ['reb' + (i + 1), 'Rebirth +' + (i + 1)])];
+const arBase = () => { try { return new URL(S.settings.marketUrl).origin; } catch { return 'https://www.enucuzgb.com'; } };
+function arNorm(o) {
+  const f = flatObj(o), keys = Object.keys(f);
+  const pick = (...res) => { for (const re of res) { const k = keys.find(k => re.test(k) && f[k] !== '' && f[k] != null); if (k) return f[k]; } return ''; };
+  return {
+    name: pick(/^item_?name$/i, /itemname/i, /^name$/i, /title/i, /item/i),
+    icon: pick(/icon/i, /image/i, /img/i),
+    seller: pick(/^user_?name$/i, /seller/i, /nick/i, /merchant_?name/i, /^user$/i, /owner/i),
+    server: pick(/^server$/i, /channel/i, /server/i),
+    price: pick(/^price$/i, /price/i, /fiyat/i),
+    x: pick(/^pos_?x$/i, /^x$/i, /coord_?x/i),
+    z: pick(/^pos_?[zy]$/i, /^[zy]$/i, /coord_?[zy]/i),
+    date: pick(/updated/i, /created/i, /date/i, /time/i, /seen/i),
+    id: pick(/^item_?id$/i, /itemid/i, /^id$/i),
+    raw: f,
+  };
+}
+const arSig = r => [r.name, r.seller, r.server, r.price, r.x, r.z].join('|');
+function arPaint() { if (ui.page === 'pazar') render(); }
+async function arLoad(opts = {}) {
+  if (AR.busy) return;
+  AR.busy = true; if (!opts.quiet) arPaint();
+  const qs = new URLSearchParams(AR.f);
+  try {
+    let rows;
+    if (serverMode) {
+      qs.set('base', arBase()); if (opts.force) qs.set('force', '1');
+      const resp = await fetch('/api/ares?' + qs);
+      AR.via = resp.headers.get('X-Via') || '';
+      const r = await resp.json();
+      if (r && r.ok === false) throw new Error(r.error || 'okunamadı');
+      const items = Array.isArray(r) ? r : (r.items || []);
+      AR.all = items.map(arNorm);
+      AR.count = AR.all.length; AR.total = typeof r.total_count === 'number' ? r.total_count : AR.count; AR.searches = r.total_searches;
+      AR.pages = Math.max(1, Math.ceil(AR.count / AR.per)); AR.page = clamp(AR.page, 1, AR.pages);
+      rows = AR.all; AR.at = Date.now();
+    } else {
+      qs.set('page', AR.page); qs.set('per', AR.per);
+      const r = await (await fetch('/api/kohesap/market?' + qs)).json();
+      if (!r.ok) throw new Error(r.error || 'okunamadı');
+      AR.all = []; rows = r.items.map(arNorm);
+      AR.items = rows; AR.total = r.total; AR.count = r.count; AR.pages = r.pages; AR.page = r.page; AR.at = r.at || Date.now(); AR.searches = r.searches; AR.via = 'site sunucusu';
+    }
+    const sigs = new Set(rows.map(arSig));
+    AR.fresh = AR.prev && !opts.filterChange ? new Set([...sigs].filter(s => !AR.prev.has(s))) : new Set();
+    AR.prev = sigs;
+    AR.ok = true; AR.err = '';
+  } catch (e) {
+    AR.err = e.message;
+    if (AR.ok !== true && !opts.probe) { AR.ok = false; loadMarket({}); } // eski yollara düş
+  } finally {
+    AR.busy = false;
+    ui.marketNext = Date.now() + S.settings.marketRefreshSec * 1000;
+    arPaint();
+  }
+}
+const arPageRows = () => serverMode ? AR.all.slice((AR.page - 1) * AR.per, AR.page * AR.per) : AR.items;
+let arQTimer = null;
+function arSetFilter(k, v) {
+  if (AR.f[k] === v) return;
+  AR.f[k] = v; AR.page = 1;
+  arLoad({ filterChange: true });
+}
+function arPriceCell(v) {
+  const n = typeof v === 'number' ? v : cellNum(v);
+  if (!n) return '<span class="mut">—</span>';
+  const tl = tlOf(n);
+  return `<b class="num">${fmtN(n)}</b><div class="hint num">${nf2.format(n / (S.settings.gbNoah || 1e8))} GB${tl != null ? ' · ' + fmtTL(tl) : ''}</div>`;
+}
+function arWhen(v) {
+  if (!v) return '<span class="mut">—</span>';
+  const d = new Date(String(v).replace(' ', 'T'));
+  if (isNaN(d)) return esc(v);
+  const diff = Date.now() - d.getTime();
+  return diff > 0 && diff < 864e5 ? `<span title="${esc(d.toLocaleString('tr-TR'))}">${agoText(diff)}</span>` : esc(d.toLocaleDateString('tr-TR'));
+}
+function arView() {
+  const f = AR.f, rows = arPageRows(), admin = isAdmin();
+  const opt = (list, val) => list.map(([k, l]) => `<option value="${esc(k)}" ${k === val ? 'selected' : ''}>${esc(l)}</option>`).join('');
+  const pager = () => {
+    const btn = (p, l, dis, on) => `<button class="btn sm ${on ? 'pri' : 'ghost'}" data-act="ar-page" data-p="${p}" ${dis ? 'disabled' : ''}>${l}</button>`;
+    const nums = [];
+    for (let p = 1; p <= AR.pages; p++) if (p === 1 || p === AR.pages || Math.abs(p - AR.page) <= 2) nums.push(p); else if (nums[nums.length - 1] !== '…') nums.push('…');
+    return `<div class="row ar-pager">${btn(1, '«', AR.page === 1)}${btn(AR.page - 1, '‹', AR.page === 1)}${nums.map(p => p === '…' ? '<span class="mut">…</span>' : btn(p, p, false, p === AR.page)).join('')}${btn(AR.page + 1, '›', AR.page === AR.pages)}${btn(AR.pages, '»', AR.page === AR.pages)}</div>`;
+  };
+  const hasRows = rows.length > 0;
+  return `
+  <div class="ar-filters card">
+    <div class="ar-row">
+      <div class="seg">${[['sell', 'Satış'], ['buy', 'Alış']].map(([k, l]) => `<button class="${f.type === k ? 'on' : ''}" data-act="ar-type" data-v="${k}">${l}</button>`).join('')}</div>
+      <select class="inp" data-arf="server">${opt(AR_SERVERS, f.server)}</select>
+      <select class="inp" data-arf="grade">${opt(AR_GRADES, f.grade)}</select>
+      <select class="inp" data-arf="priceshort">${opt([['desc', 'Fiyat: en yüksek'], ['asc', 'Fiyat: en düşük']], f.priceshort)}</select>
+      <label class="search ar-search"><input class="inp" placeholder="Item veya satıcı ara" data-fk="arq" data-arq="1" value="${esc(AR.qDraft ?? f.query)}"></label>
+    </div>
+    <div class="ar-row">
+      <input class="inp num ar-price" placeholder="En az fiyat (ör. 50m)" data-fk="armin" data-arp="minPrice" value="${f.minPrice ? fmtShort(+f.minPrice) : ''}">
+      <input class="inp num ar-price" placeholder="En çok fiyat (ör. 2b)" data-fk="armax" data-arp="maxPrice" value="${f.maxPrice ? fmtShort(+f.maxPrice) : ''}">
+      <button class="btn ghost sm" data-act="ar-clear">Temizle</button>
+      <span class="spacer"></span>
+      <span class="badge g">canlı</span>
+      <span class="mut ar-meta">${AR.busy ? 'yükleniyor…' : `${fmtN(AR.count)} ilan${AR.at ? ' · ' + new Date(AR.at).toLocaleTimeString('tr-TR') : ''}`}</span>
+      <span class="mut" data-mcd></span>
+      <button class="btn pri sm" data-act="ar-refresh" ${AR.busy ? 'disabled' : ''}>${ICON.refresh} Yenile</button>
+    </div>
+  </div>
+  ${AR.err ? `<div class="callout" style="margin:12px 0"><span class="neg">Son yenileme başarısız</span>${admin ? ': ' + esc(AR.err) : ''} — gösterilen liste ${AR.at ? new Date(AR.at).toLocaleTimeString('tr-TR') : ''} tarihli.</div>` : ''}
+  <div class="card" style="padding:0;overflow:hidden;margin-top:12px">
+    ${hasRows ? `<div class="tbl-wrap ar-wrap" style="border:0;border-radius:0"><table class="ar-table">
+      <thead><tr><th>Item</th><th>Kullanıcı</th><th>Server</th><th class="num">Fiyat</th><th>Koordinat</th><th>Son güncelleme</th><th></th></tr></thead>
+      <tbody>${rows.map((r, i) => { const isNew = AR.fresh.has(arSig(r)); return `<tr ${isNew ? 'class="row-new"' : ''}>
+        <td class="ar-c-item"><div class="ar-item">${r.icon ? `<img src="${esc(/^https?:/.test(r.icon) ? r.icon : arBase() + (String(r.icon).startsWith('/') ? '' : '/') + r.icon)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '<span class="ar-noicon"></span>'}<b>${esc(r.name || '—')}</b></div></td>
+        <td class="ar-c-seller">${esc(r.seller || '—')}</td>
+        <td class="ar-c-srv"><span class="badge">${esc(r.server || '—')}</span></td>
+        <td class="num ar-c-price">${arPriceCell(r.price)}</td>
+        <td class="mut ar-c-pos">${r.x !== '' && r.x != null ? `(${esc(r.x)}, ${esc(r.z)})` : '—'}</td>
+        <td class="mut ar-c-date">${arWhen(r.date)}</td>
+        <td class="ar-c-act" style="white-space:nowrap">${isNew ? '<span class="badge g">yeni</span> ' : ''}<button class="icon-btn" title="Fiyat listeme ekle" data-act="ar-toprice" data-i="${i}">${ICON.plus}</button></td></tr>`; }).join('')}</tbody>
+    </table></div>${pager()}`
+    : `<div style="padding:18px">${AR.busy ? empty('Yükleniyor…', 'Canlı pazar okunuyor.') : empty('Sonuç yok', 'Filtreleri değiştirip tekrar deneyin.')}</div>`}
+  </div>
+  ${admin ? `<div class="hint" style="margin-top:8px">Kaynak: ${esc(arBase())}/api/market/ares · ${esc(AR.via || '')}${AR.searches ? ' · sitede toplam arama ' + fmtN(AR.searches) : ''}</div>` : ''}`;
+}
+const _oldPazarView = VIEWS.pazar;
+VIEWS.pazar = () => {
+  if (AR.ok === false) return _oldPazarView();
+  if (AR.ok === null && !AR.busy) setTimeout(() => arLoad(), 0);
+  return arView();
+};
+const _oldRefreshMarket = refreshMarket;
+refreshMarket = (quiet) => { if (AR.ok === false) { _oldRefreshMarket(quiet); arLoad({ quiet: true, probe: true }); } else arLoad({ quiet: true }); };
+
+Object.assign(ACTIONS, {
+  'ar-type': el => arSetFilter('type', el.dataset.v),
+  'ar-refresh': () => arLoad({ force: true }),
+  'ar-clear': () => { AR.f = { server: AR.f.server, type: AR.f.type, grade: '', query: '', priceshort: 'desc', minPrice: '', maxPrice: '' }; AR.page = 1; arLoad({ filterChange: true }); },
+  'ar-page': el => {
+    AR.page = clamp(+el.dataset.p, 1, AR.pages);
+    if (serverMode) arPaint(); else arLoad({ filterChange: true });
+    const w = document.querySelector('.ar-wrap'); if (w) w.scrollTop = 0; window.scrollTo(0, 0);
+  },
+  'ar-toprice': el => {
+    const r = arPageRows()[+el.dataset.i]; if (!r || !r.name) return;
+    const price = typeof r.price === 'number' ? r.price : cellNum(r.price);
+    let p = S.prices.find(x => trLow(x.name) === trLow(r.name));
+    if (!p) { p = { id: uid(), name: String(r.name), cat: 'Pazardan', price: 0, updated: localDate(), hist: [] }; S.prices.push(p); }
+    setPrice(p, Math.round(price), 'pazar'); save(); toast(`${r.name} fiyat listene eklendi (${fmtShort(price)})`, 'ok');
+  },
+});
+document.addEventListener('change', e => {
+  const d = e.target.dataset;
+  if (d.arf) arSetFilter(d.arf, e.target.value);
+  else if (d.arp) { const n = parseAmt(e.target.value); arSetFilter(d.arp, n ? String(n) : ''); }
+});
+document.addEventListener('input', e => {
+  if (!e.target.dataset.arq) return;
+  const v = e.target.value; AR.qDraft = v;
+  clearTimeout(arQTimer);
+  arQTimer = setTimeout(() => arSetFilter('query', v.trim()), 500);
 });
