@@ -375,13 +375,13 @@ VIEWS.event = () => {
   <div class="grid g-wide">
     <div class="card">
       <div class="card-h"><h3>Haftalık takvim</h3></div>
-      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px">
+      <div class="week-scroll"><div class="week-grid">
         ${WEEK.map(d => { const evs = S.events.filter(e => !e.off && e.days.includes(d) && !(e.until && localDate() > e.until)).flatMap(e => e.times.map(t => ({ e, t }))).sort((a, b) => a.t.localeCompare(b.t)); return `
         <div style="background:var(--bg2);border:1px solid ${d === now.getDay() ? 'var(--gold)' : 'var(--line)'};border-radius:8px;padding:8px;min-height:140px">
           <div style="font-weight:600;font-size:12.5px;margin-bottom:6px;${d === now.getDay() ? 'color:var(--gold2)' : 'color:var(--tx2)'}">${DAYS[d]}</div>
           ${evs.map(x => `<div style="font-size:12px;padding:4px 6px;border-radius:5px;margin-bottom:4px;background:${x.e.color || '#5aa7ff'}1f;border-left:3px solid ${x.e.color || '#5aa7ff'}"><b>${x.t}</b> ${esc((x.e.name.match(/\(([^)]+)\)\s*$/) || [])[1] || x.e.name)}</div>`).join('') || '<div class="hint">—</div>'}
         </div>`; }).join('')}
-      </div>
+      </div></div>
     </div>
     <div class="stack">
       <div class="card"><div class="card-h"><h3>Bugün</h3><span class="sub">${DAYS[now.getDay()]}</span></div>

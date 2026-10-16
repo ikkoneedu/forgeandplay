@@ -201,10 +201,12 @@ async function loadHtmlPages(url) {
     for (const row of t.rows) { const k = row.join('|'); if (!seen.has(k)) { seen.add(k); rows.push(row); } }
   }
   if (!head) throw new Error('sayfada ilan tablosu bulunamadı');
-  MK.items = rows.map(row => Object.fromEntries(head.map((h, i) => [h || 'Alan ' + (i + 1), row[i] || ''])));
+  MK.siteCols = head.map((h, i) => h || 'Alan ' + (i + 1));
+  MK.items = rows.map(row => Object.fromEntries(MK.siteCols.map((h, i) => [h, row[i] || ''])));
   return r.pages.length;
 }
 async function loadMarket(opts = {}) {
+  if (!serverMode) { subscribeWebMarket(); return; }
   if (MK.busy) return; MK.busy = true; MK.err = '';
   const maxPages = Math.max(1, S.settings.marketMaxPages || 30);
   try {
@@ -276,11 +278,49 @@ function finishLoad(source, pages, cfg) {
   MK.newSig = MK.prevSig ? new Set([...sigs].filter(s => !MK.prevSig.has(s))) : new Set();
   MK.prevSig = sigs;
   MK.source = source; MK.pages = pages; MK.cfg = cfg;
-  MK.cols = chooseCols(MK.items);
+  // Liste sitenin tablosundan okunduysa: sitenin sütunları, sırası ve başlıkları aynen
+  const siteCols = source === 'html' ? MK.siteCols : source === 'shared' ? MK.sharedCols : null;
+  MK.rawLabels = !!(siteCols && (source === 'html' || MK.sharedSource === 'html'));
+  MK.cols = siteCols && siteCols.length ? siteCols.filter(c => MK.items.some(o => String(o[c] ?? '').trim() !== '')) : chooseCols(MK.items);
   MK.serverCol = detectServerCol(MK.items, MK.cols);
   MK.time = new Date().toLocaleTimeString('tr-TR');
   if (MK.page > Math.ceil(filtered().length / MK.per)) MK.page = 1;
+  if (source !== 'shared') publishMarket().catch(e => console.warn('pazar paylaşılamadı', e));
 }
+
+/* ---------- web ile paylaşım ----------
+   Windows uygulaması pazarı her okuduğunda (en fazla 2 dk'da bir) sonucu
+   kohesapMarket/latest belgesine yazar; web sürümü bu belgeyi canlı dinler. */
+let mkLastPublish = 0, mkUnsub = null;
+async function publishMarket() {
+  if (!serverMode || typeof CLOUD === 'undefined' || !CLOUD.user || !CLOUD.db || !MK.items.length) return;
+  if (MK.cfg && MK.cfg.serverParam) return; // tek sunucuya göre çekilmiş liste: tüm pazar değil
+  if (Date.now() - mkLastPublish < 120000) return;
+  const cols = MK.cols;
+  let rows = MK.items.map(o => cols.map(c => o[c] ?? ''));
+  let json = JSON.stringify({ cols, rows, pages: MK.pages, source: MK.source });
+  while (json.length > 900000 && rows.length > 100) { rows = rows.slice(0, Math.floor(rows.length * 0.8)); json = JSON.stringify({ cols, rows, pages: MK.pages, source: MK.source }); }
+  await FB.setDoc(FB.doc(CLOUD.db, 'kohesapMarket', 'latest'), { json, count: rows.length, at: Date.now(), time: FB.serverTimestamp(), by: CLOUD.user.uid, app: 'exe ' + ($('#ver').textContent || '') });
+  mkLastPublish = Date.now();
+}
+function subscribeWebMarket() {
+  if (mkUnsub || typeof CLOUD === 'undefined' || !CLOUD.db) return;
+  MK.busy = true; MK.progress = 'Paylaşılan pazar verisi alınıyor…';
+  mkUnsub = FB.onSnapshot(FB.doc(CLOUD.db, 'kohesapMarket', 'latest'), snap => {
+    MK.busy = false; MK.progress = '';
+    if (!snap.exists()) { MK.err = 'WEB_NO_DATA'; if (ui.page === 'pazar') render(); return; }
+    try {
+      const d = snap.data(), p = JSON.parse(d.json);
+      MK.items = p.rows.map(r => Object.fromEntries(p.cols.map((c, i) => [c, r[i]])));
+      MK.sharedCols = p.cols; MK.sharedSource = p.source;
+      MK.webAt = d.at || 0; MK.err = '';
+      finishLoad('shared', p.pages || 1, null);
+      MK.time = new Date(MK.webAt).toLocaleTimeString('tr-TR');
+    } catch (e) { MK.err = 'Paylaşılan pazar verisi okunamadı'; }
+    if (ui.page === 'pazar') render();
+  }, err => { MK.busy = false; MK.err = 'Paylaşılan pazar okunamadı: ' + err.message; mkUnsub = null; if (ui.page === 'pazar') render(); });
+}
+const agoText = ms => { const m = Math.round(ms / 60000); return m < 1 ? 'az önce' : m < 60 ? m + ' dk önce' : Math.round(m / 60) + ' sa önce'; };
 refreshMarket = (quiet) => loadMarket({});
 
 /* ---------- sütunlar ---------- */
@@ -309,7 +349,8 @@ function detectServerCol(items, cols) {
   }
   return bestHits >= Math.min(items.length, 300) * 0.5 ? best : null;
 }
-const colLabel = k => {
+const colLabel = k => MK.rawLabels ? k : colLabelAuto(k);
+const colLabelAuto = k => {
   const last = k.split('.').pop();
   const map = { name: 'İsim', itemname: 'Item', item: 'Item', item_name: 'Item', price: 'Fiyat', fiyat: 'Fiyat', server: 'Sunucu', servername: 'Sunucu', sunucu: 'Sunucu', seller: 'Satıcı', nick: 'Satıcı', quantity: 'Adet', qty: 'Adet', count: 'Adet', date: 'Tarih', created_at: 'Tarih', createdat: 'Tarih', updated_at: 'Güncelleme', type: 'Tür' };
   return map[lk(last)] || last.replace(/[_-]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
@@ -320,10 +361,12 @@ function fmtCell(k, v) {
   if (v === '' || v == null) return '<span class="mut">—</span>';
   if (typeof v === 'number') return Math.abs(v) >= 1000 ? fmtN(v) : fmtX(v);
   const s = String(v);
+  const gb = s.match(/^([\d.,]+)\s*([\d.,]+\s*GB)$/i);
+  if (gb) return `<span class="num">${esc(gb[1])}</span> <small class="mut">${esc(gb[2])}</small>`;
   if (/^\d{4}-\d{2}-\d{2}T/.test(s)) { const d = new Date(s); if (!isNaN(d)) return esc(d.toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })); }
   return esc(s);
 }
-const cellNum = v => typeof v === 'number' ? v : parseAmt(String(v).replace(/[^\d.,kmbg]/gi, ''));
+const cellNum = v => { if (typeof v === 'number') return v; const m = String(v).match(/[\d][\d.,]*\s*[kmb]?(?![a-z])/i); return m ? parseAmt(m[0].replace(/\s/g, '')) : 0; };
 
 /* ---------- süzme / sıralama ---------- */
 function filtered() {
@@ -359,14 +402,15 @@ VIEWS.pazar = () => {
     <label class="f" style="flex-direction:row;align-items:center;gap:8px">Sunucu
       <select class="inp" style="width:auto" data-mkserver="1">${MK.cfg && MK.cfg.serverParam ? '' : '<option value="all">Tümü</option>'}${servers.map(s => `<option ${s === MK.server ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
     <label class="search" style="width:280px"><input class="inp" placeholder="Item veya satıcı ara" data-fk="mkq" data-mkq="1" value="${esc(MK.q)}"></label>
-    <label class="check"><input type="checkbox" data-mauto="1" ${ui.marketAuto !== false ? 'checked' : ''}> ${S.settings.marketRefreshSec} sn'de bir yenile</label>
-    <span class="mut" data-mcd></span>
+    ${serverMode ? `<label class="check"><input type="checkbox" data-mauto="1" ${ui.marketAuto !== false ? 'checked' : ''}> ${S.settings.marketRefreshSec} sn'de bir yenile</label>
+    <span class="mut" data-mcd></span>` : `<span class="badge g">canlı</span><span class="mut">${MK.webAt ? 'Windows uygulamasından ' + agoText(Date.now() - MK.webAt) + ' paylaşıldı' : ''}</span>`}
     <div class="spacer"></div>
     <span class="gold" data-mkprog>${esc(MK.progress)}</span>
-    <button class="btn" data-act="mk-rediscover" title="Sitenin veri adresini yeniden bul">${ICON.refresh} Yeniden keşfet</button>
-    <button class="btn pri" data-act="mk-refresh" ${MK.busy ? 'disabled' : ''}>${ICON.refresh} Yenile</button>
+    ${serverMode ? `<button class="btn" data-act="mk-rediscover" title="Sitenin veri adresini yeniden bul">${ICON.refresh} Yeniden keşfet</button>
+    <button class="btn pri" data-act="mk-refresh" ${MK.busy ? 'disabled' : ''}>${ICON.refresh} Yenile</button>` : ''}
   </div>`;
   if (!MK.items.length) {
+    if (MK.err === 'WEB_NO_DATA') return head + `<div class="card">${empty('Henüz paylaşılmış pazar verisi yok', 'Canlı pazar, Windows uygulamasında Canlı Pazar sayfası açıldığında okunup buraya otomatik paylaşılır. Uygulamayı açan ilk kişiyle birlikte bu sayfa da canlı güncellenir.<br><br><a class="btn pri" href="/downloads/KOHesap.exe" download>' + ICON.dl + ' Windows uygulamasını indir</a>')}</div>`;
     if (MK.err === 'WEB_NO_API') return head + `<div class="card">${empty('Canlı pazar Windows uygulamasında', 'Canlı pazar sayfası sitenin içinde tarayıcıyla açılıp okunduğu için şimdilik yalnızca Windows uygulamasında çalışıyor. Uygulama aynı Google hesabıyla senkron çalışır.<br><br><a class="btn pri" href="/downloads/KOHesap.exe" download>' + ICON.dl + ' Windows uygulamasını indir</a>')}</div>`;
     return head + `<div class="card">${MK.err ? errBox('Pazar verisi alınamadı', MK.err, S.settings.marketUrl)
       : empty(MK.busy ? 'Yükleniyor…' : 'Veri yok', esc(MK.progress || 'Canlı pazar çekiliyor. İlk seferde gizli tarayıcı açıldığı için 10–20 sn sürebilir.'))}</div>`;
@@ -379,12 +423,14 @@ VIEWS.pazar = () => {
       <span class="mut" style="margin-left:10px">Sayfada</span><select class="inp" style="width:auto;padding:4px 8px" data-mkper="1">${[25, 50, 100, 200].map(n => `<option ${n === MK.per ? 'selected' : ''}>${n}</option>`).join('')}</select></div>`;
   };
   return head + `
-  <div class="grid g4" style="margin-bottom:14px">
+  <div class="mk-mini">${fmtN(list.length)} ilan · ${fmtN(MK.pages || 1)} site sayfası · ${esc(MK.time)}${MK.newSig.size ? ` · <span class="pos">${MK.newSig.size} yeni</span>` : ''}</div>
+  <div class="grid g4 mk-stats" style="margin-bottom:14px">
     ${stat('Toplam ilan', fmtN(list.length), MK.server !== 'all' ? esc(MK.server) + ' sunucusu' : 'tüm sunucular', 'var(--gold)')}
-    ${stat('Çekilen site sayfası', fmtN(MK.pages || 1), MK.source === 'api' ? (MK.cfg && MK.cfg.via === 'browser' ? 'veri adresi · site içinden' : 'veri adresi · doğrudan') : 'sitenin sayfaları tek tek gezildi', 'var(--blue)')}
+    ${stat('Çekilen site sayfası', fmtN(MK.pages || 1), MK.source === 'shared' ? 'Windows uygulamasından paylaşıldı' : MK.source === 'api' ? (MK.cfg && MK.cfg.via === 'browser' ? 'veri adresi · site içinden' : 'veri adresi · doğrudan') : 'sitenin sayfaları tek tek gezildi', 'var(--blue)')}
     ${stat('Yeni ilan', fmtN(MK.newSig.size), 'son yenilemeden beri', 'var(--green)')}
-    ${stat('Son güncelleme', esc(MK.time), MK.err ? '<span class="neg">son deneme başarısız</span>' : 'otomatik yenileme ' + (ui.marketAuto !== false ? 'açık' : 'kapalı'), 'var(--violet)')}
+    ${stat('Son güncelleme', esc(MK.time), MK.err ? '<span class="neg">son deneme başarısız</span>' : (serverMode ? 'otomatik yenileme ' + (ui.marketAuto !== false ? 'açık' : 'kapalı') : 'yeni veri gelince kendiliğinden yenilenir'), 'var(--violet)')}
   </div>
+  ${!serverMode && MK.webAt && Date.now() - MK.webAt > 30 * 60000 ? `<div class="callout y" style="margin-bottom:12px">Bu liste ${agoText(Date.now() - MK.webAt)} güncellendi; şu an Windows uygulamasında pazarı açık tutan kimse yok. Güncel liste için uygulamayı açabilirsin.</div>` : ''}
   ${MK.err && MK.err !== 'WEB_NO_API' ? `<div class="callout" style="margin-bottom:12px"><span class="neg">Son yenileme başarısız:</span> ${esc(MK.err)} — gösterilen veriler ${esc(MK.time)} tarihli.</div>` : ''}
   <div class="card" style="padding:0;overflow:hidden">
     <div class="tbl-wrap" style="border:0;border-radius:0;max-height:calc(100vh - 360px)"><table>

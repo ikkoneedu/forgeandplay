@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     exeUrl: KOHESAP_EXE_URL,
   };
   return NextResponse.json(body, {
-    headers: { ...corsHeaders(req.headers.get("origin")), "Cache-Control": "public, max-age=300" },
+    headers: { ...corsHeaders(req.headers.get("origin")), "Cache-Control": "no-store" },
   });
 }
 

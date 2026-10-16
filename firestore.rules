@@ -58,6 +58,16 @@ service cloud.firestore {
       allow write: if request.auth != null && (request.auth.uid == uid || isAdmin());
     }
 
+    // KO Hesap canlı pazar: Windows uygulaması okuduğu pazarı paylaşır, web herkese gösterir.
+    match /kohesapMarket/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.data.keys().hasOnly(['json', 'count', 'at', 'time', 'by', 'app'])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 1000000
+        && request.resource.data.by == request.auth.uid;
+    }
+
     // KO Hesap (Knight Online defteri): her kullanıcı yalnızca kendi verisini
     // okur/yazar. Ana belge + en fazla 4 karakter belgesi.
     match /kohesap/{uid} {

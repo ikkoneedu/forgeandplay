@@ -20,9 +20,10 @@ function sharedForCloud() {
 const charMeta = ch => ({ name: ch.name, nation: ch.nation, cls: ch.cls, race: ch.race || '', level: ch.level, server: ch.server || '', clan: ch.clan || '', note: ch.note || '', created: ch.created || '' });
 
 async function cloudConfig() {
-  const url = (serverMode ? SITE : '') + '/api/kohesap/config';
+  // exe: program kendi içinden alır (tarayıcı CORS kısıtı yok, son ayar diskte saklı)
+  const url = serverMode ? '/api/siteconfig' : '/api/kohesap/config';
   const r = await fetch(url, { cache: 'no-store' });
-  if (!r.ok) throw new Error('Sunucu yapılandırması alınamadı (' + r.status + ')');
+  if (!r.ok) throw new Error((await r.text().catch(() => '')) || ('Sunucu yapılandırması alınamadı (' + r.status + ')'));
   const c = await r.json();
   if (!c.firebase || !c.firebase.apiKey) throw new Error('Firebase yapılandırması eksik');
   return c;

@@ -28,7 +28,7 @@ var webFS embed.FS
 
 const (
 	appName    = "KO Hesap"
-	appVersion = "0.5.0"
+	appVersion = "0.5.2"
 	port       = 47811
 )
 
@@ -104,6 +104,7 @@ func main() {
 	mux.HandleFunc("/api/ping", handlePing)
 	mux.HandleFunc("/api/fetch", handleFetch)
 	mux.HandleFunc("/api/rates", handleRates)
+	mux.HandleFunc("/api/siteconfig", handleSiteConfig)
 	mux.HandleFunc("/api/browserfetch", handleBrowserFetch)
 	mux.HandleFunc("/api/info", handleInfo)
 	mux.HandleFunc("/api/quit", func(w http.ResponseWriter, r *http.Request) {
@@ -354,4 +355,53 @@ func handleBrowserFetch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, map[string]any{"ok": true, "results": res})
+}
+
+// handleSiteConfig: forgeandplay.com'daki KO Hesap yapılandırmasını (Firebase
+// ayarları, son exe sürümü) tarayıcı yerine program içinden alır; böylece
+// tarayıcının farklı-köken (CORS) kısıtına takılmaz. Son başarılı cevap
+// diske yazılır; internet yokken onunla açılır.
+func handleSiteConfig(w http.ResponseWriter, r *http.Request) {
+	cache := filepath.Join(dataDir, "site-config.json")
+	urls := []string{
+		"https://forgeandplay.com/api/kohesap/config",
+		"https://www.forgeandplay.com/api/kohesap/config",
+		"https://forgeandplay.vercel.app/api/kohesap/config",
+	}
+	var lastErr error
+	for _, u := range urls {
+		req, _ := http.NewRequest("GET", u, nil)
+		req.Header.Set("User-Agent", "KOHesap/"+appVersion)
+		resp, err := httpCli.Do(req)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+		resp.Body.Close()
+		var probe struct {
+			Firebase struct {
+				APIKey string `json:"apiKey"`
+			} `json:"firebase"`
+		}
+		if resp.StatusCode == 200 && json.Unmarshal(body, &probe) == nil && probe.Firebase.APIKey != "" {
+			_ = os.WriteFile(cache, body, 0o644)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(body)
+			return
+		}
+		lastErr = fmt.Errorf("%s: %d", u, resp.StatusCode)
+	}
+	if b, err := os.ReadFile(cache); err == nil {
+		log.Printf("site yapılandırması alınamadı (%v), önbellek kullanılıyor", lastErr)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-KOHesap-Cache", "1")
+		w.Write(b)
+		return
+	}
+	msg := "forgeandplay.com'a ulaşılamadı"
+	if lastErr != nil {
+		msg += ": " + lastErr.Error()
+	}
+	http.Error(w, msg, 502)
 }

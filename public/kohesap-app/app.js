@@ -1242,7 +1242,9 @@ function download(name, txt, type) {
 }
 
 const ACTIONS = {
-  go: el => { ui.page = el.dataset.id; closeModal(); render(); $('#content').scrollTop = 0; },
+  go: el => { ui.page = el.dataset.id; document.body.classList.remove('nav-open'); closeModal(); render(); $('#content').scrollTop = 0; window.scrollTo(0, 0); },
+  'nav-toggle': () => document.body.classList.toggle('nav-open'),
+  'nav-close': () => document.body.classList.remove('nav-open'),
   'month-prev': () => { ui.month = addMonth(ui.month, -1); ui.allMonths = false; render(); },
   'month-next': () => { ui.month = addMonth(ui.month, 1); ui.allMonths = false; render(); },
   set: el => { ui[el.dataset.k] = el.dataset.v; render(); },

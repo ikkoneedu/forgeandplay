@@ -77,7 +77,7 @@ function enterChar(ch) {
   }
   if (!S.exp.calc.level || S.exp.calc.level < ch.level) S.exp.calc.level = ch.level;
   ui.page = 'panel'; ui.partyId = null; ui.newDrop = null;
-  if (typeof MK !== 'undefined') { MK.items = []; MK.err = ''; MK.server = 'all'; }
+  if (typeof MK !== 'undefined' && serverMode) { MK.items = []; MK.err = ''; MK.server = 'all'; }
   hideAuth(); save(); render();
   toast(`Hoş geldin, ${ch.name}`, 'ok');
 }
@@ -239,7 +239,7 @@ Object.assign(ACTIONS, {
       save(); showAuth('chars');
     });
   },
-  'char-select': () => { closeModal(); showAuth('chars'); },
+  'char-select': () => { closeModal(); document.body.classList.remove('nav-open'); showAuth('chars'); },
   'cf-set': el => {
     readCharInputs(); auth.cf[el.dataset.k] = el.dataset.v;
     const f = auth.cf; f.race = f.cls === 'kurian' ? raceOptions(f.nation, f.cls)[0] : (RACE_DEFAULT[f.nation] || {})[f.cls] || '';
