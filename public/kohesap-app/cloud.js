@@ -8,6 +8,9 @@
    ========================================================================== */
 
 const SITE = 'https://forgeandplay.com';
+/** Sitenin korumalı API'leri için kimlik başlığı (yalnızca onaylı üyeler kullanabilir) */
+async function authHdr() { try { return CLOUD.user && CLOUD.user.getIdToken ? { Authorization: 'Bearer ' + await CLOUD.user.getIdToken() } : {}; } catch { return {}; } }
+const authFetch = async (url, opt = {}) => fetch(url, { ...opt, headers: { ...(opt.headers || {}), ...(await authHdr()) } });
 /** API çağrıları için asıl alan adı (site yapılandırmasından; www yönlendirmesi CORS'u bozmasın) */
 const siteBase = () => (CLOUD.cfg && /^https:\/\/(www\.)?forgeandplay\.com$/.test(CLOUD.cfg.site || '') ? CLOUD.cfg.site : SITE);
 const CLOUD = { ready: false, user: null, db: null, auth: null, cfg: null, last: { shared: '', chars: {} }, unsub: [], saving: false, imported: 0 };
@@ -19,7 +22,7 @@ let LOCAL_DB = null; // exe: bu bilgisayardaki eski (yerel hesaplı) veri
    arayüzde yalnızca admin görür. (Kurallar: config herkese okunur, admin yazar.) */
 const ADMIN_EMAILS = ['carkci.caner@gmail.com'];
 const GLOBAL_KEYS = ['gbUrl', 'gbUrl2', 'marketUrl', 'eventsUrl', 'marketMaxPages', 'marketRefreshSec', 'gbRefreshMin', 'voiceTurn'];
-const isAdmin = () => !!(typeof CLOUD !== 'undefined' && CLOUD.user && ADMIN_EMAILS.includes(String(CLOUD.user.email || '').toLowerCase()));
+const isAdmin = () => !!(typeof CLOUD !== 'undefined' && CLOUD.user && CLOUD.user.emailVerified !== false && ADMIN_EMAILS.includes(String(CLOUD.user.email || '').toLowerCase()));
 async function loadGlobalConfig() {
   try {
     const snap = await FB.getDoc(FB.doc(CLOUD.db, 'config', 'kohesap'));

@@ -521,7 +521,7 @@ async function arLoad(opts = {}) {
       rows = AR.all; AR.at = Date.now();
     } else {
       qs.set('page', AR.page); qs.set('per', AR.per);
-      const r = await (await fetch('/api/kohesap/market?' + qs)).json();
+      const r = await (await authFetch('/api/kohesap/market?' + qs)).json();
       if (!r.ok) throw new Error(r.error || 'okunamadı');
       AR.all = []; rows = r.items.map(arNorm);
       AR.items = rows; AR.total = r.total; AR.count = r.count; AR.pages = r.pages; AR.page = r.page; AR.at = r.at || Date.now(); AR.searches = r.searches; AR.via = 'site sunucusu';

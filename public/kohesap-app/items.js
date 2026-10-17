@@ -138,7 +138,7 @@ const ITEM = { seq: 0 };
 function itemApi(params) {
   const qs = new URLSearchParams(params);
   if (serverMode) { qs.set('base', arBase()); return fetch('/api/eitem?' + qs).then(r => r.json()); }
-  return fetch('/api/kohesap/item?' + qs).then(r => r.json());
+  return authFetch('/api/kohesap/item?' + qs).then(r => r.json());
 }
 function listApi(params) {
   const qs = new URLSearchParams({ query: '', minPrice: '', maxPrice: '', server: '', grade: '', type: 'sell', priceshort: 'asc', ...params });
@@ -147,7 +147,7 @@ function listApi(params) {
     return fetch('/api/ares?' + qs).then(r => r.json()).then(r => (Array.isArray(r) ? r : r.items || []).map(arNorm));
   }
   qs.set('per', '200');
-  return fetch('/api/kohesap/market?' + qs).then(r => r.json()).then(r => r.ok ? r.items.map(arNorm) : []);
+  return authFetch('/api/kohesap/market?' + qs).then(r => r.json()).then(r => r.ok ? r.items.map(arNorm) : []);
 }
 /** Sitenin tooltip HTML'ini güvenli hale getirir: yalnızca bilinen etiketler ve sınıflar kalır. */
 function cleanTooltip(html, iconSrc, name) {

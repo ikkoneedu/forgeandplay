@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireMember } from "@/lib/koekip-server";
 import { corsHeaders } from "@/lib/kohesap";
 import { fetchPassing } from "@/lib/kohesap-fetch";
 
@@ -44,6 +45,9 @@ async function loadAll(params: URLSearchParams) {
 }
 
 export async function GET(req: NextRequest) {
+  // yalnızca onaylı KO Ekip üyeleri (dış site kaynaklarını korur, kötüye kullanımı engeller)
+  const gate = await requireMember(req, corsHeaders(req.headers.get("origin")));
+  if (gate) return gate;
   const q = req.nextUrl.searchParams;
   // sitenin kendi sayfasının gönderdiği parametrelerin aynısı (doğrulanmış)
   const params = new URLSearchParams({
@@ -65,7 +69,7 @@ export async function GET(req: NextRequest) {
     const p = Math.min(page, pages);
     return NextResponse.json(
       { ok: true, total: all.total, count: all.items.length, page: p, pages, per, searches: all.searches, at: all.at, items: all.items.slice((p - 1) * per, p * per) },
-      { headers: { ...headers, "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } }
+      { headers: { ...headers, "Cache-Control": "private, no-store" } }
     );
   } catch (e) {
     const err = e as Error & { status?: number; sample?: string };

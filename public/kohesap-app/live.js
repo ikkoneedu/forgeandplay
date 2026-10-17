@@ -47,7 +47,7 @@ const isNumCell = s => /^[₺$]?\s*\d[\d.,]*\s*(tl|₺)?$/i.test(String(s).trim(
 async function rawFetch(url, render) {
   if (!serverMode) {
     // web: sitenin sunucusu üzerinden (izinli adresler, 5 dk önbellek)
-    const r = await fetch('/api/kohesap/proxy?url=' + encodeURIComponent(url));
+    const r = await authFetch('/api/kohesap/proxy?url=' + encodeURIComponent(url));
     if (!r.ok && r.status !== 502) throw new Error('sunucu hatası ' + r.status);
     const d = await r.json();
     if (d.html && !d.text) d.text = (parseDoc(d.html).body || {}).textContent || '';

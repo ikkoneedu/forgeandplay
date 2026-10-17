@@ -13,7 +13,7 @@ const ACC = { ok: false, data: null, resolve: null, unsub: null, selfUnsub: null
 const accRef = u => FB.doc(CLOUD.db, 'kohesapAccess', u);
 const reqRef = u => FB.doc(CLOUD.db, 'kohesapRequests', u);
 const inviteRef = () => FB.doc(CLOUD.db, 'kohesapAdmin', 'invite');
-const emailAdmin = user => ADMIN_EMAILS.includes(String((user && user.email) || '').toLowerCase());
+const emailAdmin = user => !!(user && user.emailVerified !== false) && ADMIN_EMAILS.includes(String((user && user.email) || '').toLowerCase());
 const accPerm = e => e && (e.code === 'permission-denied' || /insufficient permissions/i.test(e.message || ''));
 const newCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; crypto.getRandomValues(new Uint8Array(8)).forEach(x => { s += a[x % a.length]; }); return s; };
 const userCard = user => ({ email: String(user.email || '').slice(0, 120), name: String(user.displayName || '').slice(0, 60), photo: String(user.photoURL || '').slice(0, 500) });
@@ -81,7 +81,7 @@ AUTH_VIEWS.invite = () => {
   return `<div class="auth-card invite-card">
     ${brandBlock('Davetle giriş')}
     ${ACC.rulesOld ? `<div class="auth-err">KO Ekip güncelleniyor: yöneticinin yeni Firebase kurallarını yayınlaması gerekiyor. Yöneticiye haber ver.</div>` : `
-    <p class="mut" style="margin:0;font-size:13.5px">KO Ekip yalnızca davetli ekip içindir. Yöneticinin verdiği <b>davet kodunu</b> gir. Kodun yoksa bekle: isteğin yöneticiye iletildi, onaylanınca bu ekran kendiliğinden açılır.</p>
+    <p class="mut" style="margin:0;font-size:13.5px">KO Ekip yalnızca <b>yönetici onayı</b> almış ekip üyelerine açıktır. İsteğin yöneticiye iletildi; onaylanınca bu ekran kendiliğinden açılır. Yönetici sana süreli bir davet kodu verdiyse aşağıya yazabilirsin.</p>
     <form class="invite-form" data-auth-form="invite" onsubmit="return false">
       <input class="inp invite-inp" id="inviteCode" maxlength="12" placeholder="DAVET KODU" autocomplete="off" autocapitalize="characters" spellcheck="false">
       <button class="btn pri auth-btn" data-act="acc-redeem" ${ACC.busy ? 'disabled' : ''}>${ACC.busy ? 'Kontrol ediliyor…' : 'Giriş yap'}</button>
@@ -104,7 +104,7 @@ async function accessRedeem() {
     if (ACC.resolve) { const r = ACC.resolve; ACC.resolve = null; stopGateWatch(); accessWatchSelf(user); showAuth('loading'); r(true); }
   } catch (e) {
     ACC.busy = false;
-    ACC.err = accPerm(e) ? 'Davet kodu geçersiz. Yöneticiden güncel kodu iste.' : 'Bağlantı hatası: ' + e.message;
+    ACC.err = accPerm(e) ? 'Davet kodu geçersiz, kapalı ya da süresi dolmuş. Yönetici onayını bekle.' : 'Bağlantı hatası: ' + e.message;
     showAuth('invite');
   }
 }
@@ -128,17 +128,18 @@ function usersCard() {
   const reqs = A.reqs.filter(r => !has.has(r.uid)).sort((a, b) => (b.at || 0) - (a.at || 0));
   const teamIds = new Set(TEAM.doc ? TEAM.doc.memberUids || [] : []);
   const myTeam = TEAM.doc && TEAM.doc.owner === me;
-  const code = A.invite && A.invite.code;
+  const inv = A.invite || {}, live = inv.enabled === true && (inv.exp || 0) > Date.now();
+  const code = live ? inv.code : '';
+  const left = live ? Math.max(1, Math.round((inv.exp - Date.now()) / 60000)) : 0;
   return `<div class="card users-card">
-    <div class="card-h"><div><h3>Kullanıcılar ve davet <span class="badge y">admin</span></h3><div class="sub">KO Ekip'e yalnızca bu listedekiler girebilir. Yeni kişiyi davet kodu ile ya da isteğini onaylayarak eklersin.</div></div></div>
+    <div class="card-h"><div><h3>Kullanıcılar ve onay <span class="badge y">admin</span></h3><div class="sub">KO Ekip'e yalnızca bu listedekiler girebilir. Google ile giriş yapan herkes "Onay bekleyenler"e düşer; sen onaylamadıkça hiçbir veriyi göremez.</div></div></div>
     ${A.err ? `<div class="callout r" style="margin-bottom:12px">${esc(A.err)}</div>` : ''}
     <div class="invite-box">
-      <div><span class="mut">Davet kodu</span><b class="invite-code">${code ? esc(code) : '—'}</b></div>
+      <div><span class="mut">Giriş yöntemi</span><b class="invite-code" style="${live ? '' : 'font-size:15px;letter-spacing:0'}">${live ? esc(code) : '🔒 Yalnızca admin onayı'}</b>${live ? `<span class="mut">${left >= 60 ? Math.round(left / 60) + ' saat' : left + ' dk'} sonra kendiliğinden kapanır</span>` : ''}</div>
       <span class="spacer"></span>
-      ${code ? `<button class="btn sm" data-act="acc-copy">${ICON.copy} Davet metnini kopyala</button>` : ''}
-      <button class="btn sm ${code ? 'ghost' : 'pri'}" data-act="acc-newcode">${code ? 'Kodu yenile' : 'Davet kodu oluştur'}</button>
+      ${live ? `<button class="btn sm" data-act="acc-copy">${ICON.copy} Davet metnini kopyala</button><button class="btn sm ghost danger" data-act="acc-codeoff">Kodu kapat</button>` : `<button class="btn sm" data-act="acc-newcode">Süreli davet kodu aç (24 saat)</button>`}
     </div>
-    <div class="hint" style="margin:6px 0 14px">Kodu yenilersen eski kod artık çalışmaz; zaten girmiş olanların erişimi devam eder.</div>
+    <div class="hint" style="margin:6px 0 14px">Önerilen: kodu kapalı tut, gelenleri tek tek onayla. Kod açıksa, kodu bilen herkes 24 saat içinde kendini ekleyebilir; süre dolunca kod kendiliğinden geçersiz olur. Zaten girmiş olanlar etkilenmez.</div>
     ${reqs.length ? `<h4 class="users-h">Onay bekleyenler <span class="badge r">${reqs.length}</span></h4>
     <div class="users-list">${reqs.map(r => `<div class="user-row req">
       ${r.photo ? `<img class="u-ph" src="${esc(r.photo)}" alt="" referrerpolicy="no-referrer">` : '<span class="u-ph"></span>'}
@@ -168,11 +169,12 @@ VIEWS.ayar = () => {
 Object.assign(ACTIONS, {
   'acc-redeem': () => accessRedeem(),
   'acc-newcode': () => {
-    const go = () => FB.setDoc(inviteRef(), { code: newCode(), at: Date.now() }).then(() => toast('Yeni davet kodu oluşturuldu', 'ok')).catch(e => toast(accPerm(e) ? 'Kaydedilemedi: Firebase kuralları yayınlanmamış' : e.message, 'err'));
-    ACC.admin.invite && ACC.admin.invite.code ? confirmBox('Davet kodunu yenile', 'Eski kod artık çalışmayacak. Erişimi olanlar etkilenmez.', 'Yenile', go) : go();
+    const go = () => FB.setDoc(inviteRef(), { code: newCode(), at: Date.now(), enabled: true, exp: Date.now() + 24 * 3600e3 }).then(() => toast('24 saatlik davet kodu açıldı', 'ok')).catch(e => toast(accPerm(e) ? 'Kaydedilemedi: Firebase kuralları yayınlanmamış' : e.message, 'err'));
+    confirmBox('Süreli davet kodu aç', 'Kodu bilen herkes <b>24 saat</b> boyunca onayın olmadan girebilir. Yalnızca güvendiğin kişilere ver; işin bitince "Kodu kapat"a bas.', 'Kodu aç', go);
   },
+  'acc-codeoff': () => FB.setDoc(inviteRef(), { enabled: false, exp: 0 }, { merge: true }).then(() => toast('Davet kodu kapatıldı · giriş yalnızca onayla', 'ok')).catch(e => toast(e.message, 'err')),
   'acc-copy': () => {
-    const txt = `KO Ekip davet kodu: ${ACC.admin.invite.code}\nforgeandplay.com → Google ile giriş yap → kodu gir.`;
+    const txt = `KO Ekip davet kodu: ${ACC.admin.invite.code} (24 saat geçerli)\nforgeandplay.com → Google ile giriş yap → kodu gir.`;
     (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Davet metni kopyalandı', 'ok')).catch(() => toast(ACC.admin.invite.code));
   },
   'acc-approve': el => {

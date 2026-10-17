@@ -57,12 +57,16 @@ export async function verifyUser(authHeader: string | null): Promise<DecodedIdTo
   }
 }
 export const isAdminEmail = (email?: string | null) => !!email && ADMIN_EMAILS.includes(email.toLowerCase());
+/** Yalnızca Google ile giriş yapmış, e-postası doğrulanmış hesaplar (Firestore kurallarıyla aynı) */
+const isGoogle = (u: DecodedIdToken) => u.firebase?.sign_in_provider === "google.com" && u.email_verified === true;
+export const isAdmin = (u: DecodedIdToken) => isGoogle(u) && isAdminEmail(u.email);
 
-/** KO Ekip davetli mi? (admin ya da kohesapAccess kaydı var) */
+/** KO Ekip onaylı üye mi? (admin ya da kohesapAccess kaydı var) */
 export async function hasAccess(u: DecodedIdToken): Promise<boolean> {
-  if (isAdminEmail(u.email)) return true;
+  if (!isGoogle(u)) return false;
+  if (isAdmin(u)) return true;
   const db = adminDb();
-  if (!db) return true; // hizmet hesabı yoksa yalnızca giriş kontrolü yapılabilir
+  if (!db) return false; // hizmet hesabı yoksa onay doğrulanamaz → kapalı
   return (await db.doc(`kohesapAccess/${u.uid}`).get()).exists;
 }
 
@@ -173,4 +177,13 @@ export function dueNotes(p: PushDoc & { bossAll?: boolean }, boss: BossMap, now:
     }
   }
   return out;
+}
+
+/** API kapısı: onaylı üye değilse 401/403 yanıtı döner, üyeyse null. */
+export async function requireMember(req: Request, headers: Record<string, string> = {}): Promise<Response | null> {
+  const u = await verifyUser(req.headers.get("authorization"));
+  const h = { ...headers, "Cache-Control": "no-store", "Content-Type": "application/json" };
+  if (!u) return new Response(JSON.stringify({ ok: false, error: "Giriş gerekli" }), { status: 401, headers: h });
+  if (!(await hasAccess(u))) return new Response(JSON.stringify({ ok: false, error: "Onay gerekli" }), { status: 403, headers: h });
+  return null;
 }

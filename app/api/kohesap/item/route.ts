@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireMember } from "@/lib/koekip-server";
 import { corsHeaders } from "@/lib/kohesap";
 import { fetchPassing } from "@/lib/kohesap-fetch";
 
@@ -17,6 +18,9 @@ const TTL = 10 * 60_000;
 const ok = (v: string | null, re: RegExp) => (v && re.test(v) ? v : "");
 
 export async function GET(req: NextRequest) {
+  // yalnızca onaylı KO Ekip üyeleri (dış site kaynaklarını korur, kötüye kullanımı engeller)
+  const gate = await requireMember(req, corsHeaders(req.headers.get("origin")));
+  if (gate) return gate;
   const q = req.nextUrl.searchParams;
   const headers = { ...corsHeaders(req.headers.get("origin")) };
   const action = ok(q.get("action"), /^(price_history|channel_compare|tooltip)$/);
@@ -51,7 +55,7 @@ export async function GET(req: NextRequest) {
       if (cache.size > 500) cache.delete(cache.keys().next().value as string);
     }
     return new NextResponse(body, {
-      headers: { ...headers, "Content-Type": "application/json", "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200" },
+      headers: { ...headers, "Content-Type": "application/json", "Cache-Control": "private, max-age=300" },
     });
   } catch (e) {
     return NextResponse.json(

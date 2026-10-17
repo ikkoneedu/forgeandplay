@@ -1,72 +1,46 @@
 rules_version = '2';
 
+// KO Ekip (forgeandplay.com) — Firestore güvenlik kuralları
+// İlke: varsayılan KAPALI. Yalnızca Google ile giriş yapmış, e-postası doğrulanmış ve
+// admin onayı (ya da adminin açtığı süreli davet kodu) almış kullanıcılar veriye erişir.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Admin allow-list (Google sign-in provides token.email)
-    function isAdmin() {
+    // Google hesabıyla giriş (anonim / e-posta-şifre girişleri hiçbir şeye erişemez)
+    function google() {
       return request.auth != null
-        && request.auth.token.email in ['carkci.caner@gmail.com'];
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.token.email_verified == true;
     }
-
-    // KO Hesap davetli erişim: admin ya da geçerli davet koduyla erişim kaydı olan kullanıcı
+    // Admin: doğrulanmış Google e-postası listede
+    function isAdmin() {
+      return google() && request.auth.token.email in ['carkci.caner@gmail.com'];
+    }
+    // KO Ekip erişimi: admin ya da erişim kaydı olan (onaylanmış) kullanıcı
     function hasKoAccess() {
-      return request.auth != null
+      return google()
         && (isAdmin() || exists(/databases/$(database)/documents/kohesapAccess/$(request.auth.uid)));
     }
-
-    // Community games: anyone can read & play; only admin can create/delete.
-    // Anyone signed in may increment the play counter (plays only).
-    match /games/{gameId} {
-      allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin()
-        || (request.auth != null
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['plays']));
+    function inviteDoc() {
+      return get(/databases/$(database)/documents/kohesapAdmin/invite).data;
     }
 
-    // Global config (e.g. hidden built-in games): public read, admin write.
+    // ---- Eski Forge&Play site verileri: kapatıldı (yalnızca admin) ----
+    match /games/{d=**} { allow read, write: if isAdmin(); }
+    match /rooms/{d=**} { allow read, write: if isAdmin(); }
+    match /tournaments/{d=**} { allow read, write: if isAdmin(); }
+    match /users/{d=**} { allow read, write: if isAdmin(); }
+    match /leaderboard/{d=**} { allow read, write: if isAdmin(); }
+
+    // Merkezi ayarlar (veri kaynakları, yayınlanan event / PUS listesi): üyeler okur, admin yazar
     match /config/{docId} {
-      allow read: if true;
+      allow read: if hasKoAccess();
       allow write: if isAdmin();
     }
 
-    // LFG rooms: anyone can read; signed-in users can create/join/leave.
-    // (Guest/anonymous sign-in counts as signed in.)
-    match /rooms/{roomId} {
-      allow read: if true;
-      allow create, update, delete: if request.auth != null;
-
-      // Room chat messages: public read, signed-in create.
-      match /messages/{msgId} {
-        allow read: if true;
-        allow create: if request.auth != null;
-      }
-    }
-
-    // Tournaments: public read; admin creates/deletes; signed-in users join/leave.
-    match /tournaments/{tId} {
-      allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if request.auth != null;
-
-      // Match result reports: public read (evidence); each user writes only their own.
-      match /reports/{uid} {
-        allow read: if true;
-        allow create, update: if request.auth != null && request.auth.uid == uid;
-      }
-    }
-
-    // Wallets: a user reads/writes only their own doc; admin may pay out to any.
-    // NOTE: real-money integrity requires server-side (Cloud Functions) checks.
-    match /users/{uid} {
-      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
-      allow write: if request.auth != null && (request.auth.uid == uid || isAdmin());
-    }
-
-    // KO Hesap canlı pazar: Windows uygulaması okuduğu pazarı paylaşır, web herkese gösterir.
+    // Canlı pazar: üyeler okur; üye uygulaması (exe) okuduğu pazarı paylaşır
     match /kohesapMarket/{docId} {
-      allow read: if true;
+      allow read: if hasKoAccess();
       allow write: if hasKoAccess()
         && request.resource.data.keys().hasOnly(['json', 'count', 'at', 'time', 'by', 'app'])
         && request.resource.data.json is string
@@ -74,8 +48,7 @@ service cloud.firestore {
         && request.resource.data.by == request.auth.uid;
     }
 
-    // KO Hesap (Knight Online defteri): her kullanıcı yalnızca kendi verisini
-    // okur/yazar. Ana belge + en fazla 4 karakter belgesi.
+    // Kişisel defter: herkes yalnızca kendi verisini okur/yazar
     match /kohesap/{uid} {
       allow read, write: if hasKoAccess() && request.auth.uid == uid;
       allow read: if isAdmin();
@@ -85,72 +58,80 @@ service cloud.firestore {
       }
     }
 
-    // KO Hesap davet kodu: yalnızca admin görür ve değiştirir.
+    // Davet kodu ayarı: yalnızca admin görür ve değiştirir
     match /kohesapAdmin/{docId} {
       allow read, write: if isAdmin();
     }
-    // Erişim kaydı: kullanıcı yalnızca GEÇERLİ davet koduyla kendi kaydını oluşturur;
-    // sonra yalnızca son görülme / ad / karakter özetini günceller. Admin her şeyi yönetir.
+
+    // Erişim kaydı.
+    //  - Varsayılan: yalnızca ADMIN ONAYI ile oluşur.
+    //  - Admin davet kodunu açarsa (enabled + süre), kullanıcı geçerli kodla kendi kaydını oluşturabilir.
+    //  - Kullanıcı sonra yalnızca son görülme / ad / karakter özetini günceller.
     match /kohesapAccess/{uid} {
-      allow get: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow get: if google() && (request.auth.uid == uid || isAdmin());
       allow list: if isAdmin();
-      allow create: if request.auth != null && request.auth.uid == uid
+      allow create: if google() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['email', 'name', 'photo', 'at', 'code'])
+        && request.resource.data.email == request.auth.token.email
         && exists(/databases/$(database)/documents/kohesapAdmin/invite)
-        && request.resource.data.code == get(/databases/$(database)/documents/kohesapAdmin/invite).data.code;
-      allow update: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seen', 'name', 'photo', 'email', 'chars']);
+        && inviteDoc().enabled == true
+        && request.time.toMillis() < inviteDoc().exp
+        && request.resource.data.code == inviteDoc().code;
+      allow update: if google() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seen', 'name', 'photo', 'email', 'chars'])
+        && request.resource.data.email == request.auth.token.email
+        && (!('chars' in request.resource.data) || request.resource.data.chars.size() <= 8);
       allow create, update, delete: if isAdmin();
     }
-    // Erişim isteği: kodu olmayan kullanıcı kendi isteğini bırakır; admin görür, onaylar ya da siler.
+
+    // Erişim isteği: Google hesabıyla giren onaysız kullanıcı yalnızca kendi isteğini bırakır
     match /kohesapRequests/{uid} {
-      allow create, update: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['email', 'name', 'photo', 'at']);
-      allow read, delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow create, update: if google() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['email', 'name', 'photo', 'at'])
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60
+        && request.resource.data.photo is string && request.resource.data.photo.size() <= 500;
+      allow read, delete: if isAdmin() || (google() && request.auth.uid == uid);
     }
 
-    // KO Ekip bildirim ayarları ve cihaz abonelikleri: herkes yalnızca kendi belgesini görür/yazar.
-    // Gönderimi sunucu (Firebase hizmet hesabı) yapar; kohesapPushState yalnızca sunucuya açıktır.
+    // Uygulama varlıkları (sınıf görselleri, zamanlayıcı durumu, ses kullanımı): üyeler okur, admin yazar
+    match /kohesapAssets/{docId} {
+      allow read: if hasKoAccess();
+      allow write: if isAdmin();
+    }
+
+    // Bildirim ayarları ve cihaz abonelikleri: herkes yalnızca kendi belgesi.
+    // Gönderimi sunucu yapar; kohesapPushState yalnızca sunucuya açıktır (kural yok = kapalı).
     match /kohesapPush/{uid} {
-      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow read, delete: if google() && request.auth.uid == uid;
       allow create, update: if hasKoAccess() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['subs', 'ev', 'boss', 'online', 'lead', 'team', 'server', 'name', 'evs', 'bossAll', 'bossIds', 'at'])
         && (!('subs' in request.resource.data) || request.resource.data.subs.size() <= 10)
         && (!('evs' in request.resource.data) || request.resource.data.evs.size() <= 60);
     }
 
-    // KO Hesap sınıf görselleri: herkes okur, yalnızca admin yazar.
-    match /kohesapAssets/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // KO Hesap ekipleri (en fazla 8 kişi). Kodu bilen giriş yapmış kullanıcı
-    // tek belgeyi okuyabilir (katılmak için); ekipler listelenemez.
-    // Üye yalnızca kendi özetini günceller; katılma/ayrılma yalnızca kendini
-    // ekler/çıkarır; lider her şeyi yapabilir (ad değiştirme, üye çıkarma).
+    // Ekipler (en fazla 8 kişi). Yalnızca onaylı kullanıcılar görür; yalnızca admin kurar.
     match /kohesapTeams/{code} {
-      function signedIn() { return request.auth != null; }
       function me() { return request.auth.uid; }
       function onlyMyEntry() {
         return request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([me()]);
       }
-      allow get: if signedIn();
+      allow get: if hasKoAccess();
       allow list: if false;
       allow create: if isAdmin()
         && code.size() == 8
         && request.resource.data.owner == me()
         && request.resource.data.memberUids == [me()]
         && request.resource.data.members.keys().hasOnly([me()]);
-      allow update: if signedIn() && (
+      allow update: if hasKoAccess() && (
         // lider
         resource.data.owner == me()
         // üye: yalnızca kendi özeti
         || (me() in resource.data.memberUids
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'updatedAt'])
             && onlyMyEntry())
-        // katılma: davetli kullanıcı kendini ekler, en fazla 8 kişi
-        || (hasKoAccess() && !(me() in resource.data.memberUids)
+        // katılma: onaylı kullanıcı kendini ekler, en fazla 8 kişi
+        || (!(me() in resource.data.memberUids)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberUids', 'updatedAt'])
             && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1
             && request.resource.data.memberUids.hasAll(resource.data.memberUids)
@@ -165,15 +146,18 @@ service cloud.firestore {
             && !(me() in request.resource.data.memberUids)
             && onlyMyEntry())
       );
-      allow delete: if signedIn() && resource.data.owner == me();
+      allow delete: if hasKoAccess() && resource.data.owner == me();
 
-      // Sesli sohbet odası: yalnızca ekip üyeleri görür; herkes yalnızca kendi kaydını yazar.
+      // Ekip üyesi (ve hâlâ onaylı)
       function isMember() {
-        return request.auth != null
+        return hasKoAccess()
           && request.auth.uid in get(/databases/$(database)/documents/kohesapTeams/$(code)).data.memberUids;
       }
-      // Ekip yazışması: üyeler okur ve kendi adına yazar (bot mesajları da gönderenin adına);
-      // mesaj değiştirilemez, sahibi ya da lider silebilir.
+      function isOwner() {
+        return get(/databases/$(database)/documents/kohesapTeams/$(code)).data.owner == request.auth.uid;
+      }
+
+      // Ekip yazışması: üyeler okur ve kendi adına yazar; mesaj değiştirilemez, sahibi ya da lider siler.
       match /chat/{msgId} {
         allow read: if isMember();
         allow create: if isMember()
@@ -182,8 +166,7 @@ service cloud.firestore {
           && request.resource.data.t.size() <= 600
           && request.resource.data.keys().hasOnly(['u', 'n', 'c', 'cls', 'nat', 'race', 'rt', 't', 'at', 'ts', 'bot', 'kind', 'r'])
           && (!('r' in request.resource.data) || (request.resource.data.r is map && request.resource.data.r.size() <= 3));
-        allow delete: if isMember() && (resource.data.u == request.auth.uid
-          || get(/databases/$(database)/documents/kohesapTeams/$(code)).data.owner == request.auth.uid);
+        allow delete: if isMember() && (resource.data.u == request.auth.uid || isOwner());
       }
 
       // Boss sayaçları (sunucu başına bir belge): üyeler okur ve günceller.
@@ -194,29 +177,23 @@ service cloud.firestore {
           && request.resource.data.by == request.auth.uid
           && request.resource.data.b is map
           && request.resource.data.b.size() <= 60;
-        allow delete: if get(/databases/$(database)/documents/kohesapTeams/$(code)).data.owner == request.auth.uid;
+        allow delete: if isMember() && isOwner();
       }
 
+      // Sesli sohbet odası
       match /voice/{uid} {
         allow read: if isMember();
         allow create, update: if isMember() && request.auth.uid == uid;
-        allow delete: if isMember() && (request.auth.uid == uid
-          || get(/databases/$(database)/documents/kohesapTeams/$(code)).data.owner == request.auth.uid);
+        allow delete: if isMember() && (request.auth.uid == uid || isOwner());
         // Bağlantı mesajları: üye başka bir üyenin kutusuna yazar, kutu sahibi okur ve siler.
         match /inbox/{msgId} {
           allow create: if isMember()
             && request.resource.data.from == request.auth.uid
             && request.resource.data.keys().hasOnly(['t', 'sdp', 'c', 'from', 'fs', 'ts', 'at'])
             && (!('sdp' in request.resource.data) || request.resource.data.sdp.size() < 20000);
-          allow read, delete: if request.auth != null && request.auth.uid == uid;
+          allow read, delete: if google() && request.auth.uid == uid;
         }
       }
-    }
-
-    // Public leaderboard stats (name / wins / earnings); written by admin payouts.
-    match /leaderboard/{uid} {
-      allow read: if true;
-      allow write: if isAdmin();
     }
   }
 }

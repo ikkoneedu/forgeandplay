@@ -1,13 +1,14 @@
 import type { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/site";
 
+/** KO Ekip özel (davetli) bir uygulama: arama motorları ve yapay zekâ tarayıcıları dizinlemesin. */
 export default function robots(): MetadataRoute.Robots {
+  const ai = ["GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "Claude-User", "Claude-SearchBot", "anthropic-ai",
+    "PerplexityBot", "Perplexity-User", "Google-Extended", "GoogleOther", "CCBot", "Bytespider", "Amazonbot",
+    "Applebot-Extended", "meta-externalagent", "FacebookBot", "cohere-ai", "Diffbot", "MistralAI-User", "DuckAssistBot"];
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-    },
-    sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
+    rules: [
+      ...ai.map((userAgent) => ({ userAgent, disallow: "/" })),
+      { userAgent: "*", disallow: "/" },
+    ],
   };
 }
