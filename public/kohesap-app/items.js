@@ -57,7 +57,7 @@ VIEWS.pus = () => {
   const cart = P.cart.map(c => ({ c, it: P.catalog.find(x => x.id === c.id) })).filter(x => x.it);
   const totKC = sum(cart, x => x.it.kc * x.c.qty), qtyAll = sum(cart, x => x.c.qty);
   const packKC = st.kcPackKC || 400, packs = Math.ceil(totKC / packKC);
-  const cashTL = packs * (st.kcPackTL || 0), propTL = totKC * k, gb = st.gbTL ? propTL / st.gbTL : 0;
+  const cashTL = packs * (st.kcPackTL || KC_DEFAULT.tl), propTL = totKC * k, gb = st.gbTL ? propTL / st.gbTL : 0;
   const count = c => P.catalog.filter(x => x.cat === c).length;
   const card = x => {
     const qn = inCart.get(x.id) || 0;
@@ -98,14 +98,14 @@ VIEWS.pus = () => {
     <aside class="card pus-cart" id="pusCart">
       <div class="card-h"><h3>Sepet ${qtyAll ? `<span class="badge g">${qtyAll}</span>` : ''}</h3>${cart.length ? `<button class="btn sm ghost" data-act="cart-clear">Temizle</button>` : ''}</div>
       <div class="form" style="margin-bottom:14px">
-        <label class="f">${fmtN(packKC)} KC paket (TL)<input class="inp num" data-fk="kcPackTL2" data-set="kcPackTL" data-num="1" value="${st.kcPackTL ? nf2.format(st.kcPackTL) : ''}" placeholder="örn. 227,50"></label>
+        <label class="f">${fmtN(packKC)} KC paket (TL)<input class="inp num" data-fk="kcPackTL2" data-set="kcPackTL" data-num="1" value="${nf2.format(st.kcPackTL || KC_DEFAULT.tl)}" placeholder="örn. 227,50"><span class="hint">${esc(kcInfo())} · <a href="#" data-act="kc-refresh">şimdi güncelle</a></span></label>
         <label class="f">1 GB (TL)${st.server ? ' · ' + esc(st.server) : ''}<input class="inp num" data-fk="gbTL2" data-set="gbTL" data-num="1" value="${st.gbTL ? nf2.format(st.gbTL) : ''}"></label>
       </div>
       ${cart.length ? `<div class="cart-list">${cartRows}</div>` : '<div class="empty" style="padding:22px 10px"><b>Sepet boş</b>Soldaki kartlara dokunarak item ekleyin.</div>'}
       <div class="kv" style="margin-top:16px">
         <span class="k">Toplam KC</span><span class="v">${fmtN(totKC)}</span>
         <span class="k">Gereken paket</span><span class="v">${packs} × ${fmtN(packKC)} KC${totKC ? ` <span class="mut" style="font-weight:400">(${fmtN(packs * packKC - totKC)} KC artar)</span>` : ''}</span>
-        <span class="k">Ödenecek nakit</span><span class="v">${st.kcPackTL ? fmtTL(cashTL) : '—'}</span>
+        <span class="k">Ödenecek nakit</span><span class="v">${fmtTL(cashTL)}</span>
         <span class="sep"></span>
         <span class="k">Orantılı maliyet</span><span class="v big-result" style="font-size:22px">${k ? fmtTL(propTL) : '—'}</span>
         <span class="k">GB karşılığı</span><span class="v gold">${gb ? nf2.format(gb) + ' GB' : '—'}</span>

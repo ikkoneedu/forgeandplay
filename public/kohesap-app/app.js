@@ -96,7 +96,33 @@ const gbOf = noah => noah / (S.settings.gbNoah || 1e8);
 const tlOf = noah => S.settings.gbTL > 0 ? gbOf(noah) * S.settings.gbTL : null;
 const noahOfTL = tl => S.settings.gbTL > 0 ? Math.round(tl / S.settings.gbTL * (S.settings.gbNoah || 1e8)) : null;
 const fmtTL = tl => tl == null ? '—' : '₺' + nf2.format(tl);
-const kcTL = () => S.settings.kcPackKC > 0 ? S.settings.kcPackTL / S.settings.kcPackKC : 0;
+/* KC fiyatı: sitelerden otomatik alınır (12 saatte bir); hiç alınamazsa son bilinen piyasa fiyatı kullanılır
+   (17.10.2026: 400 KC = 227,50 TL — bynogame / oyuneks / knightpin). */
+const KC_DEFAULT = { kc: 400, tl: 227.5, date: '17.10.2026' };
+const kcTL = () => S.settings.kcPackKC > 0 && S.settings.kcPackTL > 0 ? S.settings.kcPackTL / S.settings.kcPackKC : KC_DEFAULT.tl / KC_DEFAULT.kc;
+let kcBusy = false;
+async function updateKC(force) {
+  if (kcBusy || !DB || !CUR.ch) return;
+  const st = S.settings;
+  if (st.kcAuto === false && !force) return;
+  if (!force && Date.now() - (st.kcAt || 0) < 12 * 3600e3) return;
+  kcBusy = true;
+  try {
+    const base = typeof serverMode !== 'undefined' && serverMode && typeof siteBase === 'function' ? siteBase() : '';
+    const r = await fetchT(base + '/api/kohesap/kc', { cache: 'no-store' }, 20000);
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'okunamadı');
+    st.kcPackKC = j.kc; st.kcPackTL = j.tl; st.kcSrc = j.src; st.kcAt = Date.now(); st.kcAuto = true;
+    save(); if (['pus', 'kasa', 'panel'].includes(ui.page)) render();
+    if (force) toast(`KC fiyatı güncellendi: ${fmtN(j.kc)} KC = ${fmtTL(j.tl)} (${j.src})`, 'ok');
+  } catch (e) { st.kcAt = Date.now() - 11 * 3600e3; if (force) toast('KC fiyatı alınamadı: ' + e.message, 'err'); }
+  finally { kcBusy = false; }
+}
+setInterval(() => updateKC(false), 60000);
+// fiyatı elle değiştiren kullanıcı için otomatik güncelleme kapanır ("şimdi güncelle" ile tekrar açılır)
+document.addEventListener('change', e => { const d = e.target && e.target.dataset; if (d && d.set === 'kcPackTL' && S && S.settings) { S.settings.kcAuto = false; S.settings.kcSrc = ''; } }, true);
+setTimeout(() => updateKC(false), 8000);
+const kcInfo = () => { const st = S.settings; return st.kcPackTL > 0 ? (st.kcSrc ? `otomatik · ${st.kcSrc} · ${new Date(st.kcAt || 0).toLocaleDateString('tr-TR')}` : 'elle girildi') : `piyasa fiyatı (${KC_DEFAULT.date})`; };
 function moneyHTML(noah, opts = {}) {
   const cls = opts.sign ? (noah > 0 ? 'pos' : noah < 0 ? 'neg' : '') : '';
   const pre = opts.sign && noah > 0 ? '+' : '';
@@ -386,18 +412,68 @@ function partyCalc(p) {
 
 const pusTL = b => (b.kc || 0) * (b.qty || 1) * kcTL();
 
+/* ---------- ORTAK DEFTER ----------
+   Tüm para hareketleri tek listede: Panel, Gelir/Gider, CSV ve ay özetleri hep buradan hesaplanır.
+   - Elle girilen gelir / gider
+   - PUS alımları                → gider (KC × KC fiyatı → TL → noah)
+   - Item ticareti: alım         → gider (alış tarihinde), satış → gelir (satış tarihinde, komisyon düşülmüş)
+   - Parti / drop: payım         → gelir (parti tarihinde)
+   noah karşılığı hesaplanamayan (KC ya da GB fiyatı girilmemiş) satırlar ayrıca sayılır. */
+function ledger() {
+  const out = [];
+  S.tx.forEach(t => out.push({ id: t.id, ref: t.id, src: 'tx', date: t.date, type: t.type, cat: t.cat, desc: t.desc, unit: t.unit, amount: t.amount,
+    noah: t.unit === 'tl' ? noahOfTL(t.amount) : t.amount, tl: txTL(t) }));
+  const k = kcTL();
+  S.pus.buys.forEach(b => {
+    const kc = (b.kc || 0) * (b.qty || 1), tl = k ? kc * k : null;
+    out.push({ id: 'pus-' + b.id, ref: b.id, src: 'pus', date: b.date, type: 'gider', cat: 'PUS', desc: `${b.item}${b.qty > 1 ? ' ×' + b.qty : ''}`, kc,
+      unit: 'tl', amount: tl, noah: tl == null ? null : noahOfTL(tl), tl });
+  });
+  S.trades.forEach(t => {
+    const c = tradeCalc(t), q = t.qty > 1 ? ' ×' + t.qty : '';
+    if (t.buyPrice > 0) out.push({ id: 'trb-' + t.id, ref: t.id, src: 'trade', date: t.buyDate || t.sellDate || '', type: 'gider', cat: 'Item alımı', desc: t.item + q, unit: 'noah', amount: c.cost, noah: c.cost, tl: tlOf(c.cost) });
+    if (t.status === 'satildi' && t.sellPrice > 0) { const v = c.netSell * t.qty; out.push({ id: 'trs-' + t.id, ref: t.id, src: 'trade', date: t.sellDate || t.buyDate || '', type: 'gelir', cat: 'Item satışı', desc: `${t.item}${q} · kâr ${c.profit >= 0 ? '+' : ''}${fmtShort(c.profit)}`, unit: 'noah', amount: v, noah: v, tl: tlOf(v) }); }
+  });
+  S.parties.forEach(p => {
+    const me = partyCalc(p).res.find(r => r.m.me);
+    if (!me || !me.income) return;
+    const items = p.drops.map(d => d.item + (d.qty > 1 ? ' ×' + d.qty : '')).slice(0, 4).join(', ');
+    const v = Math.abs(me.income);
+    out.push({ id: 'pt-' + p.id, ref: p.id, src: 'party', date: p.date, type: me.income > 0 ? 'gelir' : 'gider', cat: 'Parti / Drop', desc: `${p.name}${items ? ' · ' + items + (p.drops.length > 4 ? '…' : '') : ''}`, unit: 'noah', amount: v, noah: v, tl: tlOf(v) });
+  });
+  return out;
+}
+const rowNoah = r => r.noah || 0;
 function monthSummary(ym) {
-  const tx = S.tx.filter(t => inMonth(t.date, ym));
-  const txIn = sum(tx.filter(t => t.type === 'gelir'), txNoah);
-  const txOut = sum(tx.filter(t => t.type === 'gider'), txNoah);
+  const rows = ledger().filter(r => !ym || inMonth(r.date, ym));
+  const by = (src, type) => sum(rows.filter(r => r.src === src && r.type === type), rowNoah);
+  const gelir = sum(rows.filter(r => r.type === 'gelir'), rowNoah), gider = sum(rows.filter(r => r.type === 'gider'), rowNoah);
+  const pus = rows.filter(r => r.src === 'pus');
   const tradeP = sum(S.trades.filter(t => t.status === 'satildi' && inMonth(t.sellDate, ym)), t => tradeCalc(t).profit);
-  const partyIn = sum(S.parties.filter(p => inMonth(p.date, ym)), p => { const me = partyCalc(p).res.find(r => r.m.me); return me ? me.income : 0; });
-  const pusTLsum = sum(S.pus.buys.filter(b => inMonth(b.date, ym)), pusTL);
-  const pusOut = noahOfTL(pusTLsum) ?? 0;
-  const gelir = txIn + Math.max(0, tradeP) + partyIn;
-  const gider = txOut + Math.max(0, -tradeP) + pusOut;
-  const tlMissing = !S.settings.gbTL && (tx.some(t => t.unit === 'tl') || pusTLsum > 0);
-  return { txIn, txOut, tradeP, partyIn, pusOut, pusTL: pusTLsum, gelir, gider, net: gelir - gider, tlMissing, count: tx.length };
+  const noPrice = rows.filter(r => r.noah == null);
+  return {
+    gelir, gider, net: gelir - gider, rows,
+    txIn: by('tx', 'gelir'), txOut: by('tx', 'gider'),
+    tradeIn: by('trade', 'gelir'), tradeOut: by('trade', 'gider'), tradeP,
+    partyIn: by('party', 'gelir') - by('party', 'gider'),
+    pusOut: sum(pus, rowNoah), pusTL: sum(pus, r => r.tl || 0), pusKC: sum(pus, r => r.kc || 0),
+    noKC: noPrice.filter(r => r.src === 'pus' && !kcTL()).length, noGB: noPrice.filter(r => !(r.src === 'pus' && !kcTL())).length,
+    noPriceKC: sum(noPrice.filter(r => r.src === 'pus'), r => r.kc || 0),
+    tlMissing: noPrice.length > 0, count: rows.length,
+  };
+}
+/* fiyat eksikse: yerinde düzeltme kutusu */
+function priceFixBox(m) {
+  if (!m.noKC && !m.noGB) return '';
+  return `<div class="callout y price-fix" style="margin-bottom:14px">
+    ${m.noKC ? `<div><b>${fmtN(m.noPriceKC)} KC</b> tutarındaki PUS alımı gidere eklenemiyor: KC fiyatı girilmemiş.
+      <span class="pf-row"><input class="inp num" style="width:90px" data-pf-kc value="${S.settings.kcPackKC || 400}"> KC =
+      <input class="inp num" style="width:110px" data-pf-tl placeholder="TL" value="${S.settings.kcPackTL || ''}"> TL
+      <button class="btn sm pri" data-act="pf-kc">Kaydet</button></span></div>` : ''}
+    ${m.noGB ? `<div>${m.noGB} kayıt TL ile girilmiş ama 1 GB'ın TL fiyatı yok; noah toplamına katılamıyor.
+      <span class="pf-row">1 GB = <input class="inp num" style="width:110px" data-pf-gb placeholder="TL" value="${S.settings.gbTL || ''}"> TL
+      <button class="btn sm pri" data-act="pf-gb">Kaydet</button> <button class="btn sm ghost" data-act="go" data-id="gb">Canlı GB fiyatları</button></span></div>` : ''}
+  </div>`;
 }
 
 /* ==========================================================================
@@ -419,17 +495,18 @@ VIEWS.panel = () => {
   const months = Array.from({ length: 12 }, (_, i) => addMonth(ui.month, i - 11));
   const series = months.map(ym => ({ ym, ...monthSummary(ym) }));
   const maxV = Math.max(1, ...series.map(s => Math.max(s.gelir, s.gider)));
-  const recent = [...S.tx].sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)).slice(0, 7);
+  const recent = ledger().sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)).slice(0, 7);
   const br = [
-    ['Kasa gelirleri', m.txIn, 'var(--green)'],
-    ['Ticaret kârı (net)', m.tradeP, 'var(--blue)'],
+    ['Elle girilen gelirler', m.txIn, 'var(--green)'],
+    ['Item satışları', m.tradeIn, 'var(--blue)'],
     ['Parti payım', m.partyIn, 'var(--violet)'],
-    ['Kasa giderleri', -m.txOut, 'var(--red)'],
+    ['Elle girilen giderler', -m.txOut, 'var(--red)'],
+    ['Item alımları', -m.tradeOut, 'var(--blue)'],
     ['PUS harcaması', -m.pusOut, 'var(--gold)'],
   ];
   const brMax = Math.max(1, ...br.map(b => Math.abs(b[1])));
   return `
-  ${m.tlMissing ? `<div class="callout y" style="margin-bottom:16px">Bu ayda TL cinsinden kayıtlar var ama 1 GB'ın TL fiyatı girilmemiş; bu kayıtlar noah toplamına katılamıyor. <a href="#" data-act="go" data-id="internet" class="gold">GB fiyatını gir →</a></div>` : ''}
+  ${priceFixBox(m)}
   <div class="grid g4">
     ${stat('Bu ay gelir', moneyHTML(m.gelir, { short: true }), tlSub(m.gelir), 'var(--green)')}
     ${stat('Bu ay gider', moneyHTML(m.gider, { short: true }), tlSub(m.gider), 'var(--red)')}
@@ -459,7 +536,7 @@ VIEWS.panel = () => {
       <div class="card-h"><h3>Son hareketler</h3><button class="btn sm ghost" data-act="go" data-id="kasa">Tümü →</button></div>
       ${recent.length ? `<div class="tbl-wrap"><table><tbody>${recent.map(t => `
         <tr><td class="mut" style="width:96px">${fmtDate(t.date)}</td><td>${t.type === 'gelir' ? '<span class="badge g">Gelir</span>' : '<span class="badge r">Gider</span>'}</td>
-        <td>${esc(t.cat)}<div class="hint">${esc(t.desc)}</div></td><td class="num">${t.unit === 'tl' ? `<span class="${t.type === 'gelir' ? 'pos' : 'neg'}">${fmtTL(t.amount)}</span>` : moneyHTML(t.type === 'gelir' ? t.amount : -t.amount, { sign: true })}</td></tr>`).join('')}</tbody></table></div>`
+        <td>${esc(t.cat)}<div class="hint">${esc(t.desc)}</div></td><td class="num">${t.noah == null ? (t.src === 'pus' ? `<span class="mut">${fmtN(t.kc)} KC</span>` : `<span class="${t.type === 'gelir' ? 'pos' : 'neg'}">${fmtTL(t.amount)}</span>`) : moneyHTML(t.type === 'gelir' ? t.noah : -t.noah, { sign: true, short: true })}</td></tr>`).join('')}</tbody></table></div>`
       : empty('Henüz hareket yok', 'İlk gelir veya giderinizi ekleyerek başlayın.')}
     </div>
     <div class="card">
@@ -482,36 +559,18 @@ VIEWS.panel = () => {
 };
 
 /* ---------- GELİR / GİDER ---------- */
-/* Gelir / Gider listesine diğer sayfalardaki hareketler de otomatik düşer:
-   PUS alımları (gider), parti / drop payın (gelir), satılan itemlerin kârı / zararı. */
-function autoTx() {
-  const out = [];
-  S.pus.buys.forEach(b => {
-    const tl = pusTL(b), noah = noahOfTL(tl);
-    out.push({ id: 'pus-' + b.id, auto: 'pus', date: b.date, type: 'gider', cat: 'PUS', desc: `${b.item}${b.qty > 1 ? ' ×' + b.qty : ''} · ${fmtN((b.kc || 0) * (b.qty || 1))} KC`, amount: tl, unit: 'tl', noah: noah ?? null });
-  });
-  S.parties.forEach(p => {
-    const c = partyCalc(p), me = c.res.find(r => r.m.me);
-    if (!me || !me.income) return;
-    const items = p.drops.map(d => d.item + (d.qty > 1 ? ' ×' + d.qty : '')).slice(0, 4).join(', ');
-    out.push({ id: 'pt-' + p.id, auto: 'parti', date: p.date, type: me.income > 0 ? 'gelir' : 'gider', cat: 'Parti / Drop', desc: `${p.name}${items ? ' · ' + items + (p.drops.length > 4 ? '…' : '') : ''}`, amount: Math.abs(me.income), unit: 'noah' });
-  });
-  S.trades.filter(t => t.status === 'satildi' && t.sellDate).forEach(t => {
-    const pr = tradeCalc(t).profit; if (!pr) return;
-    out.push({ id: 'tr-' + t.id, auto: 'ticaret', date: t.sellDate, type: pr > 0 ? 'gelir' : 'gider', cat: 'Item ticareti', desc: `${t.item}${t.qty > 1 ? ' ×' + t.qty : ''} ${pr > 0 ? 'kârı' : 'zararı'}`, amount: Math.abs(pr), unit: 'noah' });
-  });
-  return out;
-}
-const rowNoah = t => t.auto === 'pus' ? (t.noah ?? 0) : txNoah(t);
-const AUTO_LBL = { pus: 'PUS', parti: 'Parti', ticaret: 'Ticaret' };
+const SRC_LBL = { pus: 'PUS', trade: 'Ticaret', party: 'Parti' };
 VIEWS.kasa = () => {
-  let list = S.tx.concat(autoTx()).filter(t => ui.allMonths || inMonth(t.date, ui.month));
+  const m = monthSummary(ui.allMonths ? '' : ui.month);
+  let list = m.rows.slice();
   if (ui.txType !== 'all') list = list.filter(t => t.type === ui.txType);
   if (ui.txQ) { const q = ui.txQ.toLocaleLowerCase('tr'); list = list.filter(t => (t.cat + ' ' + t.desc).toLocaleLowerCase('tr').includes(q)); }
   list.sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id));
   const tIn = sum(list.filter(t => t.type === 'gelir'), rowNoah), tOut = sum(list.filter(t => t.type === 'gider'), rowNoah);
+  const kcOpen = sum(list.filter(t => t.src === 'pus' && t.noah == null), t => t.kc || 0);
   const cats = {};
   list.forEach(t => { const k = t.type + '|' + t.cat; cats[k] = (cats[k] || 0) + rowNoah(t); });
+  list.filter(t => t.src === 'pus' && t.noah == null).forEach(t => { cats['gider|PUS'] = cats['gider|PUS'] || 0; });
   const catArr = Object.entries(cats).sort((a, b) => b[1] - a[1]);
   const cMax = Math.max(1, ...catArr.map(c => c[1]));
   return `
@@ -524,11 +583,10 @@ VIEWS.kasa = () => {
     <button class="btn" data-act="tx-add" data-type="gider">${ICON.plus} Gider</button>
     <button class="btn pri" data-act="tx-add" data-type="gelir">${ICON.plus} Gelir</button>
   </div>
-  ${list.some(t => t.auto === 'pus' && !t.amount) ? `<div class="callout y" style="margin-bottom:12px">PUS alımların listede ama tutarı 0 görünüyor: <b>PUS Hesabı</b> sayfasında KC paket fiyatını (ör. 400 KC = 250 TL) bir kez gir, tüm PUS harcamaların gidere TL ve noah olarak yansısın. <button class="btn sm" data-act="go" data-id="pus">PUS sayfasına git</button></div>` : ''}
-  ${list.some(t => t.unit === 'tl' && !S.settings.gbTL && (t.auto !== 'pus' || t.amount)) ? `<div class="callout y" style="margin-bottom:12px">TL ile girilen harcamaların noah karşılığı için GB fiyatı gerekiyor. <button class="btn sm" data-act="go" data-id="gb">GB fiyatlarına git</button></div>` : ''}
+  ${priceFixBox(m)}
   <div class="grid g3" style="margin-bottom:16px">
     ${stat('Gelir', moneyHTML(tIn), tlSub(tIn), 'var(--green)')}
-    ${stat('Gider', moneyHTML(tOut), tlSub(tOut), 'var(--red)')}
+    ${stat('Gider', moneyHTML(tOut), tlSub(tOut) + (kcOpen ? ` · <span class="neg">+${fmtN(kcOpen)} KC fiyatsız</span>` : ''), 'var(--red)')}
     ${stat('Fark', moneyHTML(tIn - tOut, { sign: true }), tlSub(tIn - tOut), 'var(--gold)')}
   </div>
   <div class="grid g-wide">
@@ -539,9 +597,9 @@ VIEWS.kasa = () => {
         <td class="mut">${fmtDate(t.date)}</td>
         <td>${t.type === 'gelir' ? '<span class="badge g">Gelir</span>' : '<span class="badge r">Gider</span>'}</td>
         <td>${esc(t.cat)}</td><td>${esc(t.desc) || '<span class="mut">—</span>'}</td>
-        <td class="num">${t.auto === 'pus' && !t.amount ? '<span class="mut">KC fiyatı girilmemiş</span>' : t.unit === 'tl' && !S.settings.gbTL ? '<span class="mut">GB fiyatı yok</span>' : moneyHTML(t.type === 'gelir' ? rowNoah(t) : -rowNoah(t), { sign: true })}</td>
-        <td class="num mut">${fmtTL(t.auto === 'pus' ? t.amount : txTL(t))}${t.unit === 'tl' ? ' <span class="badge y">TL</span>' : ''}</td>
-        <td>${t.auto ? `<button class="btn sm ghost" data-act="go" data-id="${t.auto === 'parti' ? 'parti' : t.auto}" title="Bu kayıt ${AUTO_LBL[t.auto]} sayfasından gelir; orada düzenlenir"><span class="badge b">${AUTO_LBL[t.auto]}</span> aç ›</button>` : actBtns('tx', t.id)}</td></tr>`).join('')}</tbody></table></div>`
+        <td class="num">${t.noah == null ? `<span class="mut">${t.src === 'pus' ? fmtN(t.kc) + ' KC · fiyat yok' : 'GB fiyatı yok'}</span>` : moneyHTML(t.type === 'gelir' ? t.noah : -t.noah, { sign: true })}</td>
+        <td class="num mut">${fmtTL(t.tl)}${t.unit === 'tl' && t.src === 'tx' ? ' <span class="badge y">TL</span>' : ''}</td>
+        <td>${t.src === 'tx' ? actBtns('tx', t.id) : `<div class="acts"><span class="badge b" title="Bu kayıt ${SRC_LBL[t.src]} sayfasından geliyor">${SRC_LBL[t.src]}</span><button class="icon-btn" title="Düzenle" data-act="lg-edit" data-src="${t.src}" data-id="${t.ref}">${ICON.edit}</button><button class="icon-btn" title="Sil" data-act="lg-del" data-src="${t.src}" data-id="${t.ref}">${ICON.del}</button></div>`}</td></tr>`).join('')}</tbody></table></div>`
       : empty('Bu filtrede kayıt yok', 'Sağ üstten gelir veya gider ekleyin. PUS alımları, parti payın ve item ticareti kârın da buraya kendiliğinden düşer.')}
     </div>
     <div class="card"><div class="card-h"><h3>Kategoriler</h3><span class="sub">${ui.allMonths ? 'Tüm zamanlar' : monthName(ui.month)}</span></div>
@@ -1340,8 +1398,32 @@ const ACTIONS = {
   'tx-add': el => txForm(null, el.dataset.type),
   'tx-edit': el => txForm(S.tx.find(t => t.id === el.dataset.id)),
   'tx-del': el => confirmBox('Kaydı sil', 'Bu gelir/gider kaydı silinsin mi?', 'Sil', () => { S.tx = S.tx.filter(t => t.id !== el.dataset.id); save(); render(); }),
-  'csv-tx': () => csv('gelir-gider.csv', ['Tarih', 'Tür', 'Kategori', 'Açıklama', 'Birim', 'Tutar', 'Noah', 'TL'],
-    S.tx.slice().sort((a, b) => a.date.localeCompare(b.date)).map(t => [t.date, t.type, t.cat, t.desc, t.unit, t.amount, txNoah(t), txTL(t) == null ? '' : txTL(t).toFixed(2).replace('.', ',')])),
+  'csv-tx': () => csv('gelir-gider.csv', ['Tarih', 'Tür', 'Kaynak', 'Kategori', 'Açıklama', 'Noah', 'TL', 'KC'],
+    ledger().sort((a, b) => (a.date || '').localeCompare(b.date || '')).map(t => [t.date, t.type, t.src === 'tx' ? 'Elle' : SRC_LBL[t.src], t.cat, t.desc, t.noah == null ? '' : Math.round(t.noah), t.tl == null ? '' : t.tl.toFixed(2).replace('.', ','), t.kc || ''])),
+  // defterdeki otomatik satırlar: kaynağında düzenle / sil
+  'lg-edit': el => {
+    const id = el.dataset.id;
+    if (el.dataset.src === 'pus') return pusForm(S.pus.buys.find(b => b.id === id));
+    if (el.dataset.src === 'trade') return tradeForm(S.trades.find(t => t.id === id));
+    if (el.dataset.src === 'party') { ui.partyId = id; ui.page = 'parti'; render(); }
+  },
+  'lg-del': el => {
+    const id = el.dataset.id, src = el.dataset.src;
+    if (src === 'pus') { const b = S.pus.buys.find(x => x.id === id); return confirmBox('PUS alımını sil', `<b>${esc(b ? b.item : '')}</b> alımı silinsin mi? Giderlerden de düşer.`, 'Sil', () => { S.pus.buys = S.pus.buys.filter(x => x.id !== id); save(); render(); toast('Silindi', 'ok'); }); }
+    if (src === 'trade') { const t = S.trades.find(x => x.id === id); return confirmBox('Ticaret kaydını sil', `<b>${esc(t ? t.item : '')}</b> kaydı silinsin mi? Alım (gider) ve satış (gelir) satırlarının ikisi de kalkar.`, 'Sil', () => { S.trades = S.trades.filter(x => x.id !== id); save(); render(); toast('Silindi', 'ok'); }); }
+    if (src === 'party') { const p = S.parties.find(x => x.id === id); return confirmBox('Partiyi sil', `<b>${esc(p ? p.name : '')}</b> partisi ve tüm drop kayıtları silinsin mi?`, 'Sil', () => { S.parties = S.parties.filter(x => x.id !== id); if (ui.partyId === id) ui.partyId = null; save(); render(); toast('Silindi', 'ok'); }); }
+  },
+  'kc-refresh': () => updateKC(true),
+  'pf-kc': () => {
+    const kc = parseNum(($('[data-pf-kc]') || {}).value), tl = parseNum(($('[data-pf-tl]') || {}).value);
+    if (!(kc > 0 && tl > 0)) return toast('KC ve TL girin (ör. 400 KC = 250 TL)', 'err');
+    S.settings.kcPackKC = kc; S.settings.kcPackTL = tl; save(); render(); toast('KC fiyatı kaydedildi: tüm PUS alımları gidere yansıdı', 'ok');
+  },
+  'pf-gb': () => {
+    const v = parseNum(($('[data-pf-gb]') || {}).value);
+    if (!(v > 0)) return toast('1 GB fiyatını TL olarak girin', 'err');
+    S.settings.gbTL = v; save(); render(); toast('GB fiyatı kaydedildi', 'ok');
+  },
   // ticaret
   'tr-add': () => tradeForm(null),
   'tr-edit': el => tradeForm(S.trades.find(t => t.id === el.dataset.id)),
@@ -1363,7 +1445,7 @@ const ACTIONS = {
   // pus
   'pus-add': () => pusForm(null),
   'pus-edit': el => pusForm(S.pus.buys.find(b => b.id === el.dataset.id)),
-  'pus-del': el => { S.pus.buys = S.pus.buys.filter(b => b.id !== el.dataset.id); save(); render(); },
+  'pus-del': el => confirmBox('PUS alımını sil', 'Bu PUS alımı silinsin mi? Giderlerden de düşer.', 'Sil', () => { S.pus.buys = S.pus.buys.filter(b => b.id !== el.dataset.id); save(); render(); }),
   // exp
   'exp-save-level': () => { const c = S.exp.calc; const n = parseAmt(c.need); if (!n) return; S.exp.table[c.level] = n; c.need = ''; save(); render(); toast(`Seviye ${c.level} kaydedildi`, 'ok'); },
   'exp-tbl-del': el => { delete S.exp.table[el.dataset.id]; save(); render(); },

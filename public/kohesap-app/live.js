@@ -495,7 +495,7 @@ VIEWS.pus = () => {
   const totKC = sum(cart, x => x.it.kc * x.c.qty);
   const packKC = st.kcPackKC || 400;
   const packs = Math.ceil(totKC / packKC);
-  const cashTL = packs * (st.kcPackTL || 0);
+  const cashTL = packs * (st.kcPackTL || KC_DEFAULT.tl);
   const propTL = totKC * k;
   const gb = st.gbTL ? propTL / st.gbTL : 0;
   const top = `
@@ -519,7 +519,7 @@ VIEWS.pus = () => {
     <div class="card">
       <div class="card-h"><h3>Sepet</h3>${cart.length ? `<button class="btn sm ghost" data-act="cart-clear">Temizle</button>` : ''}</div>
       <div class="form" style="margin-bottom:14px">
-        <label class="f">${fmtN(packKC)} KC paket fiyatı (TL)<input class="inp num" data-fk="kcPackTL2" data-set="kcPackTL" data-num="1" value="${st.kcPackTL ? nf2.format(st.kcPackTL) : ''}" placeholder="örn. 227,50"></label>
+        <label class="f">${fmtN(packKC)} KC paket fiyatı (TL)<input class="inp num" data-fk="kcPackTL2" data-set="kcPackTL" data-num="1" value="${nf2.format(st.kcPackTL || KC_DEFAULT.tl)}" placeholder="örn. 227,50"><span class="hint">${esc(kcInfo())} · <a href="#" data-act="kc-refresh">şimdi güncelle</a></span></label>
         <label class="f">1 GB (TL) · ${esc(st.server || '')}<input class="inp num" data-fk="gbTL2" data-set="gbTL" data-num="1" value="${st.gbTL ? nf2.format(st.gbTL) : ''}"></label>
       </div>
       ${cart.length ? `<div class="stack" style="gap:6px;max-height:230px;overflow:auto">${cart.map(({ c, it }) => `
@@ -531,7 +531,7 @@ VIEWS.pus = () => {
       <div class="kv" style="margin-top:16px">
         <span class="k">Toplam KC</span><span class="v">${fmtN(totKC)}</span>
         <span class="k">Gereken paket</span><span class="v">${packs} × ${fmtN(packKC)} KC${totKC ? ` <span class="mut" style="font-weight:400">(${fmtN(packs * packKC - totKC)} KC artar)</span>` : ''}</span>
-        <span class="k">Ödenecek nakit</span><span class="v">${st.kcPackTL ? fmtTL(cashTL) : '—'}</span>
+        <span class="k">Ödenecek nakit</span><span class="v">${fmtTL(cashTL)}</span>
         <span class="sep"></span>
         <span class="k">Orantılı maliyet</span><span class="v big-result" style="font-size:22px">${k ? fmtTL(propTL) : '—'}</span>
         <span class="k">GB karşılığı</span><span class="v gold">${gb ? nf2.format(gb) + ' GB' : '—'}</span>
