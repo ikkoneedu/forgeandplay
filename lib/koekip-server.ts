@@ -17,7 +17,7 @@ export const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "carkci.can
   .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 
 function serviceAccount(): Record<string, string> | null {
-  const raw = (process.env.FIREBASE_SERVICE_ACCOUNT || "").trim();
+  const raw = (process.env.FIREBASE_SERVICE_ACCOUNT || "").trim().replace(/^'|'$/g, "");
   if (!raw) return null;
   try {
     const txt = raw.startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8");
@@ -68,15 +68,22 @@ export async function hasAccess(u: DecodedIdToken): Promise<boolean> {
 
 /* ---------------- Web Push ---------------- */
 let vapidOk: boolean | null = null;
+/** Vercel'e yapıştırırken araya giren boşluk / sekme / tırnak temizlenir. */
+export const env = (k: string) => (process.env[k] || "").trim().replace(/^["']|["']$/g, "").trim();
 export function pushReady(): boolean {
   if (vapidOk !== null) return vapidOk;
-  const pub = process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const priv = process.env.VAPID_PRIVATE_KEY;
+  const pub = vapidPublic();
+  const priv = env("VAPID_PRIVATE_KEY");
   if (!pub || !priv) return (vapidOk = false);
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:carkci.caner@gmail.com", pub, priv);
-  return (vapidOk = true);
+  try {
+    webpush.setVapidDetails(env("VAPID_SUBJECT") || "mailto:carkci.caner@gmail.com", pub, priv);
+    return (vapidOk = true);
+  } catch (e) {
+    console.error("VAPID anahtarları geçersiz", e);
+    return (vapidOk = false);
+  }
 }
-export const vapidPublic = () => process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+export const vapidPublic = () => env("VAPID_PUBLIC_KEY") || env("NEXT_PUBLIC_VAPID_PUBLIC_KEY");
 
 export type PushSub = { endpoint: string; keys: { p256dh: string; auth: string } };
 export type PushDoc = {

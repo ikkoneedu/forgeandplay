@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "@/lib/kohesap";
-import { hasAccess, verifyUser } from "@/lib/koekip-server";
+import { env, hasAccess, verifyUser } from "@/lib/koekip-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ let cache: { at: number; ice: Ice[] } | null = null;
 const TTL_S = 12 * 3600;
 
 async function cloudflare(): Promise<Ice[] | null> {
-  const id = process.env.CF_TURN_KEY_ID, tok = process.env.CF_TURN_API_TOKEN;
+  const id = env("CF_TURN_KEY_ID"), tok = env("CF_TURN_API_TOKEN");
   if (!id || !tok) return null;
   if (cache && Date.now() - cache.at < (TTL_S / 2) * 1000) return cache.ice;
   const r = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${id}/credentials/generate-ice-servers`, {
@@ -36,9 +36,9 @@ async function cloudflare(): Promise<Ice[] | null> {
   return list;
 }
 function staticTurn(): Ice[] | null {
-  const urls = (process.env.TURN_URLS || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const urls = env("TURN_URLS").split(",").map((s) => s.trim()).filter(Boolean);
   if (!urls.length) return null;
-  return [{ urls, username: process.env.TURN_USERNAME || "", credential: process.env.TURN_CREDENTIAL || "" }];
+  return [{ urls, username: env("TURN_USERNAME"), credential: env("TURN_CREDENTIAL") }];
 }
 
 async function handle(req: NextRequest) {

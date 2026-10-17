@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "@/lib/kohesap";
 import {
-  adminDb, dueNotes, hasAccess, pushReady, sendToUser, verifyUser,
+  adminDb, dueNotes, env, hasAccess, pushReady, sendToUser, verifyUser,
   type BossMap, type Note, type PushDoc,
 } from "@/lib/koekip-server";
 import type { Firestore } from "firebase-admin/firestore";
@@ -98,9 +98,9 @@ async function team(req: NextRequest) {
 let usersCache: { at: number; docs: { id: string; data: PushDoc }[] } | null = null;
 
 async function cron(req: NextRequest) {
-  const secret = process.env.CRON_SECRET;
+  const secret = env("CRON_SECRET");
   const given = req.nextUrl.searchParams.get("key") || (/^Bearer\s+(.+)$/i.exec(req.headers.get("authorization") || "") || [])[1];
-  if (!secret || given !== secret) return json(req, { error: "yetkisiz" }, 401);
+  if (!secret || (given || "").trim() !== secret) return json(req, { error: "yetkisiz" }, 401);
   const db = adminDb();
   if (!db) return json(req, { error: "FIREBASE_SERVICE_ACCOUNT yok" }, 503);
   if (!pushReady()) return json(req, { error: "VAPID yok" }, 503);
