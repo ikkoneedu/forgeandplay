@@ -28,8 +28,8 @@ import (
 var webFS embed.FS
 
 const (
-	appName    = "KO Hesap"
-	appVersion = "0.7.1"
+	appName    = "KO Ekip"
+	appVersion = "0.8.0"
 	port       = 47811
 )
 

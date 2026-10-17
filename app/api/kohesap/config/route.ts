@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { KOHESAP_EXE_URL, KOHESAP_EXE_VERSION, corsHeaders } from "@/lib/kohesap";
+import { vapidPublic } from "@/lib/koekip-server";
+
+export const dynamic = "force-dynamic";
 
 /**
  * KO Hesap istemci yapılandırması (web + Windows uygulaması).
@@ -18,6 +21,12 @@ export async function GET(req: NextRequest) {
     },
     exeVersion: KOHESAP_EXE_VERSION,
     exeUrl: KOHESAP_EXE_URL,
+    push: {
+      vapid: vapidPublic(),
+      ready: !!(vapidPublic() && process.env.VAPID_PRIVATE_KEY),
+      admin: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+    },
+    turn: !!((process.env.CF_TURN_KEY_ID && process.env.CF_TURN_API_TOKEN) || process.env.TURN_URLS),
   };
   return NextResponse.json(body, {
     headers: { ...corsHeaders(req.headers.get("origin")), "Cache-Control": "no-store" },
