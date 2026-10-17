@@ -1,6 +1,6 @@
 'use strict';
 /* ==========================================================================
-   KO Hesap — arayüz ve hesaplama mantığı
+   KO Ekip — arayüz ve hesaplama mantığı
    Tüm para değerleri (aksi belirtilmedikçe) NOAH cinsinden saklanır.
    ========================================================================== */
 
@@ -285,7 +285,7 @@ function renderTicker() {
   $('#ticker').innerHTML = `
     <span class="tick" data-act="go" data-id="gb" title="1 Gold Bar fiyatı">1 GB<b>${st.gbTL ? fmtTL(st.gbTL) : 'girilmedi'}</b></span>
     <span class="tick" data-act="go" data-id="gb" title="Dolar kuru">USD<b>${st.usdTL ? '₺' + nf2.format(st.usdTL) : '—'}</b></span>`;
-  const bs = $('#brandSub'); if (bs) bs.textContent = [st.charName, st.server].filter(Boolean).join(' · ') || 'Knight Online defteri';
+  const bs = $('#brandSub'); if (bs) bs.textContent = [st.charName, st.server].filter(Boolean).join(' · ') || 'Knight Online ekibi';
 }
 
 function render() {
@@ -1157,8 +1157,8 @@ VIEWS.ayar = () => {
     <div class="card">
       <div class="card-h"><h3>Google hesabı</h3><span class="badge g">senkron açık</span></div>
       <div class="row" style="margin-bottom:14px">${CLOUD.user && CLOUD.user.photoURL ? `<img src="${esc(CLOUD.user.photoURL)}" width="40" height="40" style="border-radius:50%" alt="" referrerpolicy="no-referrer">` : ''}<div><b>${esc(CUR.acc ? (CUR.acc.name || CUR.acc.user) : '')}</b><div class="hint">${esc(CUR.acc ? CUR.acc.user : '')} · ${CUR.acc ? CUR.acc.chars.length : 0} / 4 karakter</div></div></div>
-      <div class="row"><button class="btn" data-act="logout">Çıkış yap</button><button class="btn danger" data-act="acc-del">${ICON.del} KO Hesap verilerimi sil</button></div>
-      <div class="hint" style="margin-top:10px">Kayıtların Google hesabına bağlı olarak saklanır; ${serverMode ? 'web sürümünde (forgeandplay.com/tr/kohesap)' : 'Windows uygulamasında'} aynı hesapla girince hepsi gelir.</div>
+      <div class="row"><button class="btn" data-act="logout">Çıkış yap</button><button class="btn danger" data-act="acc-del">${ICON.del} KO Ekip verilerimi sil</button></div>
+      <div class="hint" style="margin-top:10px">Kayıtların Google hesabına bağlı olarak saklanır; ${serverMode ? 'web sürümünde (forgeandplay.com)' : 'Windows uygulamasında'} aynı hesapla girince hepsi gelir.</div>
     </div>
     <div class="card">
       <div class="card-h"><h3>Bildirim ve güncelleme</h3></div>
@@ -1356,7 +1356,7 @@ const ACTIONS = {
     if (!S.prices.length) S.prices = d.prices;
     bindView(); ui.partyId = null; save(); render();
   }),
-  quit: () => { fetch('/api/quit').finally(() => { document.body.innerHTML = '<div class="empty" style="margin-top:20vh"><b>KO Hesap kapatıldı</b>Bu pencereyi kapatabilirsiniz.</div>'; window.close(); }); },
+  quit: () => { fetch('/api/quit').finally(() => { document.body.innerHTML = '<div class="empty" style="margin-top:20vh"><b>KO Ekip kapatıldı</b>Bu pencereyi kapatabilirsiniz.</div>'; window.close(); }); },
 };
 
 document.addEventListener('click', e => {
@@ -1422,7 +1422,7 @@ function importFile(inp) {
   r.onload = () => {
     try {
       const d = JSON.parse(r.result);
-      if (!d || !(d.settings || d.shared)) throw new Error('KO Hesap yedeği değil');
+      if (!d || !(d.settings || d.shared)) throw new Error('KO Ekip yedeği değil');
       if (d.v === 2) confirmBox('Yedekten yükle', `“${esc(f.name)}” tam yedektir; <b>karakterlerin ve ortak ayarların</b> bu yedekteki haliyle değiştirilecek (en fazla 4 karakter).`, 'Yükle', () => {
         const m = migrateDB(d); const gb = DB.shared.gbMarket;
         CUR.acc.chars = m.accounts.flatMap(a => a.chars).slice(0, MAX_CHARS); DB.shared = m.shared; DB.shared.gbMarket = gb;

@@ -41,8 +41,24 @@ const voiceDoc = u => FB.doc(CLOUD.db, 'kohesapTeams', VOICE.code, 'voice', u);
 const inboxCol = u => FB.collection(CLOUD.db, 'kohesapTeams', VOICE.code, 'voice', u, 'inbox');
 const inboxDoc = (u, id) => FB.doc(CLOUD.db, 'kohesapTeams', VOICE.code, 'voice', u, 'inbox', id);
 const rnd = () => Math.random().toString(36).slice(2, 10);
+/* Aktarma (TURN) sunucusu: mobil operatörler (CGNAT) ve bazı modemler doğrudan bağlantıya
+   izin vermez; telefon–telefon / telefon–PC bağlantısı ancak bununla kurulur.
+   Bilgiler sitenin sunucusundan (yalnızca davetli üyelere) alınır, 6 saatte bir yenilenir. */
+VOICE.ice = null; VOICE.iceAt = 0; VOICE.iceSrc = '';
+async function loadIce(force) {
+  if (!force && VOICE.ice && Date.now() - VOICE.iceAt < 6 * 3600e3) return VOICE.ice;
+  try {
+    const tok = CLOUD.user ? await CLOUD.user.getIdToken() : '';
+    const r = await fetch((serverMode ? SITE : '') + '/api/kohesap/turn', { method: 'POST', headers: { Authorization: 'Bearer ' + tok }, cache: 'no-store' });
+    if (!r.ok) throw new Error('turn ' + r.status);
+    const j = await r.json();
+    VOICE.ice = Array.isArray(j.iceServers) ? j.iceServers : []; VOICE.iceSrc = j.src || ''; VOICE.iceAt = Date.now();
+  } catch (e) { console.warn('aktarma sunucusu alınamadı', e); if (!VOICE.ice) { VOICE.ice = []; VOICE.iceAt = Date.now() - 5.5 * 3600e3; } }
+  return VOICE.ice;
+}
+const hasRelay = () => iceServers().some(x => [].concat(x.urls || []).some(u => /^turns?:/.test(u)));
 function iceServers() {
-  const list = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+  const list = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }].concat(VOICE.ice || []);
   // Yönetim panelinden TURN sunucusu girilebilir (bazı ev/mobil ağlarda doğrudan bağlantı kurulamaz)
   try { const t = JSON.parse(S.settings.voiceTurn || 'null'); if (t) (Array.isArray(t) ? t : [t]).forEach(x => x && x.urls && list.push(x)); } catch { }
   return list;
@@ -100,7 +116,7 @@ function peerFor(uidv, sid) {
   let pe = VOICE.peers.get(uidv);
   if (pe && pe.sid !== sid) { closePeer(uidv); pe = null; }
   if (pe) return pe;
-  const pc = new RTCPeerConnection({ iceServers: iceServers(), bundlePolicy: 'max-bundle' });
+  const pc = new RTCPeerConnection({ iceServers: iceServers(), bundlePolicy: 'max-bundle', iceCandidatePoolSize: 2 });
   pe = { uid: uidv, sid, pc, audio: null, an: null, speaking: false, state: 'bağlanıyor', pendingIce: [], offerer: myUid() < uidv };
   VOICE.peers.set(uidv, pe);
   pc.addTrack(VOICE.sendTrack, VOICE.stream);
@@ -108,7 +124,9 @@ function peerFor(uidv, sid) {
   pc.onicecandidate = e => { if (e.candidate && pe.descSent) voiceSend(uidv, { t: 'ice', c: e.candidate.toJSON() }); };
   pc.ontrack = e => {
     const st = e.streams[0] || new MediaStream([e.track]);
-    const a = new Audio(); a.autoplay = true; a.playsInline = true; a.srcObject = st;
+    if (pe.audio) { try { pe.audio.srcObject = null; pe.audio.remove(); } catch { } }
+    const a = document.createElement('audio'); a.autoplay = true; a.playsInline = true; a.setAttribute('playsinline', ''); a.srcObject = st;
+    a.className = 'v-audio'; a.hidden = true; document.body.appendChild(a);
     a.volume = Math.min(1, (VOICE.pref.vol[uidv] ?? 100) / 100); a.muted = VOICE.deaf;
     if (VOICE.pref.spk && a.setSinkId) a.setSinkId(VOICE.pref.spk).catch(() => { });
     a.play().catch(() => { pe.needsTap = true; voicePaintLive(); });
@@ -117,7 +135,8 @@ function peerFor(uidv, sid) {
   };
   pc.onconnectionstatechange = () => {
     const s = pc.connectionState;
-    pe.state = s === 'connected' ? 'bağlı' : s === 'failed' ? 'kurulamadı' : s === 'disconnected' ? 'koptu' : 'bağlanıyor';
+    pe.state = s === 'connected' ? 'bağlı' : s === 'failed' ? (hasRelay() ? 'kurulamadı' : 'kurulamadı · aktarma sunucusu yok') : s === 'disconnected' ? 'koptu' : 'bağlanıyor';
+    if (s === 'failed') pe.fails = (pe.fails || 0) + 1;
     if (s === 'connected') { blip(true); pe.okAt = Date.now(); tuneSender(pe); }
     if (s === 'disconnected') pe.lostAt = Date.now();
     if (s === 'failed' && pe.offerer) restartPeer(uidv);
@@ -184,7 +203,7 @@ function restartPeer(uidv) { const pe = VOICE.peers.get(uidv); if (pe && pe.offe
 function closePeer(uidv) {
   const pe = VOICE.peers.get(uidv); if (!pe) return;
   try { pe.pc.close(); } catch { }
-  if (pe.audio) { pe.audio.srcObject = null; }
+  if (pe.audio) { pe.audio.srcObject = null; try { pe.audio.remove(); } catch { } }
   try { pe.an && pe.an.src.disconnect(); } catch { }
   VOICE.peers.delete(uidv);
 }
@@ -275,6 +294,7 @@ function myVoiceInfo() {
 function voiceWatch() {
   if (!VOICE.on) return;
   const now = Date.now();
+  if (now - VOICE.iceAt > 6 * 3600e3) loadIce(true).then(() => VOICE.peers.forEach(pe => { try { pe.pc.setConfiguration({ ...pe.pc.getConfiguration(), iceServers: iceServers() }); } catch { } }));
   VOICE.peers.forEach((pe, u) => {
     if (!pe.offerer) return;
     const s = pe.pc.connectionState;
@@ -289,7 +309,9 @@ async function voiceJoin() {
   if (VOICE.on || VOICE.joining || !TEAM.doc) return;
   VOICE.joining = true; VOICE.err = ''; voicePaint();
   try {
+    const iceP = loadIce();
     VOICE.stream = await getMic();
+    await iceP;
     VOICE.sendTrack = VOICE.stream.getAudioTracks()[0];
     VOICE.ctx = VOICE.ctx || new AudioContext();
     if (VOICE.ctx.state === 'suspended') await VOICE.ctx.resume().catch(() => { });
@@ -439,7 +461,7 @@ function voiceTile(r) {
     <b class="vt-name">${esc(r.char || r.name)}</b>
     <span class="vt-sub" lang="en">${esc(title)}</span>
     <span class="vt-who">${r.level ? 'Lv ' + r.level + ' · ' : ''}${esc(r.name || '')}${r.me ? ' · sen' : ''}</span>
-    <span class="vt-st ${r.state === 'bağlı' || r.me ? 'ok' : r.state === 'kurulamadı' ? 'bad' : ''}">${VOICE.on && !r.me && r.inVoice ? qualBars(r.pe) : ''}<span class="vt-stx">${esc(tileState(r))}</span></span>
+    <span class="vt-st ${r.state === 'bağlı' || r.me ? 'ok' : String(r.state).startsWith('kurulamadı') ? 'bad' : ''}">${VOICE.on && !r.me && r.inVoice ? qualBars(r.pe) : ''}<span class="vt-stx">${esc(tileState(r))}</span></span>
     ${VOICE.on && r.inVoice && !r.me ? `<input class="vt-vol" type="range" min="0" max="100" step="5" value="${VOICE.pref.vol[r.uid] ?? 100}" data-vvol="${esc(r.uid)}" title="Ses düzeyi" aria-label="${esc(r.char || r.name)} ses düzeyi">` : ''}
   </div>`;
 }
@@ -455,6 +477,7 @@ function voiceSettings() {
       <label class="f">Mikrofon<select class="inp" data-vmic><option value="">Varsayılan</option>${VOICE.devices.in.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.mic ? 'selected' : ''}>${esc(d.label || 'Mikrofon')}</option>`).join('')}</select></label>
       ${VOICE.devices.out.length && 'setSinkId' in HTMLMediaElement.prototype ? `<label class="f">Hoparlör / kulaklık<select class="inp" data-vspk><option value="">Varsayılan</option>${VOICE.devices.out.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.spk ? 'selected' : ''}>${esc(d.label || 'Çıkış')}</option>`).join('')}</select></label>` : '<span></span>'}
       <label class="f">Ses kalitesi<select class="inp" data-vq>${Object.entries(VQUAL).map(([k, v]) => `<option value="${k}" ${k === (p.q || 'hi') ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select><span class="hint">Herkes için 8 kişide bile rahat; internet zayıfsa Standart seç.</span></label>
+      <div class="f"><span class="vc-lbl">Bağlantı</span><span class="hint">${hasRelay() ? '✅ Aktarma sunucusu hazır: telefon ve kısıtlı ağlarda da bağlanır.' : '⚠️ Aktarma (TURN) sunucusu tanımlı değil: telefonlar ve bazı ev ağları birbirine bağlanamayabilir.' + (typeof isAdmin === 'function' && isAdmin() ? ' Admin: Vercel\'de CF_TURN_KEY_ID ve CF_TURN_API_TOKEN değişkenlerini ekle.' : ' Admin\'e haber ver.')}</span></div>
       <div class="f vc-checks"><label class="check"><input type="checkbox" data-vns ${p.ns !== false ? 'checked' : ''}> Gürültü engelleme</label><label class="check"><input type="checkbox" data-vagc ${p.agc !== false ? 'checked' : ''}> Otomatik ses seviyesi</label><label class="check"><input type="checkbox" data-vsnd ${p.sounds ? 'checked' : ''}> Giriş / çıkış sesleri</label></div>
     </div>
   </div>`;
@@ -470,6 +493,7 @@ function voiceMain() {
       ${VOICE.on ? '' : `<button class="btn pri vs-join" data-act="v-join" ${VOICE.joining ? 'disabled' : ''}>${VOICE.joining ? 'Bağlanıyor…' : `${MIC_ON} Sese katıl`}</button>`}
     </div>
     ${VOICE.err ? `<div class="callout r" style="margin-top:12px">${esc(VOICE.err)}</div>` : ''}
+    ${VOICE.on && !hasRelay() && [...VOICE.peers.values()].some(pe => pe.fails) ? `<div class="callout y" style="margin-top:12px">Bazı üyelere bağlanılamadı. Telefon (mobil veri) ve bazı modemler doğrudan bağlantıya izin vermez; bunun için aktarma sunucusu gerekir.${isAdmin() ? ' Admin: Vercel\'e CF_TURN_KEY_ID ve CF_TURN_API_TOKEN ekle (kurulum notunda adımlar var).' : ' Admin\'e haber ver.'}</div>` : ''}
     <div class="vt-grid">${roster.map(voiceTile).join('')}</div>
     ${VOICE.on ? `<div class="vs-bar">
       <button class="vbtn lg ${VOICE.muted ? 'off' : ''}" data-act="v-mute" title="${VOICE.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}">${VOICE.muted ? MIC_OFF : MIC_ON}</button>
@@ -496,7 +520,7 @@ function voicePaintLive() {
     el.classList.toggle('talk', !!r.speaking);
     const st = el.querySelector('.vt-st');
     if (st) {
-      st.className = 'vt-st ' + (r.state === 'bağlı' || r.me ? 'ok' : r.state === 'kurulamadı' ? 'bad' : '');
+      st.className = 'vt-st ' + (r.state === 'bağlı' || r.me ? 'ok' : String(r.state).startsWith('kurulamadı') ? 'bad' : '');
       st.innerHTML = `${VOICE.on && !r.me && r.inVoice ? qualBars(r.pe) : ''}<span class="vt-stx">${esc(tileState(r))}</span>`;
     }
   });
@@ -574,6 +598,12 @@ document.addEventListener('change', e => {
   }
   if (d.vns != null) { VOICE.pref.ns = e.target.checked; vprefSave(); voiceReMic(); }
   if (d.vagc != null) { VOICE.pref.agc = e.target.checked; vprefSave(); voiceReMic(); }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !VOICE.on) return;
+  if (VOICE.ctx && VOICE.ctx.state !== 'running') VOICE.ctx.resume().catch(() => { });
+  VOICE.peers.forEach(pe => { if (pe.audio && pe.audio.paused) pe.audio.play().catch(() => { pe.needsTap = true; voicePaintLive(); }); });
+  beat(); voiceWatch();
 });
 // otomatik oynatma engellendiyse ilk dokunuşta sesleri başlat
 document.addEventListener('pointerdown', () => {

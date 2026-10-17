@@ -477,8 +477,8 @@ function checkEventNotify() {
     if (dt > 0 && dt <= lead && !notified.has(key)) {
       notified.add(key);
       const msg = `${o.e.name} ${Math.ceil(dt / 60000)} dk sonra başlıyor (${o.t})`;
-      toast('⏰ ' + msg);
-      try { if (window.Notification && Notification.permission === 'granted') new Notification('KO Hesap', { body: msg, icon: 'icon.svg' }); } catch { }
+      if (typeof localNotify === 'function') localNotify('⏰ Event', msg, 'ev-' + o.e.id);
+      else toast('⏰ ' + msg);
     }
   });
 }
@@ -555,7 +555,7 @@ function errBox(title, err, url) {
 async function runDiag(url) {
   openForm({ title: 'Teşhis raporu', wide: true, data: {}, fields: [], extra: '<div id="diagBox"><span class="mut">Sayfa iki yöntemle deneniyor… İlk seferde gizli tarayıcının açılması 20–30 sn sürebilir.</span></div>', onSave: () => true });
   $('#modalFoot').innerHTML = `<button class="btn ghost" data-act="modal-close">Kapat</button><button class="btn" data-act="diag-save">${ICON.dl} Rapor dosyasını kaydet</button><button class="btn pri" data-act="diag-copy">${ICON.copy} Kopyala</button>`;
-  let rep = `KO Hesap teşhis — ${new Date().toLocaleString('tr-TR')}\nAdres: ${url}\n`;
+  let rep = `KO Ekip teşhis — ${new Date().toLocaleString('tr-TR')}\nAdres: ${url}\n`;
   const full = [];
   if (!serverMode) rep += 'Not: Bu rapor web sürümünden alındı (sitenin sunucusu üzerinden, gizli tarayıcı yok). Arka plan adresleri için raporu Windows uygulamasında alın.\n';
   for (const render of serverMode ? [false, true] : [false]) {

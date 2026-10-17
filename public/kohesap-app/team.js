@@ -250,7 +250,7 @@ Object.assign(ACTIONS, {
     TEAM.busy = false; render();
   },
   'team-copy': () => {
-    const txt = `KO Hesap ekibimize katıl: "${TEAM.doc.name}" · kod ${TEAM.code} · forgeandplay.com/tr/kohesap → Ekip → Ekibe katıl`;
+    const txt = `KO Ekip ekibimize katıl: "${TEAM.doc.name}" · kod ${TEAM.code} · forgeandplay.com → Ekip → Ekibe katıl`;
     (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Davet metni kopyalandı', 'ok')).catch(() => toast(TEAM.code));
   },
   'team-leave': () => confirmBox('Ekipten ayrıl', `<b>${esc(TEAM.doc.name)}</b> ekibinden ayrılacaksın.${TEAM.doc.owner === myUid() ? ' Liderlik sıradaki üyeye geçer; tek kişiysen ekip kapanır.' : ''}`, 'Ayrıl', () => {

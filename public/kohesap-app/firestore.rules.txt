@@ -109,6 +109,16 @@ service cloud.firestore {
       allow read, delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);
     }
 
+    // KO Ekip bildirim ayarları ve cihaz abonelikleri: herkes yalnızca kendi belgesini görür/yazar.
+    // Gönderimi sunucu (Firebase hizmet hesabı) yapar; kohesapPushState yalnızca sunucuya açıktır.
+    match /kohesapPush/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if hasKoAccess() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['subs', 'ev', 'boss', 'online', 'lead', 'team', 'server', 'name', 'evs', 'bossAll', 'bossIds', 'at'])
+        && (!('subs' in request.resource.data) || request.resource.data.subs.size() <= 10)
+        && (!('evs' in request.resource.data) || request.resource.data.evs.size() <= 60);
+    }
+
     // KO Hesap sınıf görselleri: herkes okur, yalnızca admin yazar.
     match /kohesapAssets/{docId} {
       allow read: if true;
@@ -173,6 +183,17 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['u', 'n', 'c', 'cls', 'nat', 'race', 'rt', 't', 'at', 'ts', 'bot', 'kind']);
         allow delete: if isMember() && (resource.data.u == request.auth.uid
           || get(/databases/$(database)/documents/kohesapTeams/$(code)).data.owner == request.auth.uid);
+      }
+
+      // Boss sayaçları (sunucu başına bir belge): üyeler okur ve günceller.
+      match /boss/{srv} {
+        allow read: if isMember();
+        allow create, update: if isMember() && srv.size() <= 24
+          && request.resource.data.keys().hasOnly(['b', 'restart', 'at', 'by'])
+          && request.resource.data.by == request.auth.uid
+          && request.resource.data.b is map
+          && request.resource.data.b.size() <= 60;
+        allow delete: if get(/databases/$(database)/documents/kohesapTeams/$(code)).data.owner == request.auth.uid;
       }
 
       match /voice/{uid} {

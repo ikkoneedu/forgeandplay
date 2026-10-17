@@ -1,9 +1,9 @@
 /** KO Hesap (Knight Online defteri) — sunucu tarafı ortak sabitler. */
 
 /** public/downloads/KOHesap.exe sürümü; exe açılışta bunu görüp "yeni sürüm" uyarısı gösterir. */
-export const KOHESAP_EXE_VERSION = "0.7.1";
-export const KOHESAP_EXE_URL = "/downloads/KOHesap.exe";
-export const KOHESAP_APP_URL = "/kohesap-app/index.html";
+export const KOHESAP_EXE_VERSION = "0.8.0";
+export const KOHESAP_EXE_URL = "/downloads/KOEkip.exe";
+export const KOHESAP_APP_URL = "/";
 
 /** Exe yerel arayüzü bu adreslerden çalışır (CORS izni). */
 export const KOHESAP_LOCAL_ORIGINS = ["http://localhost:47811", "http://127.0.0.1:47811"];
@@ -23,8 +23,8 @@ export function corsHeaders(origin: string | null): Record<string, string> {
   const h: Record<string, string> = { Vary: "Origin" };
   if (origin && KOHESAP_LOCAL_ORIGINS.includes(origin)) {
     h["Access-Control-Allow-Origin"] = origin;
-    h["Access-Control-Allow-Methods"] = "GET, OPTIONS";
-    h["Access-Control-Allow-Headers"] = "Content-Type";
+    h["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+    h["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
   }
   return h;
 }

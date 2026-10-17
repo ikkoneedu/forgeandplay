@@ -1,7 +1,7 @@
 'use strict';
 /* ==========================================================================
    DAVETLE ERİŞİM
-   forgeandplay.com'a herkes üye olabilir; KO Hesap'a yalnızca davet koduyla
+   forgeandplay.com'a herkes üye olabilir; KO Ekip'e yalnızca davet koduyla
    (ya da yöneticinin onayıyla) girilir. Kurallar Firestore'da da uygulanır:
      kohesapAdmin/invite      → { code }            yalnızca admin okur/yazar
      kohesapAccess/{uid}      → erişim kaydı         kullanıcı geçerli kodla kendisi oluşturur; admin yönetir
@@ -42,7 +42,7 @@ async function accessGate(user) {
     if (ACC.rulesOld) return;
     try {
       ACC.unsub = FB.onSnapshot(accRef(user.uid), s => {
-        if (s.exists() && ACC.resolve) { ACC.ok = true; ACC.data = s.data(); const r = ACC.resolve; ACC.resolve = null; stopGateWatch(); accessWatchSelf(user); toast('KO Hesap erişimin açıldı', 'ok'); showAuth('loading'); r(true); }
+        if (s.exists() && ACC.resolve) { ACC.ok = true; ACC.data = s.data(); const r = ACC.resolve; ACC.resolve = null; stopGateWatch(); accessWatchSelf(user); toast('KO Ekip erişimin açıldı', 'ok'); showAuth('loading'); r(true); }
       }, () => { });
     } catch { }
   });
@@ -59,7 +59,7 @@ function accessWatchSelf(user) {
   if (ACC.selfUnsub || emailAdmin(user)) return;
   ACC.selfUnsub = FB.onSnapshot(accRef(user.uid), s => {
     // yalnızca daha önce görülen kayıt silinirse çıkış (anlık önbellek boşluğunda kimse atılmasın)
-    if (!s.exists()) { if (ACC.ok && ACC.selfSeen && !(s.metadata && s.metadata.fromCache)) { ACC.ok = false; toast('KO Hesap erişimin yönetici tarafından kaldırıldı', 'err'); setTimeout(() => logout(), 1500); } return; }
+    if (!s.exists()) { if (ACC.ok && ACC.selfSeen && !(s.metadata && s.metadata.fromCache)) { ACC.ok = false; toast('KO Ekip erişimin yönetici tarafından kaldırıldı', 'err'); setTimeout(() => logout(), 1500); } return; }
     ACC.selfSeen = true;
     ACC.data = s.data();
     const t = ACC.data.team;
@@ -80,8 +80,8 @@ AUTH_VIEWS.invite = () => {
   const u = ACC.user || {};
   return `<div class="auth-card invite-card">
     ${brandBlock('Davetle giriş')}
-    ${ACC.rulesOld ? `<div class="auth-err">KO Hesap güncelleniyor: yöneticinin yeni Firebase kurallarını yayınlaması gerekiyor. Yöneticiye haber ver.</div>` : `
-    <p class="mut" style="margin:0;font-size:13.5px">KO Hesap yalnızca davetli ekip içindir. Yöneticinin verdiği <b>davet kodunu</b> gir. Kodun yoksa bekle: isteğin yöneticiye iletildi, onaylanınca bu ekran kendiliğinden açılır.</p>
+    ${ACC.rulesOld ? `<div class="auth-err">KO Ekip güncelleniyor: yöneticinin yeni Firebase kurallarını yayınlaması gerekiyor. Yöneticiye haber ver.</div>` : `
+    <p class="mut" style="margin:0;font-size:13.5px">KO Ekip yalnızca davetli ekip içindir. Yöneticinin verdiği <b>davet kodunu</b> gir. Kodun yoksa bekle: isteğin yöneticiye iletildi, onaylanınca bu ekran kendiliğinden açılır.</p>
     <form class="invite-form" data-auth-form="invite" onsubmit="return false">
       <input class="inp invite-inp" id="inviteCode" maxlength="12" placeholder="DAVET KODU" autocomplete="off" autocapitalize="characters" spellcheck="false">
       <button class="btn pri auth-btn" data-act="acc-redeem" ${ACC.busy ? 'disabled' : ''}>${ACC.busy ? 'Kontrol ediliyor…' : 'Giriş yap'}</button>
@@ -130,7 +130,7 @@ function usersCard() {
   const myTeam = TEAM.doc && TEAM.doc.owner === me;
   const code = A.invite && A.invite.code;
   return `<div class="card users-card">
-    <div class="card-h"><div><h3>Kullanıcılar ve davet <span class="badge y">admin</span></h3><div class="sub">KO Hesap'a yalnızca bu listedekiler girebilir. Yeni kişiyi davet kodu ile ya da isteğini onaylayarak eklersin.</div></div></div>
+    <div class="card-h"><div><h3>Kullanıcılar ve davet <span class="badge y">admin</span></h3><div class="sub">KO Ekip'e yalnızca bu listedekiler girebilir. Yeni kişiyi davet kodu ile ya da isteğini onaylayarak eklersin.</div></div></div>
     ${A.err ? `<div class="callout r" style="margin-bottom:12px">${esc(A.err)}</div>` : ''}
     <div class="invite-box">
       <div><span class="mut">Davet kodu</span><b class="invite-code">${code ? esc(code) : '—'}</b></div>
@@ -172,7 +172,7 @@ Object.assign(ACTIONS, {
     ACC.admin.invite && ACC.admin.invite.code ? confirmBox('Davet kodunu yenile', 'Eski kod artık çalışmayacak. Erişimi olanlar etkilenmez.', 'Yenile', go) : go();
   },
   'acc-copy': () => {
-    const txt = `KO Hesap davet kodu: ${ACC.admin.invite.code}\nforgeandplay.com/tr/kohesap → Google ile giriş yap → kodu gir.`;
+    const txt = `KO Ekip davet kodu: ${ACC.admin.invite.code}\nforgeandplay.com → Google ile giriş yap → kodu gir.`;
     (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Davet metni kopyalandı', 'ok')).catch(() => toast(ACC.admin.invite.code));
   },
   'acc-approve': el => {
@@ -184,7 +184,7 @@ Object.assign(ACTIONS, {
   'acc-reject': el => FB.deleteDoc(reqRef(el.dataset.uid)).then(() => toast('İstek silindi')).catch(e => toast(e.message, 'err')),
   'acc-revoke': el => {
     const u = ACC.admin.users.find(x => x.uid === el.dataset.uid); if (!u) return;
-    confirmBox('Erişimi kaldır', `<b>${esc(u.name || u.email)}</b> artık KO Hesap'a giremeyecek${TEAM.doc && (TEAM.doc.memberUids || []).includes(u.uid) ? ' ve ekipten çıkarılacak' : ''}. Kayıtları silinmez; tekrar eklersen geri gelir.`, 'Erişimi kaldır', async () => {
+    confirmBox('Erişimi kaldır', `<b>${esc(u.name || u.email)}</b> artık KO Ekip'e giremeyecek${TEAM.doc && (TEAM.doc.memberUids || []).includes(u.uid) ? ' ve ekipten çıkarılacak' : ''}. Kayıtları silinmez; tekrar eklersen geri gelir.`, 'Erişimi kaldır', async () => {
       try {
         if (TEAM.doc && TEAM.doc.owner === myUid() && (TEAM.doc.memberUids || []).includes(u.uid)) await teamKick(u.uid);
         await FB.deleteDoc(accRef(u.uid));

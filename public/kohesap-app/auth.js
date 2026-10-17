@@ -74,9 +74,9 @@ function authEl() {
 function showAuth(mode, err = '') {
   auth.mode = mode; auth.err = err;
   const el = authEl();
-  el.hidden = false;
+  el.hidden = false; el.className = 'mode-' + mode;
   document.querySelector('.app').style.visibility = 'hidden';
-  el.innerHTML = `<div class="auth-bg"></div><div class="auth-wrap">${AUTH_VIEWS[mode]()}</div><div class="auth-foot">KO Hesap ${esc($('#ver').textContent)} · forgeandplay.com · kayıtların Google hesabınla tüm cihazlarında</div>`;
+  el.innerHTML = `<div class="auth-bg"></div><div class="auth-wrap">${AUTH_VIEWS[mode]()}</div><div class="auth-foot">KO Ekip ${esc($('#ver').textContent)} · forgeandplay.com · kayıtların Google hesabınla tüm cihazlarında</div>`;
   // imleç yalnızca form ilk açıldığında ad kutusuna gider (sınıf/ırk değişince yazılan yer kaymasın)
   const f = el.querySelector('input:not([type=checkbox])');
   if (f && mode === 'charForm' && auth.lastMode !== 'charForm') setTimeout(() => { if (!el.contains(document.activeElement) || document.activeElement === document.body) f.focus(); }, 30);
@@ -137,31 +137,40 @@ async function logout() {
 }
 
 /* ---------- görünümler ---------- */
-const brandBlock = (sub) => `<div class="auth-brand"><img src="icon.svg" width="52" height="52" alt=""><div><div class="auth-title">KO Hesap</div><div class="auth-sub">${sub}</div></div></div>`;
+const brandBlock = (sub) => `<div class="auth-brand"><img src="icons/icon-192.png" width="52" height="52" alt=""><div><div class="auth-title">KO Ekip</div><div class="auth-sub">${sub}</div></div></div>`;
 const errLine = () => auth.err ? `<div class="auth-err">${esc(auth.err)}</div>` : '';
 const AUTH_VIEWS = {
-  loading: () => `<div class="auth-card" style="align-items:center;text-align:center">${brandBlock('Knight Online gelir · gider · hesap defteri')}<div class="spinner"></div><div class="mut">Bağlanılıyor…</div></div>`,
+  loading: () => `<div class="auth-card" style="align-items:center;text-align:center">${brandBlock('Knight Online ekip uygulaması')}<div class="spinner"></div><div class="mut">Bağlanılıyor…</div></div>`,
   offline: () => `<div class="auth-card">
       ${brandBlock('Bağlantı kurulamadı')}
       <div class="auth-err">${esc(auth.err)}</div>
-      <div class="mut" style="font-size:13px">KO Hesap kayıtlarını Google hesabında saklar; ilk giriş için internet bağlantısı gerekir.</div>
+      <div class="mut" style="font-size:13px">KO Ekip kayıtlarını Google hesabında saklar; ilk giriş için internet bağlantısı gerekir.</div>
       <button class="btn pri auth-btn" data-act="au-retry">Tekrar dene</button>
     </div>`,
-  login: () => `<div class="auth-card">
-      ${brandBlock('Knight Online gelir · gider · hesap defteri')}
-      <ul class="auth-feats">
-        <li>Hesap başına 4 karakter, her birinin kayıtları ayrı</li>
-        <li>Gelir / gider, item ticareti, parti drop ve pay dağılımı</li>
-        <li>Canlı GB fiyatları, PUS ve EXP hesabı, event takvimi</li>
-        <li>Web ve Windows uygulaması aynı kayıtları kullanır</li>
-        <li>Davetle çalışır: giriş için yöneticinin verdiği davet kodu gerekir</li>
-      </ul>
-      ${errLine()}
-      <button class="btn auth-google" data-act="au-google" ${auth.busy ? 'disabled' : ''}>
-        <svg viewBox="0 0 48 48" width="20" height="20"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-        ${auth.busy ? 'Google penceresi açık…' : 'Google ile giriş yap'}
-      </button>
-      <div class="auth-alt">Giriş yaparak forgeandplay.com <a href="${serverMode ? SITE : ''}/tr/kullanim-sartlari" target="_blank" rel="noopener">kullanım şartlarını</a> kabul etmiş olursun.</div>
+  login: () => `<div class="land">
+      <div class="land-art" aria-hidden="true"><div class="la la-k"></div><div class="la la-h"></div></div>
+      <div class="land-main">
+        <img class="land-logo" src="icons/icon-192.png" width="88" height="88" alt="">
+        <h1 class="land-title">KO <span>Ekip</span></h1>
+        <p class="land-tag">Knight Online ekibin için tek uygulama: sesli sohbet, boss alarmı, event bildirimleri ve hesap defteri.</p>
+        ${errLine()}
+        <button class="btn auth-google land-cta" data-act="au-google" ${auth.busy ? 'disabled' : ''}>
+          <svg viewBox="0 0 48 48" width="20" height="20"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+          ${auth.busy ? 'Google penceresi açık…' : 'Google ile giriş yap'}
+        </button>
+        <div class="land-note">🔒 Davetle çalışır · giriş için ekip yöneticisinin davet kodu gerekir</div>
+        <div class="land-feats">
+          ${[
+            ['🎧', 'Sesli sohbet', '8 kişilik ekip odası, bas-konuş, telefon ve PC'],
+            ['🐉', 'Boss alarmı', 'Sunucuya göre sayaç, çıkmadan 10 dk önce bildirim'],
+            ['⏰', 'Event bildirimi', 'BDW, Bifrost, CZ, JR… başlamadan haber'],
+            ['🟢', 'Ekip online', 'Ekipten biri oyuna girince telefonuna gelir'],
+            ['📒', 'Hesap defteri', 'Gelir-gider, item ticareti, drop paylaşımı'],
+            ['📈', 'Canlı pazar', 'GB fiyatları, pazar ilanları, PUS ve EXP hesabı'],
+          ].map(([i, t, d]) => `<div class="lf"><span class="lf-i">${i}</span><b>${t}</b><small>${d}</small></div>`).join('')}
+        </div>
+        <div class="land-alt">Giriş yaparak <a href="${serverMode ? SITE : ''}/tr/kullanim-sartlari" target="_blank" rel="noopener">kullanım şartlarını</a> kabul etmiş olursun · <a href="${serverMode ? SITE : ''}/tr/gizlilik" target="_blank" rel="noopener">gizlilik</a></div>
+      </div>
     </div>`,
   chars: () => {
     const acc = CUR.acc;
@@ -311,8 +320,8 @@ Object.assign(ACTIONS, {
   },
   'cf-save': () => { readCharInputs(); saveCharForm(); },
   logout: () => logout(),
-  'acc-del': () => confirmBox('KO Hesap verilerini sil', `Google hesabına (<b>${esc(CUR.acc.user)}</b>) bağlı <b>${CUR.acc.chars.length} karakter ve tüm KO Hesap kayıtları</b> buluttan kalıcı olarak silinecek. Forge&Play hesabın silinmez.`, 'Verileri sil', async () => {
-    try { await cloudDeleteAll(); CLOUD.last = { shared: '', chars: {} }; toast('KO Hesap verileri silindi', 'ok'); logout(); }
+  'acc-del': () => confirmBox('KO Ekip verilerini sil', `Google hesabına (<b>${esc(CUR.acc.user)}</b>) bağlı <b>${CUR.acc.chars.length} karakter ve tüm KO Ekip kayıtları</b> buluttan kalıcı olarak silinecek. Forge&Play hesabın silinmez.`, 'Verileri sil', async () => {
+    try { await cloudDeleteAll(); CLOUD.last = { shared: '', chars: {} }; toast('KO Ekip verileri silindi', 'ok'); logout(); }
     catch (e) { toast('Silinemedi: ' + e.message, 'err'); }
   }),
 });

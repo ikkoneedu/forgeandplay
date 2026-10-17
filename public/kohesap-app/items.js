@@ -1,5 +1,5 @@
 /* ==========================================================================
-   KO Hesap — item görselleri, PUS mağaza görünümü, item detay penceresi
+   KO Ekip — item görselleri, PUS mağaza görünümü, item detay penceresi
    Görseller kaynak sitenin kendi ikonlarıdır; koruma sayfası yüzünden
    tarayıcı doğrudan alamadığı için exe'de /api/img, web'de /api/kohesap/img
    üzerinden (önbellekli) gelir.
