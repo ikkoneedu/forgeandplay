@@ -50,7 +50,7 @@ VOICE.ice = null; VOICE.iceAt = 0; VOICE.iceSrc = ''; VOICE.usage = null; VOICE.
 async function turnCall(used, keepalive) {
   const tok = CLOUD.user ? await CLOUD.user.getIdToken() : '';
   const r = await fetch((serverMode ? siteBase() : '') + '/api/kohesap/turn', { method: 'POST', keepalive: !!keepalive, headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify(used ? { used: Math.round(used) } : {}), cache: 'no-store' });
-  if (!r.ok) throw new Error('turn ' + r.status);
+  if (!r.ok) { let m = ''; try { m = (await r.json()).error || ''; } catch { } throw new Error('sunucu ' + r.status + (m ? ' · ' + m : '')); }
   const j = await r.json();
   if (j.usage) VOICE.usage = j.usage;
   VOICE.usageAt = Date.now();
@@ -63,7 +63,8 @@ async function loadIce(force) {
     const j = await turnCall(0);
     if (j.src !== 'limit') { VOICE.ice = Array.isArray(j.iceServers) ? j.iceServers : []; VOICE.iceSrc = j.src || ''; }
     VOICE.iceAt = Date.now();
-  } catch (e) { console.warn('aktarma sunucusu alınamadı', e); if (!VOICE.ice) { VOICE.ice = []; VOICE.iceAt = Date.now() - 5.5 * 3600e3; } }
+    VOICE.iceErr = '';
+  } catch (e) { console.warn('aktarma sunucusu alınamadı', e); VOICE.iceErr = e.message || String(e); if (!VOICE.ice) { VOICE.ice = []; VOICE.iceAt = Date.now() - 5.5 * 3600e3; } }
   return VOICE.ice;
 }
 /* kota doldu: aktarma bilgisini at, aktarma üzerinden giden bağlantıları kapat */
@@ -111,6 +112,7 @@ function blip(up) {
 }
 
 /* ---------- ses seviyesi ölçümü ---------- */
+const meterStream = t => { const c = t.clone(); c.enabled = true; return new MediaStream([c]); };
 function analyser(stream) {
   const c = VOICE.ctx || (VOICE.ctx = new AudioContext());
   const src = c.createMediaStreamSource(stream), an = c.createAnalyser();
@@ -128,9 +130,16 @@ function voiceTick() {
   if (!TEAM.doc || TEAM.code !== VOICE.code) { voiceLeave(true); toast('Ekipten ayrıldığın için sesli sohbet kapandı'); return; }
   const now = Date.now(), p = VOICE.pref;
   VOICE.level = VOICE.localAn ? VOICE.localAn.read() : 0;
+  // ses motoru askıdaysa uyandırmayı dene
+  if (VOICE.ctx && VOICE.ctx.state !== 'running' && now - (VOICE.resumeAt || 0) > 2000) { VOICE.resumeAt = now; VOICE.ctx.resume().catch(() => { }); }
+  // ölçüm tamamen düz (0) kalıyorsa ölçemiyoruz demektir: sesi kesmek yerine iletmeye devam et
+  if (VOICE.level > 0.3) VOICE.lastLevelAt = now;
+  const blind = !VOICE.localAn || (VOICE.ctx && VOICE.ctx.state !== 'running') || now - (VOICE.lastLevelAt || VOICE.joinAt || now) > 3000;
+  if (blind !== VOICE.blind) { VOICE.blind = blind; voicePaint(); }
   let open;
   if (p.mode === 'open') open = true;
   else if (p.mode === 'ptt') open = VOICE.pttDown;
+  else if (blind) open = true;
   else { if (VOICE.level >= p.thr) VOICE.gateUntil = now + 450; open = now < VOICE.gateUntil; }
   VOICE.gateOpen = open;
   setSending(open);
@@ -376,8 +385,8 @@ async function voiceJoin() {
     VOICE.sendTrack = VOICE.stream.getAudioTracks()[0];
     VOICE.ctx = VOICE.ctx || new AudioContext();
     if (VOICE.ctx.state === 'suspended') await VOICE.ctx.resume().catch(() => { });
-    VOICE.localAn = analyser(new MediaStream([VOICE.sendTrack.clone()]));
-    VOICE.code = TEAM.code; VOICE.sid = rnd(); VOICE.on = true; VOICE.muted = false;
+    VOICE.localAn = analyser(meterStream(VOICE.sendTrack));
+    VOICE.code = TEAM.code; VOICE.sid = rnd(); VOICE.on = true; VOICE.muted = false; VOICE.joinAt = Date.now(); VOICE.lastLevelAt = 0; VOICE.blind = false;
     setSending(VOICE.pref.mode === 'open');
     await beat();
     VOICE.unsubs.push(FB.onSnapshot(inboxCol(myUid()), s => s.docChanges().forEach(c => { if (c.type === 'added') onInbox(c.doc); })));
@@ -445,7 +454,7 @@ async function switchMic(id) {
     VOICE.peers.forEach(pe => pe.pc.getSenders().forEach(s => { if (s.track && s.track.kind === 'audio') s.replaceTrack(nt); }));
     VOICE.stream.getTracks().forEach(t => t.stop());
     VOICE.stream = ns; VOICE.sendTrack = nt;
-    VOICE.localAn = analyser(new MediaStream([nt.clone()]));
+    VOICE.localAn = analyser(meterStream(nt));
     toast('Mikrofon değiştirildi', 'ok');
   } catch (e) { toast(micError(e), 'err'); }
 }
@@ -541,7 +550,7 @@ function voiceSettings() {
       <label class="f">Mikrofon<select class="inp" data-vmic><option value="">Varsayılan</option>${VOICE.devices.in.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.mic ? 'selected' : ''}>${esc(d.label || 'Mikrofon')}</option>`).join('')}</select></label>
       ${VOICE.devices.out.length && 'setSinkId' in HTMLMediaElement.prototype ? `<label class="f">Hoparlör / kulaklık<select class="inp" data-vspk><option value="">Varsayılan</option>${VOICE.devices.out.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.spk ? 'selected' : ''}>${esc(d.label || 'Çıkış')}</option>`).join('')}</select></label>` : '<span></span>'}
       <label class="f">Ses kalitesi<select class="inp" data-vq>${Object.entries(VQUAL).map(([k, v]) => `<option value="${k}" ${k === (p.q || 'hi') ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select><span class="hint">Herkes için 8 kişide bile rahat; internet zayıfsa Standart seç.</span></label>
-      <div class="f"><span class="vc-lbl">Bağlantı</span>${usageLine()}<span class="hint">${VOICE.limitHit ? '⛔ Bu ayın ses aktarma kotası doldu: telefon / kısıtlı ağ bağlantıları ay başına kadar kapalı.' : hasRelay() ? '✅ Aktarma sunucusu hazır: telefon ve kısıtlı ağlarda da bağlanır.' : '⚠️ Aktarma (TURN) sunucusu tanımlı değil: telefonlar ve bazı ev ağları birbirine bağlanamayabilir.' + (typeof isAdmin === 'function' && isAdmin() ? ' Admin: Vercel\'de CF_TURN_KEY_ID ve CF_TURN_API_TOKEN değişkenlerini ekle.' : ' Admin\'e haber ver.')}</span></div>
+      <div class="f"><span class="vc-lbl">Bağlantı</span>${usageLine()}<span class="hint">${VOICE.limitHit ? '⛔ Bu ayın ses aktarma kotası doldu: telefon / kısıtlı ağ bağlantıları ay başına kadar kapalı.' : hasRelay() ? '✅ Aktarma sunucusu hazır: telefon ve kısıtlı ağlarda da bağlanır.' : '⚠️ Aktarma (TURN) sunucusu tanımlı değil: telefonlar ve bazı ev ağları birbirine bağlanamayabilir.' + (typeof isAdmin === 'function' && isAdmin() ? (VOICE.iceErr ? ' Aktarma bilgisi alınamadı (' + esc(VOICE.iceErr) + ').' : ' Admin: Vercel\'de CF_TURN_KEY_ID ve CF_TURN_API_TOKEN değişkenlerini ekle.') : ' Admin\'e haber ver.')}</span></div>
       <div class="f vc-checks"><label class="check"><input type="checkbox" data-vns ${p.ns !== false ? 'checked' : ''}> Gürültü engelleme</label><label class="check"><input type="checkbox" data-vagc ${p.agc !== false ? 'checked' : ''}> Otomatik ses seviyesi</label><label class="check"><input type="checkbox" data-vsnd ${p.sounds ? 'checked' : ''}> Giriş / çıkış sesleri</label></div>
     </div>
   </div>`;
@@ -557,6 +566,7 @@ function voiceMain() {
       ${VOICE.on ? '' : `<button class="btn pri vs-join" data-act="v-join" ${VOICE.joining ? 'disabled' : ''}>${VOICE.joining ? 'Bağlanıyor…' : `${MIC_ON} Sese katıl`}</button>`}
     </div>
     ${VOICE.err ? `<div class="callout r" style="margin-top:12px">${esc(VOICE.err)}</div>` : ''}
+    ${VOICE.on && VOICE.blind && VOICE.pref.mode === 'vad' && !VOICE.muted ? `<div class="callout y" style="margin-top:12px"><b>Mikrofondan ses seviyesi okunamıyor.</b> Sesin yine de iletiliyor (ses algılama geçici olarak açık mikrofon gibi çalışıyor). Arkadaşların seni duymuyorsa ⚙ ayarlardan doğru mikrofonu seç; Windows'ta Ayarlar → Gizlilik → Mikrofon'dan uygulamalara izin verildiğini kontrol et.</div>` : ''}
     ${VOICE.on && VOICE.limitHit ? `<div class="callout y" style="margin-top:12px"><b>Bu ayın ücretsiz ses aktarma kotası doldu</b> (${VOICE.usage ? fmtGB(VOICE.usage.gb) + ' / ' + VOICE.usage.limitGB + ' GB' : ''}). Ücretli kısma geçmemek için aktarma kapatıldı. Aynı ağdaki ve doğrudan bağlanabilen üyeler konuşmaya devam eder; telefonlar ay başında tekrar bağlanır.${isAdmin() ? ' Admin: sınırı Bildirimler → Sunucu durumu kartından değiştirebilirsin.' : ''}</div>` : ''}
     ${VOICE.on && !VOICE.limitHit && !hasRelay() && [...VOICE.peers.values()].some(pe => pe.fails) ? `<div class="callout y" style="margin-top:12px">Bazı üyelere bağlanılamadı. Telefon (mobil veri) ve bazı modemler doğrudan bağlantıya izin vermez; bunun için aktarma sunucusu gerekir.${isAdmin() ? ' Admin: Vercel\'e CF_TURN_KEY_ID ve CF_TURN_API_TOKEN ekle (kurulum notunda adımlar var).' : ' Admin\'e haber ver.'}</div>` : ''}
     <div class="vt-grid">${roster.map(voiceTile).join('')}</div>

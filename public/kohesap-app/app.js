@@ -1505,7 +1505,9 @@ function demoState() {
 }
 
 /* ---------- başlat ---------- */
-(async function init() {
+/* Açılış: TÜM betikler (auth.js, team.js …) yüklendikten sonra başlar.
+   (Önceden ağ isteğinin süresine güveniliyordu; hızlı açılışta giriş kodu henüz yüklenmemiş oluyordu → boş ekran.) */
+async function init() {
   try { await load(); bindView(); }
   catch (e) { console.error('açılış', e); DB = DB || defaultDB(); try { bindView(); } catch { } }
   startAuth();
@@ -1525,4 +1527,6 @@ function demoState() {
     startLiveTimers();
     if (S.settings.autoSources && S.sources.length) for (const s of S.sources) runSource(s, true);
   }
-})();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => init());
+else setTimeout(init, 0);
