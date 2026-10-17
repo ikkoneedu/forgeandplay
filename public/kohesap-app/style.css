@@ -845,3 +845,25 @@ button.ar-item:hover b{color:var(--gold2);text-decoration:underline;text-underli
   .vc-teaser .btn{width:100%;justify-content:center}
 }
 .cf-two{display:flex;gap:24px;flex-wrap:wrap}
+
+/* ===== davet ekranı ve kullanıcı yönetimi ===== */
+.invite-card{gap:14px}
+.invite-form{display:flex;gap:8px}
+.invite-inp{flex:1;font:700 20px var(--mono,monospace);letter-spacing:.25em;text-transform:uppercase;text-align:center}
+.invite-wait{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12.5px;color:var(--tx3)}
+.users-card{margin-bottom:16px;border-color:rgba(227,181,84,.4)}
+.invite-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;background:var(--bg2);border:1px dashed rgba(227,181,84,.45)}
+.invite-box .mut{display:block;font-size:11.5px}
+.invite-code{font:700 22px var(--mono,monospace);letter-spacing:.2em;color:var(--gold2)}
+.users-h{margin:14px 0 8px;font:600 13.5px var(--head);display:flex;align-items:center;gap:8px}
+.users-list{display:flex;flex-direction:column;gap:6px}
+.user-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);flex-wrap:wrap}
+.user-row.req{border-color:rgba(239,91,91,.35);background:linear-gradient(90deg,rgba(239,91,91,.06),var(--bg2))}
+.u-ph{width:36px;height:36px;border-radius:50%;background:var(--panel2);flex:none;object-fit:cover}
+.u-tx{flex:1;min-width:180px;display:flex;flex-direction:column;gap:2px}
+.u-tx b{font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.u-tx>span{font-size:12px;color:var(--tx3)}
+.u-chars{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.u-chars i{font-style:normal;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--tx2);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;padding:2px 8px 2px 3px}
+.u-chars i b{color:var(--gold2)}
+@media (max-width:600px){.user-row .btn{flex:1 1 auto;justify-content:center}.invite-form{flex-direction:column}}

@@ -9,6 +9,12 @@ service cloud.firestore {
         && request.auth.token.email in ['carkci.caner@gmail.com'];
     }
 
+    // KO Hesap davetli erişim: admin ya da geçerli davet koduyla erişim kaydı olan kullanıcı
+    function hasKoAccess() {
+      return request.auth != null
+        && (isAdmin() || exists(/databases/$(database)/documents/kohesapAccess/$(request.auth.uid)));
+    }
+
     // Community games: anyone can read & play; only admin can create/delete.
     // Anyone signed in may increment the play counter (plays only).
     match /games/{gameId} {
@@ -61,7 +67,7 @@ service cloud.firestore {
     // KO Hesap canlı pazar: Windows uygulaması okuduğu pazarı paylaşır, web herkese gösterir.
     match /kohesapMarket/{docId} {
       allow read: if true;
-      allow write: if request.auth != null
+      allow write: if hasKoAccess()
         && request.resource.data.keys().hasOnly(['json', 'count', 'at', 'time', 'by', 'app'])
         && request.resource.data.json is string
         && request.resource.data.json.size() < 1000000
@@ -71,10 +77,36 @@ service cloud.firestore {
     // KO Hesap (Knight Online defteri): her kullanıcı yalnızca kendi verisini
     // okur/yazar. Ana belge + en fazla 4 karakter belgesi.
     match /kohesap/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if hasKoAccess() && request.auth.uid == uid;
+      allow read: if isAdmin();
       match /chars/{charId} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if hasKoAccess() && request.auth.uid == uid;
+        allow read: if isAdmin();
       }
+    }
+
+    // KO Hesap davet kodu: yalnızca admin görür ve değiştirir.
+    match /kohesapAdmin/{docId} {
+      allow read, write: if isAdmin();
+    }
+    // Erişim kaydı: kullanıcı yalnızca GEÇERLİ davet koduyla kendi kaydını oluşturur;
+    // sonra yalnızca son görülme / ad / karakter özetini günceller. Admin her şeyi yönetir.
+    match /kohesapAccess/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['email', 'name', 'photo', 'at', 'code'])
+        && exists(/databases/$(database)/documents/kohesapAdmin/invite)
+        && request.resource.data.code == get(/databases/$(database)/documents/kohesapAdmin/invite).data.code;
+      allow update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seen', 'name', 'photo', 'email', 'chars']);
+      allow create, update, delete: if isAdmin();
+    }
+    // Erişim isteği: kodu olmayan kullanıcı kendi isteğini bırakır; admin görür, onaylar ya da siler.
+    match /kohesapRequests/{uid} {
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['email', 'name', 'photo', 'at']);
+      allow read, delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);
     }
 
     // KO Hesap sınıf görselleri: herkes okur, yalnızca admin yazar.
@@ -95,7 +127,7 @@ service cloud.firestore {
       }
       allow get: if signedIn();
       allow list: if false;
-      allow create: if signedIn()
+      allow create: if isAdmin()
         && code.size() == 8
         && request.resource.data.owner == me()
         && request.resource.data.memberUids == [me()]
@@ -107,8 +139,8 @@ service cloud.firestore {
         || (me() in resource.data.memberUids
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'updatedAt'])
             && onlyMyEntry())
-        // katılma: kendini ekler, en fazla 8 kişi
-        || (!(me() in resource.data.memberUids)
+        // katılma: davetli kullanıcı kendini ekler, en fazla 8 kişi
+        || (hasKoAccess() && !(me() in resource.data.memberUids)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberUids', 'updatedAt'])
             && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1
             && request.resource.data.memberUids.hasAll(resource.data.memberUids)

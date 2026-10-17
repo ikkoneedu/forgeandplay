@@ -68,6 +68,7 @@ function teamWatch() {
       teamSyncSoon();
     }
     if (ui.page === 'ekip') render();
+    if (ui.page === 'ayar' && typeof repaintUsers === 'function') repaintUsers();
   }, err => { TEAM.loaded = true; TEAM.err = err.message; if (ui.page === 'ekip') render(); });
 }
 let teamSyncTimer = null;
@@ -150,12 +151,15 @@ function ekipBody() {
   if (teamCodeOf() && !TEAM.loaded) return `<div class="card">${empty('Ekip yükleniyor…', '')}</div>`;
   if (!TEAM.doc) return `
     <div class="grid g2 team-start">
-      <div class="card">
-        <div class="card-h"><h3>Ekip kur</h3></div>
+      ${isAdmin() ? `<div class="card">
+        <div class="card-h"><h3>Ekip kur <span class="badge y">admin</span></h3></div>
         <p class="mut" style="margin:0 0 14px;font-size:13.5px">Bir ekip kur, 8 karakterlik kodu arkadaşlarına gönder. Ekibe katılan herkesin karakterleri (sınıf, seviye, sunucu, klan, EXP) burada görünür; parti açarken tek dokunuşla üye listesi dolar.</p>
         <div class="form"><label class="f full">Ekip adı<input class="inp" id="teamName" maxlength="40" placeholder="örn. Gece Farmcıları"></label></div>
         <button class="btn pri" style="margin-top:12px" data-act="team-create" ${TEAM.busy ? 'disabled' : ''}>${ICON.plus} Ekip kur</button>
-      </div>
+      </div>` : `<div class="card">
+        <div class="card-h"><h3>Ekip</h3></div>
+        <p class="mut" style="margin:0;font-size:13.5px">Ekipler ve ses odası yönetici tarafından kurulur. Yönetici seni ekibe eklediğinde bu sayfa kendiliğinden açılır; ya da ondan aldığın ekip kodunu yandaki kutuya gir.</p>
+      </div>`}
       <div class="card">
         <div class="card-h"><h3>Ekibe katıl</h3></div>
         <p class="mut" style="margin:0 0 14px;font-size:13.5px">Ekip liderinin gönderdiği kodu gir. Bir ekipte en fazla ${TEAM_MAX} kişi olabilir.</p>
@@ -230,6 +234,7 @@ function partyFromTeam() {
 
 Object.assign(ACTIONS, {
   'team-create': async () => {
+    if (!isAdmin()) return toast('Ekipleri yalnızca yönetici kurabilir', 'err');
     const name = ($('#teamName') || {}).value || '';
     if (!name.trim()) return toast('Ekip adı girin', 'err');
     TEAM.busy = true; render();

@@ -77,8 +77,11 @@ function showAuth(mode, err = '') {
   el.hidden = false;
   document.querySelector('.app').style.visibility = 'hidden';
   el.innerHTML = `<div class="auth-bg"></div><div class="auth-wrap">${AUTH_VIEWS[mode]()}</div><div class="auth-foot">KO Hesap ${esc($('#ver').textContent)} · forgeandplay.com · kayıtların Google hesabınla tüm cihazlarında</div>`;
+  // imleç yalnızca form ilk açıldığında ad kutusuna gider (sınıf/ırk değişince yazılan yer kaymasın)
   const f = el.querySelector('input:not([type=checkbox])');
-  if (f && mode === 'charForm') setTimeout(() => f.focus(), 30);
+  if (f && mode === 'charForm' && auth.lastMode !== 'charForm') setTimeout(() => { if (!el.contains(document.activeElement) || document.activeElement === document.body) f.focus(); }, 30);
+  if (f && mode === 'invite' && auth.lastMode !== 'invite') setTimeout(() => f.focus(), 30);
+  auth.lastMode = mode;
 }
 function hideAuth() {
   const el = authEl();
@@ -91,9 +94,11 @@ async function startAuth() {
   catch (e) { return showAuth('offline', e.message); }
   let first = true;
   FB.onAuthStateChanged(CLOUD.auth, async user => {
-    if (!user) { CLOUD.user = null; CUR.acc = null; CUR.ch = null; bindView(); return showAuth('login'); }
+    if (!user) { CLOUD.user = null; CUR.acc = null; CUR.ch = null; accessStop(); bindView(); return showAuth('login'); }
     if (CLOUD.user && CLOUD.user.uid === user.uid) return;
     showAuth('loading');
+    // davetle giriş: erişimi olmayan kullanıcı davet kodu ekranında bekler (access.js)
+    if (!(await accessGate(user))) return;
     try { await cloudLoad(user); }
     catch (e) { return showAuth('offline', 'Kayıtların yüklenemedi: ' + e.message); }
     sideExtra();
@@ -149,6 +154,7 @@ const AUTH_VIEWS = {
         <li>Gelir / gider, item ticareti, parti drop ve pay dağılımı</li>
         <li>Canlı GB fiyatları, PUS ve EXP hesabı, event takvimi</li>
         <li>Web ve Windows uygulaması aynı kayıtları kullanır</li>
+        <li>Davetle çalışır: giriş için yöneticinin verdiği davet kodu gerekir</li>
       </ul>
       ${errLine()}
       <button class="btn auth-google" data-act="au-google" ${auth.busy ? 'disabled' : ''}>
