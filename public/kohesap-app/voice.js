@@ -9,8 +9,8 @@
    - Modlar: açık mikrofon, ses algılama (eşik ayarlı), bas-konuş (uygulama içinde
      tuş/fare; Windows uygulamasında oyun öndeyken de çalışır).
    ========================================================================== */
-const VOICE_STALE = 90e3;     // bu kadar süre nabız gelmeyen kişi odadan düşmüş sayılır
-const VOICE_HB = 20e3;
+const VOICE_STALE = 200e3;     // bu kadar süre nabız gelmeyen kişi odadan düşmüş sayılır
+const VOICE_HB = 60e3;   // seyrek nabız: Firebase ücretsiz kotası için (8 kişi, saatler süren oturum)
 const PTT_KEYS = [
   { id: 'Mouse4', vk: 0x05, label: 'Fare yan tuş 1 (geri)' },
   { id: 'Mouse5', vk: 0x06, label: 'Fare yan tuş 2 (ileri)' },
@@ -29,10 +29,14 @@ const VOICE = {
   peers: new Map(), presence: {}, unsubs: [], hbTimer: null, levelTimer: null,
   muted: false, deaf: false, pttDown: false, gateOpen: false, gateUntil: 0, level: 0, speaking: false,
   ptt: null, devices: { in: [], out: [] },
-  pref: Object.assign({ mode: 'vad', thr: 12, key: 'Mouse4', mic: '', spk: '', vol: {}, sounds: true }, vprefLoad()),
+  pref: Object.assign({ mode: 'vad', thr: 12, key: 'Mouse4', mic: '', spk: '', vol: {}, sounds: true, q: 'hi', ns: true, agc: true }, vprefLoad()),
+  raw: {}, watchCode: '', watchUnsub: null,
 };
 const vprefSave = () => { try { localStorage.setItem(VPREF_KEY, JSON.stringify(VOICE.pref)); } catch { } };
-const voiceCol = () => FB.collection(CLOUD.db, 'kohesapTeams', VOICE.code, 'voice');
+const voiceCol = (code = VOICE.code) => FB.collection(CLOUD.db, 'kohesapTeams', code, 'voice');
+/* ses kalitesi (Opus) */
+const VQUAL = { std: { kbps: 40, label: 'Standart · 40 kbps' }, hi: { kbps: 64, label: 'Yüksek · 64 kbps (önerilen)' }, max: { kbps: 96, label: 'En yüksek · 96 kbps' } };
+const vBitrate = () => (VQUAL[VOICE.pref.q] || VQUAL.hi).kbps * 1000;
 const voiceDoc = u => FB.doc(CLOUD.db, 'kohesapTeams', VOICE.code, 'voice', u);
 const inboxCol = u => FB.collection(CLOUD.db, 'kohesapTeams', VOICE.code, 'voice', u, 'inbox');
 const inboxDoc = (u, id) => FB.doc(CLOUD.db, 'kohesapTeams', VOICE.code, 'voice', u, 'inbox', id);
@@ -114,7 +118,7 @@ function peerFor(uidv, sid) {
   pc.onconnectionstatechange = () => {
     const s = pc.connectionState;
     pe.state = s === 'connected' ? 'bağlı' : s === 'failed' ? 'kurulamadı' : s === 'disconnected' ? 'koptu' : 'bağlanıyor';
-    if (s === 'connected') { blip(true); pe.okAt = Date.now(); }
+    if (s === 'connected') { blip(true); pe.okAt = Date.now(); tuneSender(pe); }
     if (s === 'disconnected') pe.lostAt = Date.now();
     if (s === 'failed' && pe.offerer) restartPeer(uidv);
     voicePaintLive();
@@ -128,7 +132,41 @@ function waitGather(pc, ms = 2500) {
     pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); res(); } });
   });
 }
-const tuneSdp = sdp => sdp.replace(/(a=fmtp:\d+ [^\r\n]*?)(minptime=\d+;useinbandfec=1)/, '$1$2;usedtx=1;maxaveragebitrate=40000');
+/* Opus: kayıp düzeltme açık, sessizlikte kesme (DTX) kapalı (kelime başları kırpılmasın), mono 48 kHz, seçilen bit hızı */
+const tuneSdp = sdp => sdp.replace(/(a=fmtp:\d+ )([^\r\n]*useinbandfec=1[^\r\n]*)/, (m, a, b) =>
+  a + b.split(';').filter(x => x && !/^(usedtx|maxaveragebitrate|stereo|sprop-stereo|maxplaybackrate|cbr)=/.test(x)).concat(['usedtx=0', 'stereo=0', 'sprop-stereo=0', 'maxplaybackrate=48000', 'maxaveragebitrate=' + vBitrate()]).join(';'));
+/* gönderici: bit hızı ve öncelik (ses paketleri ağda önde gitsin) */
+async function tuneSender(pe) {
+  for (const s of pe.pc.getSenders()) {
+    if (!s.track || s.track.kind !== 'audio') continue;
+    try {
+      const prm = s.getParameters();
+      if (!prm.encodings || !prm.encodings.length) prm.encodings = [{}];
+      prm.encodings[0].maxBitrate = vBitrate();
+      prm.encodings[0].priority = 'high';
+      prm.encodings[0].networkPriority = 'high';
+      await s.setParameters(prm);
+    } catch { }
+  }
+}
+/* bağlantı kalitesi: gecikme (ms), paket kaybı (%), aktarma sunucusu üzerinden mi */
+async function peerStats(pe) {
+  try {
+    const st = await pe.pc.getStats();
+    let rtt = null, recv = 0, lost = 0, relay = false, jit = null, pairLocal = null;
+    st.forEach(r => {
+      if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') { if (r.currentRoundTripTime != null) rtt = r.currentRoundTripTime * 1000; pairLocal = r.localCandidateId; }
+      if (r.type === 'inbound-rtp' && r.kind === 'audio') { recv = r.packetsReceived || 0; lost = r.packetsLost || 0; if (r.jitter != null) jit = r.jitter * 1000; }
+    });
+    if (pairLocal) { const lc = st.get(pairLocal); relay = !!(lc && lc.candidateType === 'relay'); }
+    const dR = recv - (pe.lastRecv || 0), dL = lost - (pe.lastLost || 0);
+    pe.lastRecv = recv; pe.lastLost = lost;
+    pe.loss = dR + dL > 0 ? Math.max(0, dL) / (dR + dL) * 100 : 0;
+    pe.rtt = rtt; pe.jit = jit; pe.relay = relay;
+    pe.qual = rtt == null ? 0 : (rtt < 120 && pe.loss < 2) ? 3 : (rtt < 250 && pe.loss < 6) ? 2 : 1;
+  } catch { }
+}
+function voiceStatsTick() { if (!VOICE.on) return; Promise.all([...VOICE.peers.values()].filter(pe => pe.pc.connectionState === 'connected').map(peerStats)).then(() => voicePaintLive()); }
 async function makeOffer(uidv, restart) {
   const pe = VOICE.peers.get(uidv); if (!pe) return;
   const pc = pe.pc;
@@ -180,11 +218,16 @@ async function onInbox(d) {
   } catch (e) { console.warn('ses bağlantı mesajı', m.t, e); }
 }
 function onPresence(snap) {
+  const raw = {}; snap.forEach(d => { const v = d.data(); if (v) raw[d.id] = v; });
+  VOICE.raw = raw; applyPresence();
+}
+function applyPresence() {
   const now = Date.now(), seen = {};
-  snap.forEach(d => { const v = d.data(); if (v && now - (v.hb || 0) < VOICE_STALE) seen[d.id] = v; });
+  Object.entries(VOICE.raw).forEach(([u, v]) => { if (now - (v.hb || 0) < VOICE_STALE) seen[u] = v; });
   const before = new Set(Object.keys(VOICE.presence));
   VOICE.presence = seen;
   const me = myUid();
+  if (!VOICE.on) { voicePaint(); return; }            // katılmadan yalnızca odadakileri göster
   Object.entries(seen).forEach(([u, v]) => {
     if (u === me) return;
     const pe = VOICE.peers.get(u);
@@ -199,10 +242,20 @@ function onPresence(snap) {
   voicePaint();
 }
 
+/* odadakileri katılmadan da izle (ekip varken) */
+function voiceWatchPresence() {
+  const code = TEAM.doc && CLOUD.db ? TEAM.code : '';
+  if (code === VOICE.watchCode) return;
+  if (VOICE.watchUnsub) { try { VOICE.watchUnsub(); } catch { } VOICE.watchUnsub = null; }
+  VOICE.watchCode = code; VOICE.raw = {}; VOICE.presence = {};
+  if (code) VOICE.watchUnsub = FB.onSnapshot(voiceCol(code), onPresence, e => { if (isPermErr(e)) TEAM.rulesMissing = true; });
+}
+setInterval(() => { voiceWatchPresence(); if (VOICE.watchCode) applyPresence(); }, 20000);
+
 /* ---------- katıl / ayrıl ---------- */
 async function getMic() {
   const p = VOICE.pref;
-  const c = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 };
+  const c = { echoCancellation: true, noiseSuppression: p.ns !== false, autoGainControl: p.agc !== false, channelCount: 1, sampleRate: 48000, sampleSize: 16 };
   if (p.mic) c.deviceId = { exact: p.mic };
   try { return await navigator.mediaDevices.getUserMedia({ audio: c }); }
   catch (e) { if (p.mic && e.name === 'OverconstrainedError') { p.mic = ''; vprefSave(); return getMic(); } throw e; }
@@ -216,7 +269,7 @@ function micError(e) {
 }
 function myVoiceInfo() {
   const ch = CUR.ch || {};
-  return { name: (CLOUD.user.displayName || '').slice(0, 40) || 'Oyuncu', char: ch.name || '', cls: ch.cls || 'warrior', nation: ch.nation || 'karus', level: +ch.level || 0, muted: VOICE.muted, deaf: VOICE.deaf, sid: VOICE.sid, hb: Date.now() };
+  return { name: (CLOUD.user.displayName || '').slice(0, 40) || 'Oyuncu', char: ch.name || '', cls: ch.cls || 'warrior', nation: ch.nation || 'karus', race: ch.race || '', rtype: ch.rtype || 'okcu', level: +ch.level || 0, muted: VOICE.muted, deaf: VOICE.deaf, sid: VOICE.sid, hb: Date.now() };
 }
 /* kurulamayan / kopan bağlantıyı kendiliğinden yeniden dene (kaybolan mesajlara karşı) */
 function voiceWatch() {
@@ -245,14 +298,16 @@ async function voiceJoin() {
     setSending(VOICE.pref.mode === 'open');
     await beat();
     VOICE.unsubs.push(FB.onSnapshot(inboxCol(myUid()), s => s.docChanges().forEach(c => { if (c.type === 'added') onInbox(c.doc); })));
-    VOICE.unsubs.push(FB.onSnapshot(voiceCol(), onPresence));
+    voiceWatchPresence(); applyPresence();
     VOICE.hbTimer = setInterval(beat, VOICE_HB);
     VOICE.levelTimer = setInterval(voiceTick, 60);
     VOICE.watchTimer = setInterval(voiceWatch, 3000);
+    VOICE.statsTimer = setInterval(voiceStatsTick, 2000);
     pttStart();
     listDevices();
     blip(true);
     toast('Sesli sohbete katıldın', 'ok');
+    if (ui.page !== 'ses') { ui.page = 'ses'; render(); }
   } catch (e) {
     VOICE.err = isPermErr(e) ? 'Sese katılınamadı: Firebase kuralları yayınlanmamış (Ekip sayfasındaki adımlara bak).' : e && e.name && e.name !== 'FirebaseError' ? micError(e) : 'Katılınamadı: ' + (e.message || e);
     if (isPermErr(e)) { TEAM.rulesMissing = true; }
@@ -263,12 +318,13 @@ async function voiceLeave(silent) {
   const was = VOICE.on;
   VOICE.on = false;
   VOICE.unsubs.splice(0).forEach(f => { try { f(); } catch { } });
-  clearInterval(VOICE.hbTimer); clearInterval(VOICE.levelTimer); clearInterval(VOICE.watchTimer);
+  clearInterval(VOICE.hbTimer); clearInterval(VOICE.levelTimer); clearInterval(VOICE.watchTimer); clearInterval(VOICE.statsTimer);
   pttStop();
   [...VOICE.peers.keys()].forEach(closePeer);
   if (VOICE.stream) VOICE.stream.getTracks().forEach(t => t.stop());
   try { VOICE.localAn && VOICE.localAn.src.mediaStream.getTracks().forEach(t => t.stop()); } catch { }
-  VOICE.stream = null; VOICE.sendTrack = null; VOICE.localAn = null; VOICE.presence = {}; VOICE.speaking = false;
+  VOICE.stream = null; VOICE.sendTrack = null; VOICE.localAn = null; VOICE.speaking = false;
+  if (was && myUid()) { delete VOICE.raw[myUid()]; applyPresence(); }
   if (was && VOICE.code && CLOUD.db && myUid()) FB.deleteDoc(voiceDoc(myUid())).catch(() => { });
   if (was && !silent) { blip(false); toast('Sesli sohbetten ayrıldın'); }
   voicePaint();
@@ -342,75 +398,131 @@ const MIC_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const HEAD_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg>';
 const HEAD_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 15v-3a8 8 0 0 1 12.7-6.5M20 12v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/><path d="M3 3l18 18"/></svg>';
 const PHONE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 14.5c4.7-4.7 12.3-4.7 17 0l-2 2.5-3.5-1.4v-2.2a9 9 0 0 0-6 0v2.2L5.5 17z"/></svg>';
-function voiceRoster() {
-  const me = myUid(), list = [];
+const GEAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+ICON.ses = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="7" rx="1.5"/><rect x="17" y="13" width="4" height="7" rx="1.5"/></svg>';
+PAGES.splice(PAGES.findIndex(p => p.id === 'ekip') + 1, 0, { id: 'ses', t: 'Ses & Sohbet', d: 'Ekip sesli sohbeti, yazışma ve bot' });
+
+/* ekipteki herkes: seste olanlar canlı bilgileriyle, olmayanlar ana karakteriyle */
+function voiceRoster(all) {
+  const me = myUid(), list = [], seen = new Set();
   Object.entries(VOICE.presence).forEach(([u, v]) => {
+    seen.add(u);
     const pe = VOICE.peers.get(u);
-    list.push({ uid: u, ...v, me: u === me, speaking: u === me ? VOICE.speaking : !!(pe && pe.speaking), state: u === me ? 'sen' : pe ? pe.state : 'bağlanıyor', needsTap: pe && pe.needsTap });
+    list.push({ uid: u, ...v, inVoice: true, me: u === me,
+      speaking: u === me ? VOICE.on && VOICE.speaking : !!(VOICE.on && pe && pe.speaking),
+      state: u === me ? 'sen' : !VOICE.on ? 'seste' : pe ? pe.state : 'bağlanıyor', needsTap: pe && pe.needsTap, pe });
   });
-  return list.sort((a, b) => (b.me - a.me) || String(a.char || a.name).localeCompare(String(b.char || b.name), 'tr'));
+  if (all && typeof teamMembers === 'function') teamMembers().forEach(m => {
+    if (seen.has(m.uid)) return;
+    const c = m.mainChar || {};
+    list.push({ uid: m.uid, name: m.name, char: c.name || '', cls: c.cls || 'warrior', nation: c.nation || 'karus', race: c.race || '', rtype: c.rtype || 'okcu', level: c.level || 0, master: c.master, inVoice: false, me: m.uid === me });
+  });
+  return list.sort((a, b) => (b.inVoice - a.inVoice) || (b.me - a.me) || String(a.char || a.name).localeCompare(String(b.char || b.name), 'tr'));
 }
-function voicePanel() {
-  if (!TEAM.doc) return '';
-  const p = VOICE.pref, roster = voiceRoster(), count = roster.length;
-  const others = Object.keys(VOICE.presence).length;
-  if (!VOICE.on) {
-    const inRoom = []; // odadakileri katılmadan da göster (son bilinen)
-    return `<div class="card vc vc-off">
-      <div class="vc-head"><div class="vc-ico">${HEAD_ON}</div><div><h3>Ekip sesli sohbeti</h3><span class="mut">Ses doğrudan ekip üyeleri arasında gider, hiçbir yere kaydedilmez. En fazla ${TEAM_MAX} kişi.</span></div>
-        <span class="spacer"></span><button class="btn pri" data-act="v-join" ${VOICE.joining ? 'disabled' : ''}>${VOICE.joining ? 'Bağlanıyor…' : `${MIC_ON} Sese katıl`}</button></div>
-      ${VOICE.err ? `<div class="callout r" style="margin-top:12px">${esc(VOICE.err)}</div>` : ''}
-      <div class="hint" style="margin-top:10px">İpucu: oyun sırasında kulaklık kullan. Windows uygulamasında bas-konuş tuşu oyun öndeyken de çalışır.</div>
-    </div>`;
-  }
+const qualBars = pe => {
+  if (!pe || !pe.qual) return '';
+  const tip = `${pe.rtt != null ? Math.round(pe.rtt) + ' ms' : ''}${pe.loss ? ' · %' + nf2.format(pe.loss) + ' kayıp' : ''}${pe.relay ? ' · aktarma sunucusu' : ' · doğrudan'}`;
+  return `<span class="qbars q${pe.qual}" title="Bağlantı: ${esc(tip)}"><i></i><i></i><i></i></span><span class="qms">${pe.rtt != null ? Math.round(pe.rtt) + ' ms' : ''}</span>`;
+};
+function tileState(r) {
+  if (!r.inVoice) return 'seste değil';
+  if (r.me) return VOICE.muted ? 'mikrofon kapalı' : VOICE.pref.mode === 'ptt' ? (VOICE.pttDown ? 'konuşuyor' : 'bas-konuş: ' + pttKey().label) : 'mikrofon açık';
+  if (r.needsTap) return 'ses için ekrana dokun';
+  return r.state;
+}
+function voiceTile(r) {
+  const n = NATIONS[r.nation] || NATIONS.karus, c = CLASSES[r.cls] || CLASSES.warrior;
+  const title = r.level ? jobTitle({ cls: r.cls, nation: r.nation, level: r.level, master: r.master }) : classLabel(r.cls, r.nation);
+  return `<div class="vt ${r.speaking ? 'talk' : ''} ${r.inVoice ? '' : 'away'} ${r.me ? 'me' : ''}" style="--nc:${n.color};--cc:${c.color}" data-vp="${esc(r.uid)}">
+    <div class="vt-av">${charAvatar({ cls: r.cls, nation: r.nation, race: r.race, rtype: r.rtype }, 84)}<span class="vt-wave"></span>
+      ${r.inVoice && (r.muted || r.deaf) ? `<span class="vt-mute" title="${r.deaf ? 'Sesi kapalı' : 'Mikrofonu kapalı'}">${r.deaf ? HEAD_OFF : MIC_OFF}</span>` : ''}</div>
+    <b class="vt-name">${esc(r.char || r.name)}</b>
+    <span class="vt-sub" lang="en">${esc(title)}</span>
+    <span class="vt-who">${r.level ? 'Lv ' + r.level + ' · ' : ''}${esc(r.name || '')}${r.me ? ' · sen' : ''}</span>
+    <span class="vt-st ${r.state === 'bağlı' || r.me ? 'ok' : r.state === 'kurulamadı' ? 'bad' : ''}">${VOICE.on && !r.me && r.inVoice ? qualBars(r.pe) : ''}<span class="vt-stx">${esc(tileState(r))}</span></span>
+    ${VOICE.on && r.inVoice && !r.me ? `<input class="vt-vol" type="range" min="0" max="100" step="5" value="${VOICE.pref.vol[r.uid] ?? 100}" data-vvol="${esc(r.uid)}" title="Ses düzeyi" aria-label="${esc(r.char || r.name)} ses düzeyi">` : ''}
+  </div>`;
+}
+function voiceSettings() {
+  const p = VOICE.pref;
   const modeSeg = [['vad', 'Ses algılama'], ['ptt', 'Bas-konuş'], ['open', 'Açık mikrofon']].map(([k, l]) => `<button class="${p.mode === k ? 'on' : ''}" data-act="v-mode" data-v="${k}">${l}</button>`).join('');
-  return `<div class="card vc">
-    <div class="vc-head"><div class="vc-ico live">${HEAD_ON}</div><div><h3>Ekip sesli sohbeti <span class="badge g">canlı</span></h3><span class="mut">${count} kişi odada</span></div>
-      <span class="spacer"></span>
-      <div class="vc-ctrl">
-        <button class="vbtn ${VOICE.muted ? 'off' : ''}" data-act="v-mute" title="${VOICE.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}">${VOICE.muted ? MIC_OFF : MIC_ON}</button>
-        <button class="vbtn ${VOICE.deaf ? 'off' : ''}" data-act="v-deaf" title="${VOICE.deaf ? 'Sesi aç' : 'Herkesi sustur'}">${VOICE.deaf ? HEAD_OFF : HEAD_ON}</button>
-        <button class="vbtn leave" data-act="v-leave" title="Ayrıl">${PHONE_OFF}</button>
-      </div>
-    </div>
-    <div class="vc-people">${roster.map(r => {
-      const n = NATIONS[r.nation] || NATIONS.karus, c = CLASSES[r.cls] || CLASSES.warrior;
-      return `<div class="vp ${r.speaking ? 'talk' : ''} ${r.me ? 'me' : ''}" style="--nc:${n.color};--cc:${c.color}" data-vp="${esc(r.uid)}">
-        <div class="vp-av">${charAvatar({ cls: r.cls, nation: r.nation }, 42)}${r.muted ? `<span class="vp-m">${MIC_OFF}</span>` : ''}</div>
-        <div class="vp-tx"><b>${esc(r.char || r.name)}</b><span>${esc(r.name)}${r.level ? ' · Lv ' + r.level : ''}</span>
-          <span class="vp-st ${r.state === 'bağlı' || r.me ? 'ok' : r.state === 'kurulamadı' ? 'bad' : ''}">${r.me ? (VOICE.muted ? 'mikrofon kapalı' : p.mode === 'ptt' ? (VOICE.pttDown ? 'konuşuyor' : `bas-konuş: ${esc(pttKey().label)}`) : 'mikrofon açık') : r.needsTap ? 'ses için ekrana dokun' : esc(r.state)}</span></div>
-        ${!r.me ? `<input class="vp-vol" type="range" min="0" max="100" step="5" value="${p.vol[r.uid] ?? 100}" data-vvol="${esc(r.uid)}" title="Ses düzeyi" aria-label="${esc(r.char || r.name)} ses düzeyi">` : ''}
-      </div>`;
-    }).join('')}${others <= 1 ? `<div class="vp empty"><span class="mut">Ekipten kimse yok. Arkadaşların Ekip sayfasından "Sese katıl" diyince burada görünür.</span></div>` : ''}</div>
-    <div class="vc-set">
-      <div class="vc-row"><span class="vc-lbl">Konuşma modu</span><div class="seg">${modeSeg}</div></div>
-      ${p.mode === 'vad' ? `<div class="vc-row"><span class="vc-lbl">Hassasiyet</span><div class="vc-meter"><i data-vmeter></i><input type="range" min="2" max="60" value="${p.thr}" data-vthr title="Bu çizginin üstündeki sesler iletilir" aria-label="Hassasiyet"></div></div>` : ''}
-      ${p.mode === 'ptt' ? `<div class="vc-row"><span class="vc-lbl">Bas-konuş tuşu</span><select class="inp" data-vkey>${PTT_KEYS.map(k => `<option value="${k.id}" ${k.id === p.key ? 'selected' : ''}>${esc(k.label)}</option>`).join('')}</select>
-        <span class="hint">${VOICE.pttGlobal ? 'Oyun öndeyken de çalışıyor.' : serverMode ? 'Bağlanıyor…' : 'Web sürümünde yalnızca bu sekme öndeyken çalışır; oyun içinde kullanmak için Windows uygulamasını kullan.'} Fare yan tuşu önerilir; harf tuşları oyuna da gider.</span></div>` : ''}
-      <div class="vc-row two">
-        <label class="f">Mikrofon<select class="inp" data-vmic><option value="">Varsayılan</option>${VOICE.devices.in.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.mic ? 'selected' : ''}>${esc(d.label || 'Mikrofon')}</option>`).join('')}</select></label>
-        ${VOICE.devices.out.length && 'setSinkId' in HTMLMediaElement.prototype ? `<label class="f">Hoparlör / kulaklık<select class="inp" data-vspk><option value="">Varsayılan</option>${VOICE.devices.out.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.spk ? 'selected' : ''}>${esc(d.label || 'Çıkış')}</option>`).join('')}</select></label>` : ''}
-      </div>
-      <label class="check vc-snd"><input type="checkbox" data-vsnd ${p.sounds ? 'checked' : ''}> Giriş / çıkış sesleri</label>
+  return `<div class="vc-set">
+    <div class="vc-row"><span class="vc-lbl">Konuşma modu</span><div class="seg">${modeSeg}</div></div>
+    ${p.mode === 'vad' ? `<div class="vc-row"><span class="vc-lbl">Hassasiyet</span><div class="vc-meter"><i data-vmeter></i><input type="range" min="2" max="60" value="${p.thr}" data-vthr title="Bu çizginin üstündeki sesler iletilir" aria-label="Hassasiyet"></div><span class="hint">Konuşurken çubuk yeşile dönmeli; arka plan sesi yeşile geçiyorsa çizgiyi sağa çek.</span></div>` : ''}
+    ${p.mode === 'ptt' ? `<div class="vc-row"><span class="vc-lbl">Bas-konuş tuşu</span><select class="inp" data-vkey>${PTT_KEYS.map(k => `<option value="${k.id}" ${k.id === p.key ? 'selected' : ''}>${esc(k.label)}</option>`).join('')}</select>
+      <span class="hint">${VOICE.pttGlobal ? 'Oyun öndeyken de çalışıyor.' : serverMode ? 'Bağlanıyor…' : 'Web sürümünde yalnızca bu sekme öndeyken çalışır; oyun içinde kullanmak için Windows uygulamasını kullan.'} Fare yan tuşu önerilir; harf tuşları oyuna da gider.</span></div>` : ''}
+    <div class="vc-row two">
+      <label class="f">Mikrofon<select class="inp" data-vmic><option value="">Varsayılan</option>${VOICE.devices.in.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.mic ? 'selected' : ''}>${esc(d.label || 'Mikrofon')}</option>`).join('')}</select></label>
+      ${VOICE.devices.out.length && 'setSinkId' in HTMLMediaElement.prototype ? `<label class="f">Hoparlör / kulaklık<select class="inp" data-vspk><option value="">Varsayılan</option>${VOICE.devices.out.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.spk ? 'selected' : ''}>${esc(d.label || 'Çıkış')}</option>`).join('')}</select></label>` : '<span></span>'}
+      <label class="f">Ses kalitesi<select class="inp" data-vq>${Object.entries(VQUAL).map(([k, v]) => `<option value="${k}" ${k === (p.q || 'hi') ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select><span class="hint">Herkes için 8 kişide bile rahat; internet zayıfsa Standart seç.</span></label>
+      <div class="f vc-checks"><label class="check"><input type="checkbox" data-vns ${p.ns !== false ? 'checked' : ''}> Gürültü engelleme</label><label class="check"><input type="checkbox" data-vagc ${p.agc !== false ? 'checked' : ''}> Otomatik ses seviyesi</label><label class="check"><input type="checkbox" data-vsnd ${p.sounds ? 'checked' : ''}> Giriş / çıkış sesleri</label></div>
     </div>
   </div>`;
 }
-/* sık değişen kısımlar (konuşan halkası, bağlantı durumu) sayfayı baştan çizmeden güncellenir */
+function voiceMain() {
+  const roster = voiceRoster(true), inRoom = roster.filter(r => r.inVoice);
+  const talking = inRoom.filter(r => r.speaking);
+  return `<div class="vs-head">
+      <div class="vc-ico ${VOICE.on ? 'live' : ''}">${HEAD_ON}</div>
+      <div><h3>${esc(TEAM.doc.name || 'Ekip')} · ses odası ${VOICE.on ? '<span class="badge g">bağlısın</span>' : ''}</h3>
+        <span class="mut">${inRoom.length ? `${inRoom.length} kişi seste${talking.length ? ' · <b class="talk-txt">' + esc(talking.map(r => r.char || r.name).join(', ')) + ' konuşuyor</b>' : ''}` : 'Şu an seste kimse yok'}</span></div>
+      <span class="spacer"></span>
+      ${VOICE.on ? '' : `<button class="btn pri vs-join" data-act="v-join" ${VOICE.joining ? 'disabled' : ''}>${VOICE.joining ? 'Bağlanıyor…' : `${MIC_ON} Sese katıl`}</button>`}
+    </div>
+    ${VOICE.err ? `<div class="callout r" style="margin-top:12px">${esc(VOICE.err)}</div>` : ''}
+    <div class="vt-grid">${roster.map(voiceTile).join('')}</div>
+    ${VOICE.on ? `<div class="vs-bar">
+      <button class="vbtn lg ${VOICE.muted ? 'off' : ''}" data-act="v-mute" title="${VOICE.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}">${VOICE.muted ? MIC_OFF : MIC_ON}</button>
+      <button class="vbtn lg ${VOICE.deaf ? 'off' : ''}" data-act="v-deaf" title="${VOICE.deaf ? 'Sesi aç' : 'Herkesi sustur'}">${VOICE.deaf ? HEAD_OFF : HEAD_ON}</button>
+      <button class="vbtn lg ${ui.vset ? 'on' : ''}" data-act="v-set" title="Ses ayarları">${GEAR}</button>
+      <button class="vbtn lg leave" data-act="v-leave" title="Sesten ayrıl">${PHONE_OFF}</button>
+    </div>` : `<div class="hint vs-tip">Ses doğrudan ekip üyeleri arasında gider, hiçbir yere kaydedilmez. Oyunda kulaklık kullan; Windows uygulamasında bas-konuş tuşu oyun öndeyken de çalışır.</div>`}
+    ${VOICE.on && ui.vset ? voiceSettings() : ''}`;
+}
+VIEWS.ses = () => {
+  if (!TEAM.doc) return `<div class="card">${empty('Önce bir ekip kur ya da ekibe katıl', 'Sesli sohbet ve yazışma ekip üyeleri arasında çalışır.')}<div style="text-align:center;margin-top:12px"><button class="btn pri" data-act="go" data-id="ekip">Ekip sayfasına git</button></div></div>`;
+  voiceWatchPresence();
+  return (TEAM.rulesMissing && typeof rulesBox === 'function' ? rulesBox() : '') + `<div class="vs">
+    <section class="card vs-main">${voiceMain()}</section>
+    <section class="card vs-chat">${typeof chatPanel === 'function' ? chatPanel() : ''}</section>
+  </div>`;
+};
+
+/* sık değişen kısımlar (konuşan, bağlantı) sayfayı baştan çizmeden güncellenir */
 function voicePaintLive() {
-  const roster = voiceRoster();
-  roster.forEach(r => {
+  voiceRoster(true).forEach(r => {
     const el = document.querySelector(`[data-vp="${CSS.escape(r.uid)}"]`);
     if (!el) return;
     el.classList.toggle('talk', !!r.speaking);
-    const st = el.querySelector('.vp-st');
-    if (st && !r.me) { st.textContent = r.needsTap ? 'ses için ekrana dokun' : r.state; st.className = 'vp-st ' + (r.state === 'bağlı' ? 'ok' : r.state === 'kurulamadı' ? 'bad' : ''); }
-    if (st && r.me && VOICE.pref.mode === 'ptt') st.textContent = VOICE.muted ? 'mikrofon kapalı' : VOICE.pttDown ? 'konuşuyor' : 'bas-konuş: ' + pttKey().label;
+    const st = el.querySelector('.vt-st');
+    if (st) {
+      st.className = 'vt-st ' + (r.state === 'bağlı' || r.me ? 'ok' : r.state === 'kurulamadı' ? 'bad' : '');
+      st.innerHTML = `${VOICE.on && !r.me && r.inVoice ? qualBars(r.pe) : ''}<span class="vt-stx">${esc(tileState(r))}</span>`;
+    }
   });
+  const tt = document.querySelector('.vs-head .mut');
+  if (tt) {
+    const inRoom = voiceRoster(false), talking = inRoom.filter(r => r.speaking);
+    tt.innerHTML = inRoom.length ? `${inRoom.length} kişi seste${talking.length ? ' · <b class="talk-txt">' + esc(talking.map(r => r.char || r.name).join(', ')) + ' konuşuyor</b>' : ''}` : 'Şu an seste kimse yok';
+  }
   voiceBar();
 }
 function voicePaint() {
-  if (ui.page === 'ekip') { const h = document.querySelector('.vc-slot'); if (h) h.innerHTML = voicePanel(); else render(); }
+  if (ui.page === 'ses') { const h = document.querySelector('.vs-main'); if (h) h.innerHTML = voiceMain(); else render(); }
+  else if (ui.page === 'ekip') { const h = document.querySelector('.vc-slot'); if (h) h.innerHTML = voiceTeaser(); }
   voiceBar();
+}
+/* Ekip sayfasında küçük tanıtım + kısayol */
+function voiceTeaser() {
+  if (!TEAM.doc) return '';
+  const inRoom = voiceRoster(false);
+  return `<div class="card vc-teaser">
+    <div class="vc-ico ${VOICE.on ? 'live' : ''}">${HEAD_ON}</div>
+    <div><h3>Ses & Sohbet</h3><span class="mut">${inRoom.length ? `${inRoom.length} kişi seste: ${esc(inRoom.map(r => r.char || r.name).join(', '))}` : 'Seste kimse yok'}${typeof CHAT !== 'undefined' && CHAT.unread ? ` · <b class="gold">${CHAT.unread} yeni mesaj</b>` : ''}</span></div>
+    <span class="spacer"></span>
+    <div class="vt-mini">${inRoom.slice(0, 8).map(r => charAvatar({ cls: r.cls, nation: r.nation, race: r.race, rtype: r.rtype }, 30)).join('')}</div>
+    <button class="btn pri" data-act="go" data-id="ses">${VOICE.on ? 'Odaya dön' : 'Odaya git'}</button>
+  </div>`;
 }
 /* her sayfada kenar çubuğunda küçük ses çubuğu */
 function voiceBar() {
@@ -420,25 +532,27 @@ function voiceBar() {
   if (!el) { el = document.createElement('div'); el.id = 'voiceBar'; host.parentNode.insertBefore(el, host); }
   if (!VOICE.on) { el.innerHTML = ''; el.hidden = true; return; }
   el.hidden = false;
-  const roster = voiceRoster(), talking = roster.filter(r => r.speaking);
-  el.innerHTML = `<div class="vbar ${VOICE.speaking ? 'talk' : ''}">
-    <button class="vbar-main" data-act="go" data-id="ekip"><span class="vdot"></span><span><b>Sesli sohbet</b><small>${talking.length ? esc(talking.map(r => r.char || r.name).join(', ')) + ' konuşuyor' : roster.length + ' kişi'}</small></span></button>
+  const roster = voiceRoster(false), talking = roster.filter(r => r.speaking);
+  el.innerHTML = `<div class="vbar ${talking.length ? 'talk' : ''}">
+    <button class="vbar-main" data-act="go" data-id="ses"><span class="vdot"></span><span><b>Sesli sohbet</b><small>${talking.length ? esc(talking.map(r => r.char || r.name).join(', ')) + ' konuşuyor' : roster.length + ' kişi'}</small></span></button>
     <button class="vbtn sm ${VOICE.muted ? 'off' : ''}" data-act="v-mute" title="Mikrofon">${VOICE.muted ? MIC_OFF : MIC_ON}</button>
     <button class="vbtn sm leave" data-act="v-leave" title="Ayrıl">${PHONE_OFF}</button>
   </div>`;
 }
 
-/* Ekip sayfasına ses panelini ekle */
 const _ekipView = VIEWS.ekip;
 VIEWS.ekip = () => {
   const html = _ekipView();
-  return TEAM.doc ? `<div class="vc-slot">${voicePanel()}</div>` + html : html;
+  if (TEAM.doc) voiceWatchPresence();
+  return TEAM.doc ? `<div class="vc-slot">${voiceTeaser()}</div>` + html : html;
 };
+async function voiceReMic() { if (VOICE.on) await switchMic(VOICE.pref.mic); }
 Object.assign(ACTIONS, {
   'v-join': () => voiceJoin(),
   'v-leave': () => voiceLeave(),
   'v-mute': () => voiceMute(),
   'v-deaf': () => voiceDeaf(),
+  'v-set': () => { ui.vset = !ui.vset; if (ui.vset) listDevices(); voicePaint(); },
   'v-mode': el => { VOICE.pref.mode = el.dataset.v; vprefSave(); VOICE.gateUntil = 0; pttStart(); voiceTick(); voicePaint(); },
 });
 document.addEventListener('input', e => {
@@ -452,6 +566,14 @@ document.addEventListener('change', e => {
   if (d.vmic != null) switchMic(e.target.value);
   if (d.vspk != null) switchSpeaker(e.target.value);
   if (d.vsnd != null) { VOICE.pref.sounds = e.target.checked; vprefSave(); }
+  if (d.vq != null) {
+    VOICE.pref.q = e.target.value; vprefSave();
+    // yeni bit hızı: göndericiye hemen uygula, karşı taraf için bağlantıyı yenile
+    VOICE.peers.forEach((pe, u) => { tuneSender(pe); if (pe.offerer) makeOffer(u, false).catch(() => { }); });
+    toast('Ses kalitesi: ' + VQUAL[VOICE.pref.q].label, 'ok');
+  }
+  if (d.vns != null) { VOICE.pref.ns = e.target.checked; vprefSave(); voiceReMic(); }
+  if (d.vagc != null) { VOICE.pref.agc = e.target.checked; vprefSave(); voiceReMic(); }
 });
 // otomatik oynatma engellendiyse ilk dokunuşta sesleri başlat
 document.addEventListener('pointerdown', () => {
@@ -461,10 +583,10 @@ document.addEventListener('pointerdown', () => {
 }, true);
 if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', () => { if (VOICE.on) listDevices(); });
 
-/* ekipten ayrılınca / çıkışta / karakter değişince sesten çık */
+/* ekipten ayrılınca / çıkışta sesten çık */
 const _teamLeave = teamLeave;
 teamLeave = async function () { await voiceLeave(true); return _teamLeave(); };
 const _logoutV = logout;
-logout = async function () { await voiceLeave(true); return _logoutV(); };
+logout = async function () { await voiceLeave(true); if (VOICE.watchUnsub) { VOICE.watchUnsub(); VOICE.watchUnsub = null; } VOICE.watchCode = ''; return _logoutV(); };
 const _renderV = render;
 render = function () { _renderV(); voiceBar(); };

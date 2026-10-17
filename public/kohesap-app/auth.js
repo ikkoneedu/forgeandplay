@@ -27,7 +27,8 @@ const charLine = ch => `Lv ${ch.level} · ${jobTitle(ch)} · ${(NATIONS[ch.natio
 
 /* ---------- resmi sınıf görseli (yüklenmezse amblem kalır) ---------- */
 function artImg(ch) {
-  return `<img src="${esc(classArtProxy(ch.cls, ch.nation))}" data-d="${esc(classArt(ch.cls, ch.nation))}" alt="${esc(classLabel(ch.cls, ch.nation))}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onload="this.parentNode.classList.add('ok')" onerror="iconFail(this)">`;
+  const src = charArtSrc(ch), direct = src.includes('h=ntt');
+  return `<img src="${src.startsWith('data:') ? src : esc(src)}" data-d="${direct ? esc(classArt(ch.cls, ch.nation)) : ''}" alt="${esc(classLabel(ch.cls, ch.nation))}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onload="this.parentNode.classList.add('ok')" onerror="iconFail(this)">`;
 }
 function charArt(ch, cls = '') {
   return `<div class="art ${cls}"><span class="art-fb">${charEmblem(ch, 84)}</span>${artImg(ch)}</div>`;
@@ -35,7 +36,9 @@ function charArt(ch, cls = '') {
 /** Yuvarlak karakter fotoğrafı (sınıf görselinin yüz kısmı); yüklenmezse amblem görünür. */
 function charAvatar(ch, size = 40) {
   const n = NATIONS[ch.nation] || NATIONS.karus;
-  return `<span class="cav" style="--s:${size}px;--nc:${n.color}"><span class="cav-fb">${charEmblem(ch, size)}</span>${artImg(ch)}</span>`;
+  const face = charFaceSrc(ch);
+  return `<span class="cav" style="--s:${size}px;--nc:${n.color}"><span class="cav-fb">${charEmblem(ch, size)}</span>${face
+    ? `<img class="face" src="${esc(face)}" alt="" decoding="async" onload="this.parentNode.classList.add('ok')" onerror="this.remove()">` : artImg(ch)}</span>`;
 }
 /** Bir karakterin verisi üzerinde geçici olarak hesap yapar (seçim ekranı / ekip kartı için). */
 function withChar(ch, fn) {
@@ -94,6 +97,7 @@ async function startAuth() {
     try { await cloudLoad(user); }
     catch (e) { return showAuth('offline', 'Kayıtların yüklenemedi: ' + e.message); }
     sideExtra();
+    artLoad();
     if (CLOUD.imported) toast(`Bu bilgisayardaki ${CLOUD.imported} karakter Google hesabına aktarıldı`, 'ok');
     const last = rememberedChar();
     const ch = CUR.acc.chars.find(c => c.id === last);
@@ -166,7 +170,7 @@ const AUTH_VIEWS = {
         <div class="slot-info">
           <div class="slot-title" lang="en">${esc(jobTitle(ch))}</div>
           <div class="slot-name">${esc(ch.name)}</div>
-          <div class="slot-sub"><b>Lv ${ch.level}</b>${ch.server ? ' · ' + esc(ch.server) : ''}${ch.race ? ' · ' + esc(ch.race) : ''}</div>
+          <div class="slot-sub"><b>Lv ${ch.level}</b>${ch.server ? ' · ' + esc(ch.server) : ''}${ch.race ? ' · ' + esc(ch.race) : ''}${ch.cls === 'rogue' ? ' · ' + ROGUE_TYPES[ch.rtype === 'asas' ? 'asas' : 'okcu'] : ''}</div>
           ${ch.clan ? `<div class="slot-clan">${esc(ch.clan)}</div>` : ''}
           <div class="slot-exp" title="Seviye ilerlemesi"><i style="width:${sm.exp}%"></i></div>
           <div class="slot-kv"><span>%${nf2.format(sm.exp)} EXP</span><span class="${sm.net > 0 ? 'pos' : sm.net < 0 ? 'neg' : ''}">Bu ay ${sm.net ? (sm.net > 0 ? '+' : '') + fmtShort(sm.net) : '—'}</span></div>
@@ -184,7 +188,7 @@ const AUTH_VIEWS = {
       </div>
       ${newServerBanner()}
       <div class="slots">${slots.map(slot).join('')}</div>
-      <div class="hint chars-hint">${acc.chars.length}/${MAX_CHARS} yuva dolu · karta dokun ve gir · görseller: NTT Game resmi oyun rehberi</div>
+      <div class="hint chars-hint">${acc.chars.length}/${MAX_CHARS} yuva dolu · karta dokun ve gir</div>
     </div>`;
   },
   charForm: () => {
@@ -207,9 +211,10 @@ const AUTH_VIEWS = {
           <div><div class="cf-lbl">Ulus</div><div class="nation-pick">${Object.entries(NATIONS).map(([k, nn]) => `
             <button type="button" class="nation ${f.nation === k ? 'on' : ''}" style="--nc:${nn.color}" data-act="cf-set" data-k="nation" data-v="${k}"><b>${nn.label}</b><span>${k === 'karus' ? 'Tuarek ırkları' : 'Barbarian ve El Moradian'}</span></button>`).join('')}</div></div>
           <div><div class="cf-lbl">Sınıf</div><div class="class-pick">${Object.entries(CLASSES).map(([k, cc]) => `
-            <button type="button" class="cls ${f.cls === k ? 'on' : ''}" style="--cc:${cc.color};--nc:${n.color}" data-act="cf-set" data-k="cls" data-v="${k}">${charArt({ nation: f.nation, cls: k }, 'cls-art')}<span>${esc(classLabel(k, f.nation))}</span></button>`).join('')}</div></div>
+            <button type="button" class="cls ${f.cls === k ? 'on' : ''}" style="--cc:${cc.color};--nc:${n.color}" data-act="cf-set" data-k="cls" data-v="${k}">${charArt({ nation: f.nation, cls: k, race: k === f.cls ? f.race : '', rtype: k === f.cls ? f.rtype : 'okcu' }, 'cls-art')}<span>${esc(classLabel(k, f.nation))}</span></button>`).join('')}</div></div>
           <div class="cls-info"><div><span>Rol</span><b>${esc(c.role)}</b></div><div><span>Ana stat</span><b>${esc(c.stat)}</b></div><div><span>Ekipman</span><b>${esc(c.gear)}</b></div><div><span>Meslek yolu</span><b>${esc(classLabel(f.cls, f.nation))} → ${esc(side.job)} (10) → ${esc(side.master)} (60)</b></div></div>
-          <div><div class="cf-lbl">Irk</div><div class="chips">${races.map(r => `<button type="button" class="chip ${r === f.race ? 'on' : ''}" data-act="cf-set" data-k="race" data-v="${esc(r)}">${esc(r)}</button>`).join('')}</div></div>
+          <div class="cf-two"><div><div class="cf-lbl">Irk</div><div class="chips">${races.map(r => `<button type="button" class="chip ${r === f.race ? 'on' : ''}" data-act="cf-set" data-k="race" data-v="${esc(r)}">${esc(r)}</button>`).join('')}</div></div>
+          ${f.cls === 'rogue' ? `<div><div class="cf-lbl">Rogue tipi</div><div class="chips">${Object.entries(ROGUE_TYPES).map(([k, l]) => `<button type="button" class="chip ${(f.rtype || 'okcu') === k ? 'on' : ''}" data-act="cf-set" data-k="rtype" data-v="${k}">${l}</button>`).join('')}</div></div>` : ''}</div>
           <div class="form">
             <label class="f">Karakter adı<input class="inp" id="cf-name" data-cf="name" value="${esc(f.name)}" maxlength="21" placeholder="Oyundaki adın"></label>
             <label class="f">Seviye<input class="inp num" data-cf="level" value="${esc(f.level)}" inputmode="numeric" placeholder="1–83"></label>
@@ -241,8 +246,8 @@ const AUTH_VIEWS = {
 
 /* ---------- işlemler ---------- */
 function openCharForm(ch) {
-  auth.cf = ch ? { id: ch.id, name: ch.name, nation: ch.nation, cls: ch.cls, race: RACE_FIX[ch.race] || ch.race, level: ch.level, server: ch.server, clan: ch.clan || '', note: ch.note || '', master: ch.master !== false }
-    : { name: '', nation: 'karus', cls: 'warrior', race: 'Arch Tuarek', level: 1, server: S.settings.server || DEFAULT_SERVERS[0], clan: '', note: '', master: true };
+  auth.cf = ch ? { id: ch.id, name: ch.name, nation: ch.nation, cls: ch.cls, race: RACE_FIX[ch.race] || ch.race, level: ch.level, server: ch.server, clan: ch.clan || '', note: ch.note || '', master: ch.master !== false, rtype: ch.rtype || 'okcu' }
+    : { name: '', nation: 'karus', cls: 'warrior', race: 'Arch Tuarek', level: 1, server: S.settings.server || DEFAULT_SERVERS[0], clan: '', note: '', master: true, rtype: 'okcu' };
   if (!$('#auth') || $('#auth').hidden) { authEl(); }
   showAuth('charForm');
 }
@@ -255,13 +260,13 @@ function saveCharForm() {
   if (acc.chars.some(c => c.id !== f.id && trLowA(c.name) === trLowA(f.name))) return showAuth('charForm', 'Bu hesapta aynı isimde bir karakter var.');
   if (f.id) {
     const ch = acc.chars.find(c => c.id === f.id);
-    Object.assign(ch, { name: f.name, nation: f.nation, cls: f.cls, race: f.race, level, server: f.server, clan: f.clan.trim(), note: f.note.trim(), master: f.master !== false });
+    Object.assign(ch, { name: f.name, nation: f.nation, cls: f.cls, race: f.race, level, server: f.server, clan: f.clan.trim(), note: f.note.trim(), master: f.master !== false, rtype: f.rtype || 'okcu' });
     save();
     if (CUR.ch === ch && auth.returnToApp) { auth.returnToApp = false; enterChar(ch); return; }
     return showAuth('chars');
   }
   if (acc.chars.length >= MAX_CHARS) return showAuth('charForm', 'Bir hesapta en fazla 4 karakter olabilir.');
-  const ch = { id: uid(), name: f.name, nation: f.nation, cls: f.cls, race: f.race, level, server: f.server, clan: f.clan.trim(), note: f.note.trim(), master: f.master !== false, created: new Date().toISOString(), data: newCharData(level) };
+  const ch = { id: uid(), name: f.name, nation: f.nation, cls: f.cls, race: f.race, level, server: f.server, clan: f.clan.trim(), note: f.note.trim(), master: f.master !== false, rtype: f.rtype || 'okcu', created: new Date().toISOString(), data: newCharData(level) };
   if (DB.legacy && !acc.chars.length) { ch.data = DB.legacy; DB.legacy = null; }
   acc.chars.push(ch);
   save();
@@ -295,7 +300,7 @@ Object.assign(ACTIONS, {
   'char-select': () => { closeModal(); document.body.classList.remove('nav-open'); showAuth('chars'); },
   'cf-set': el => {
     readCharInputs(); auth.cf[el.dataset.k] = el.dataset.v;
-    const f = auth.cf; if (el.dataset.k !== 'race') f.race = (RACE_DEFAULT[f.nation] || {})[f.cls] || '';
+    const f = auth.cf; if (el.dataset.k !== 'race' && el.dataset.k !== 'rtype') f.race = (RACE_DEFAULT[f.nation] || {})[f.cls] || '';
     showAuth('charForm');
   },
   'cf-save': () => { readCharInputs(); saveCharForm(); },

@@ -72,7 +72,7 @@ function sharedForCloud() {
   delete sh.gbMarket;
   return strip(sh);
 }
-const charMeta = ch => ({ name: ch.name, nation: ch.nation, cls: ch.cls, race: RACE_FIX[ch.race] || ch.race || '', level: ch.level, server: ch.server || '', clan: ch.clan || '', note: ch.note || '', master: ch.master !== false, created: ch.created || '', played: ch.played || '' });
+const charMeta = ch => ({ name: ch.name, nation: ch.nation, cls: ch.cls, race: RACE_FIX[ch.race] || ch.race || '', level: ch.level, server: ch.server || '', clan: ch.clan || '', note: ch.note || '', master: ch.master !== false, rtype: ch.rtype || 'okcu', created: ch.created || '', played: ch.played || '' });
 
 async function cloudConfig() {
   // exe: program kendi içinden alır (tarayıcı CORS kısıtı yok, son ayar diskte saklı)

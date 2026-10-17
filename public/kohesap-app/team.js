@@ -19,7 +19,7 @@ function myTeamEntry() {
     name: (u.displayName || (u.email || '').split('@')[0] || 'Oyuncu').slice(0, 40),
     photo: u.photoURL || '',
     main: mainId,
-    chars: acc.chars.map(c => ({ id: c.id, name: c.name, cls: c.cls, nation: c.nation, race: c.race || '', level: +c.level || 1, server: c.server || '', clan: c.clan || '', master: c.master !== false, exp: Math.round((+(c.data && c.data.exp && c.data.exp.calc && c.data.exp.calc.cur) || 0) * 100) / 100 })),
+    chars: acc.chars.map(c => ({ id: c.id, name: c.name, cls: c.cls, nation: c.nation, race: c.race || '', level: +c.level || 1, server: c.server || '', clan: c.clan || '', master: c.master !== false, rtype: c.rtype || 'okcu', exp: Math.round((+(c.data && c.data.exp && c.data.exp.calc && c.data.exp.calc.cur) || 0) * 100) / 100 })),
     updated: new Date().toISOString(),
   };
 }
@@ -30,7 +30,7 @@ const isPermErr = e => e && (e.code === 'permission-denied' || /insufficient per
 async function teamRulesProbe() {
   if (TEAM.rulesChecked || !CLOUD.db || !myUid()) return;
   TEAM.rulesChecked = true;
-  try { await FB.getDoc(teamRef('KURALCHK')); TEAM.rulesMissing = false; }
+  try { await FB.getDoc(teamRef('KURALCHK')); await FB.getDoc(FB.doc(CLOUD.db, 'kohesapAssets', 'classArt')); TEAM.rulesMissing = false; }
   catch (e) { TEAM.rulesMissing = isPermErr(e); }
   if (ui.page === 'ekip') render();
 }
@@ -39,8 +39,8 @@ function rulesBox() {
   const pid = (CLOUD.cfg && CLOUD.cfg.firebase && CLOUD.cfg.firebase.projectId) || '';
   if (!isAdmin()) return `<div class="callout r" style="margin-bottom:16px"><b>Ekip özelliği henüz açılmadı.</b> Sunucu tarafındaki izin ayarı (Firebase kuralları) güncellenmemiş. Site yöneticisine haber ver.</div>`;
   return `<div class="card rules-box">
-    <div class="card-h"><div><h3>Ekip ve sesli sohbet için Firebase kurallarını yayınla <span class="badge y">admin</span></h3>
-      <div class="sub">Yeni kurallar Firebase'de yayınlanmadığı için ekip kurma ve sese katılma "izin yok" hatası veriyor. Kurallar Vercel ile otomatik gitmez; bir kez elle yapıştırman gerekiyor.</div></div></div>
+    <div class="card-h"><div><h3>Güncel Firebase kurallarını yayınla <span class="badge y">admin</span></h3>
+      <div class="sub">Bu sürümün kuralları Firebase'de henüz yayınlanmamış; ekip, sesli sohbet veya karakter görselleri "izin yok" hatası verebilir. Kurallar Vercel ile otomatik gitmez; her güncellemede bir kez elle yapıştırman gerekiyor.</div></div></div>
     <ol class="rules-steps">
       <li><button class="btn pri sm" data-act="rules-copy">Kuralları kopyala</button> (repodaki <code>firestore.rules</code> dosyasının tamamı)</li>
       <li>${pid ? `<a class="btn sm" href="https://console.firebase.google.com/project/${esc(pid)}/firestore/rules" target="_blank" rel="noopener">Firebase kural sayfasını aç ↗</a>` : 'Firebase Console → Firestore Database → Rules sekmesini aç'}</li>
@@ -265,7 +265,7 @@ Object.assign(ACTIONS, {
       toast('Kurallar kopyalandı (' + txt.split('\n').length + ' satır). Firebase\'e yapıştır.', 'ok');
     } catch (e) { toast('Kopyalanamadı: ' + e.message, 'err'); }
   },
-  'rules-recheck': () => { TEAM.rulesChecked = false; TEAM.rulesMissing = false; teamRulesProbe().then(() => toast(TEAM.rulesMissing ? 'Kurallar hâlâ eski görünüyor' : 'Kurallar yayınlanmış, ekip özelliği hazır', TEAM.rulesMissing ? 'err' : 'ok')); },
+  'rules-recheck': () => { TEAM.rulesChecked = false; TEAM.rulesMissing = false; teamRulesProbe().then(() => { toast(TEAM.rulesMissing ? 'Kurallar hâlâ eski görünüyor' : 'Kurallar yayınlanmış, her şey hazır', TEAM.rulesMissing ? 'err' : 'ok'); if (!TEAM.rulesMissing) artLoad(); render(); }); },
 });
 document.addEventListener('change', e => {
   if (e.target.dataset && e.target.dataset.teamMain != null) { DB.shared.teamMain = e.target.value; save(); teamSync(true); }

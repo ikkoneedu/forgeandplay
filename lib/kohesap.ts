@@ -1,7 +1,7 @@
 /** KO Hesap (Knight Online defteri) — sunucu tarafı ortak sabitler. */
 
 /** public/downloads/KOHesap.exe sürümü; exe açılışta bunu görüp "yeni sürüm" uyarısı gösterir. */
-export const KOHESAP_EXE_VERSION = "0.6.6";
+export const KOHESAP_EXE_VERSION = "0.7.0";
 export const KOHESAP_EXE_URL = "/downloads/KOHesap.exe";
 export const KOHESAP_APP_URL = "/kohesap-app/index.html";
 
