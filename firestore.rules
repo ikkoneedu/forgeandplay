@@ -77,6 +77,49 @@ service cloud.firestore {
       }
     }
 
+    // KO Hesap ekipleri (en fazla 8 kişi). Kodu bilen giriş yapmış kullanıcı
+    // tek belgeyi okuyabilir (katılmak için); ekipler listelenemez.
+    // Üye yalnızca kendi özetini günceller; katılma/ayrılma yalnızca kendini
+    // ekler/çıkarır; lider her şeyi yapabilir (ad değiştirme, üye çıkarma).
+    match /kohesapTeams/{code} {
+      function signedIn() { return request.auth != null; }
+      function me() { return request.auth.uid; }
+      function onlyMyEntry() {
+        return request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([me()]);
+      }
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && code.size() == 8
+        && request.resource.data.owner == me()
+        && request.resource.data.memberUids == [me()]
+        && request.resource.data.members.keys().hasOnly([me()]);
+      allow update: if signedIn() && (
+        // lider
+        resource.data.owner == me()
+        // üye: yalnızca kendi özeti
+        || (me() in resource.data.memberUids
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'updatedAt'])
+            && onlyMyEntry())
+        // katılma: kendini ekler, en fazla 8 kişi
+        || (!(me() in resource.data.memberUids)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberUids', 'updatedAt'])
+            && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1
+            && request.resource.data.memberUids.hasAll(resource.data.memberUids)
+            && me() in request.resource.data.memberUids
+            && request.resource.data.memberUids.size() <= 8
+            && onlyMyEntry())
+        // ayrılma: kendini çıkarır
+        || (me() in resource.data.memberUids
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberUids', 'updatedAt'])
+            && request.resource.data.memberUids.size() == resource.data.memberUids.size() - 1
+            && resource.data.memberUids.hasAll(request.resource.data.memberUids)
+            && !(me() in request.resource.data.memberUids)
+            && onlyMyEntry())
+      );
+      allow delete: if signedIn() && resource.data.owner == me();
+    }
+
     // Public leaderboard stats (name / wins / earnings); written by admin payouts.
     match /leaderboard/{uid} {
       allow read: if true;

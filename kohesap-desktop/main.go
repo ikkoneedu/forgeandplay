@@ -29,7 +29,7 @@ var webFS embed.FS
 
 const (
 	appName    = "KO Hesap"
-	appVersion = "0.6.3"
+	appVersion = "0.6.4"
 	port       = 47811
 )
 

@@ -23,7 +23,35 @@ function charEmblem(ch, size = 44) {
   const n = NATIONS[ch.nation] || NATIONS.karus, c = CLASSES[ch.cls] || CLASSES.warrior;
   return `<span class="emblem" style="width:${size}px;height:${size}px;--nc:${n.color};--cc:${c.color}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:${Math.round(size * 0.56)}px;height:${Math.round(size * 0.56)}px">${CLASS_GLYPH[ch.cls] || CLASS_GLYPH.warrior}</svg></span>`;
 }
-const charLine = ch => `Lv ${ch.level} · ${classLabel(ch.cls, ch.nation)} · ${(NATIONS[ch.nation] || {}).label || ''}${ch.server ? ' · ' + ch.server : ''}`;
+const charLine = ch => `Lv ${ch.level} · ${jobTitle(ch)} · ${(NATIONS[ch.nation] || {}).label || ''}${ch.server ? ' · ' + ch.server : ''}`;
+
+/* ---------- resmi sınıf görseli (yüklenmezse amblem kalır) ---------- */
+function charArt(ch, cls = '') {
+  return `<div class="art ${cls}"><span class="art-fb">${charEmblem(ch, 84)}</span><img src="${esc(classArt(ch.cls, ch.nation))}" alt="${esc(classLabel(ch.cls, ch.nation))}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"></div>`;
+}
+/** Bir karakterin verisi üzerinde geçici olarak hesap yapar (seçim ekranı / ekip kartı için). */
+function withChar(ch, fn) {
+  const prev = CUR.ch; CUR.ch = ch; bindView();
+  try { return fn(); } finally { CUR.ch = prev; bindView(); }
+}
+function charSummary(ch) {
+  return withChar(ch, () => {
+    const m = monthSummary(localDate().slice(0, 7));
+    const c = S.exp.calc || {};
+    return { net: m.net, count: m.count, exp: Math.max(0, Math.min(100, +c.cur || 0)), parties: S.parties.length, trades: S.trades.length };
+  });
+}
+const agoDay = iso => {
+  if (!iso) return '';
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 864e5);
+  return d <= 0 ? 'bugün' : d === 1 ? 'dün' : d < 30 ? d + ' gün önce' : new Date(iso).toLocaleDateString('tr-TR');
+};
+function newServerBanner() {
+  const ms = new Date(NEW_SERVER.open).getTime() - Date.now();
+  if (ms <= -7 * 864e5) return '';
+  const d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
+  return `<div class="ns-banner"><b>Yeni sunucular</b><span>12 Kasım 16:00 · başlangıç level cap ${NEW_SERVER.cap}</span><span class="ns-cd">${ms > 0 ? `${d} gün ${h} saat kaldı` : 'açıldı'}</span></div>`;
+}
 
 /* ---------- ekran yönetimi ---------- */
 const auth = { mode: 'login', err: '', busy: false };
@@ -69,6 +97,7 @@ async function startAuth() {
 }
 function enterChar(ch) {
   CUR.ch = ch;
+  ch.played = new Date().toISOString();
   rememberChar(ch.id);
   bindView();
   if (ch.server) {
@@ -119,66 +148,82 @@ const AUTH_VIEWS = {
   chars: () => {
     const acc = CUR.acc;
     const slots = Array.from({ length: MAX_CHARS }, (_, i) => acc.chars[i]);
+    const slot = (ch, i) => {
+      if (!ch) return `<button class="slot empty" data-act="char-new"><span class="slot-plus">${ICON.plus}</span><b>Karakter oluştur</b><span class="mut">Boş yuva ${i + 1}</span></button>`;
+      const n = NATIONS[ch.nation] || NATIONS.karus, c = CLASSES[ch.cls] || CLASSES.warrior, sm = charSummary(ch);
+      return `<div class="slot filled" style="--nc:${n.color};--cc:${c.color}" data-act="char-play" data-id="${ch.id}" role="button" tabindex="0" aria-label="${esc(ch.name)} ile gir">
+        ${charArt(ch, 'slot-art')}
+        <div class="slot-tools"><button class="icon-btn" data-act="char-edit" data-id="${ch.id}" title="Düzenle">${ICON.edit}</button><button class="icon-btn danger" data-act="char-del" data-id="${ch.id}" title="Sil">${ICON.del}</button></div>
+        <span class="slot-nat">${esc(n.label)}</span>
+        <div class="slot-info">
+          <div class="slot-title" lang="en">${esc(jobTitle(ch))}</div>
+          <div class="slot-name">${esc(ch.name)}</div>
+          <div class="slot-sub"><b>Lv ${ch.level}</b>${ch.server ? ' · ' + esc(ch.server) : ''}${ch.race ? ' · ' + esc(ch.race) : ''}</div>
+          ${ch.clan ? `<div class="slot-clan">${esc(ch.clan)}</div>` : ''}
+          <div class="slot-exp" title="Seviye ilerlemesi"><i style="width:${sm.exp}%"></i></div>
+          <div class="slot-kv"><span>%${nf2.format(sm.exp)} EXP</span><span class="${sm.net > 0 ? 'pos' : sm.net < 0 ? 'neg' : ''}">Bu ay ${sm.net ? (sm.net > 0 ? '+' : '') + fmtShort(sm.net) : '—'}</span></div>
+          <div class="slot-foot"><span>${ch.played ? 'Son giriş ' + agoDay(ch.played) : 'Henüz girilmedi'}</span><span class="slot-enter">Gir ›</span></div>
+        </div>
+      </div>`;
+    };
     return `<div class="auth-chars">
-      <div class="row" style="margin-bottom:22px">
+      <div class="row chars-head">
         ${brandBlock('Karakter seç')}
         <span class="spacer"></span>
         ${CLOUD.user && CLOUD.user.photoURL ? `<img src="${esc(CLOUD.user.photoURL)}" width="28" height="28" style="border-radius:50%" alt="" referrerpolicy="no-referrer">` : ''}
         <span class="mut"><b style="color:var(--tx)">${esc(acc.name || acc.user)}</b><br><small>${esc(acc.user)}</small></span>
         <button class="btn ghost" data-act="logout">Çıkış</button>
       </div>
-      <div class="slots">${slots.map((ch, i) => ch ? `
-        <div class="slot filled" style="--nc:${NATIONS[ch.nation].color};--cc:${CLASSES[ch.cls].color}">
-          <div class="slot-top">${charEmblem(ch, 72)}</div>
-          <div class="slot-name">${esc(ch.name)}</div>
-          <div class="slot-lv">Seviye ${ch.level}</div>
-          <div class="slot-meta"><span>${esc(classLabel(ch.cls, ch.nation))}</span><span>${esc(NATIONS[ch.nation].label)}</span><span>${esc(ch.race || '')}</span><span>${esc(ch.server || '—')}${ch.clan ? ' · ' + esc(ch.clan) : ''}</span></div>
-          <div class="slot-stats">${ch.data.tx.length} kayıt · ${ch.data.trades.length} ticaret · ${ch.data.parties.length} parti</div>
-          <button class="btn pri" style="width:100%;justify-content:center" data-act="char-play" data-id="${ch.id}">Gir</button>
-          <div class="row" style="justify-content:center;gap:4px;margin-top:6px"><button class="btn sm ghost" data-act="char-edit" data-id="${ch.id}">${ICON.edit} Düzenle</button><button class="btn sm ghost danger" data-act="char-del" data-id="${ch.id}">${ICON.del} Sil</button></div>
-        </div>` : `
-        <button class="slot empty" data-act="char-new"><span class="slot-plus">${ICON.plus}</span><b>Karakter oluştur</b><span class="mut">Boş yuva ${i + 1}</span></button>`).join('')}
-      </div>
+      ${newServerBanner()}
+      <div class="slots">${slots.map(slot).join('')}</div>
+      <div class="hint chars-hint">${acc.chars.length}/${MAX_CHARS} yuva dolu · karta dokun ve gir · görseller: NTT Game resmi oyun rehberi</div>
     </div>`;
   },
   charForm: () => {
     const f = auth.cf;
     const isNew = !f.id;
-    const servers = [...new Set([...(S.gbMarket ? S.gbMarket.servers : []), ...DEFAULT_SERVERS])];
+    const servers = [...new Set([...(S.gbMarket ? S.gbMarket.servers : []), ...DEFAULT_SERVERS, ...(f.server ? [f.server] : [])])];
     const races = raceOptions(f.nation, f.cls);
     if (!races.includes(f.race)) f.race = races[0];
-    const preview = { ...f, name: f.name || 'Karakter adı', level: f.level || 1 };
+    const lv = Math.round(parseNum(f.level)) || 1;
+    const preview = { ...f, name: f.name || 'Karakter adı', level: lv, master: f.master !== false };
+    const c = CLASSES[f.cls], side = classSide(f.cls, f.nation), n = NATIONS[f.nation];
     return `<form class="auth-chars" data-auth-form="char" onsubmit="return false">
-      <div class="row" style="margin-bottom:20px">
+      <div class="row chars-head">
         ${brandBlock(isNew ? 'Yeni karakter' : 'Karakteri düzenle')}
         <span class="spacer"></span>
         <button class="btn ghost" data-act="au-mode" data-v="chars">← Karakterlere dön</button>
       </div>
       <div class="cf-grid">
         <div class="stack" style="gap:18px">
-          <div><div class="cf-lbl">Ulus</div><div class="nation-pick">${Object.entries(NATIONS).map(([k, n]) => `
-            <button type="button" class="nation ${f.nation === k ? 'on' : ''}" style="--nc:${n.color}" data-act="cf-set" data-k="nation" data-v="${k}"><b>${k === 'karus' ? 'Karus' : 'Human'}</b><span>${k === 'karus' ? 'Ork ırkları' : 'El Morad'}</span></button>`).join('')}</div></div>
-          <div><div class="cf-lbl">Sınıf</div><div class="class-pick">${Object.entries(CLASSES).map(([k, c]) => `
-            <button type="button" class="cls ${f.cls === k ? 'on' : ''}" style="--cc:${c.color}" data-act="cf-set" data-k="cls" data-v="${k}">${charEmblem({ nation: f.nation, cls: k }, 40)}<span>${esc(classLabel(k, f.nation))}</span></button>`).join('')}</div></div>
+          <div><div class="cf-lbl">Ulus</div><div class="nation-pick">${Object.entries(NATIONS).map(([k, nn]) => `
+            <button type="button" class="nation ${f.nation === k ? 'on' : ''}" style="--nc:${nn.color}" data-act="cf-set" data-k="nation" data-v="${k}"><b>${nn.label}</b><span>${k === 'karus' ? 'Tuarek ırkları' : 'Barbarian ve El Moradian'}</span></button>`).join('')}</div></div>
+          <div><div class="cf-lbl">Sınıf</div><div class="class-pick">${Object.entries(CLASSES).map(([k, cc]) => `
+            <button type="button" class="cls ${f.cls === k ? 'on' : ''}" style="--cc:${cc.color};--nc:${n.color}" data-act="cf-set" data-k="cls" data-v="${k}">${charArt({ nation: f.nation, cls: k }, 'cls-art')}<span>${esc(classLabel(k, f.nation))}</span></button>`).join('')}</div></div>
+          <div class="cls-info"><div><span>Rol</span><b>${esc(c.role)}</b></div><div><span>Ana stat</span><b>${esc(c.stat)}</b></div><div><span>Ekipman</span><b>${esc(c.gear)}</b></div><div><span>Meslek yolu</span><b>${esc(classLabel(f.cls, f.nation))} → ${esc(side.job)} (10) → ${esc(side.master)} (60)</b></div></div>
+          <div><div class="cf-lbl">Irk</div><div class="chips">${races.map(r => `<button type="button" class="chip ${r === f.race ? 'on' : ''}" data-act="cf-set" data-k="race" data-v="${esc(r)}">${esc(r)}</button>`).join('')}</div></div>
           <div class="form">
             <label class="f">Karakter adı<input class="inp" id="cf-name" data-cf="name" value="${esc(f.name)}" maxlength="21" placeholder="Oyundaki adın"></label>
-            <label class="f">Irk<select class="inp" data-cf="race">${races.map(r => `<option ${r === f.race ? 'selected' : ''}>${esc(r)}</option>`).join('')}</select></label>
-            <label class="f">Seviye<input class="inp num" data-cf="level" value="${esc(f.level)}" inputmode="numeric"></label>
-            <label class="f">Sunucu<select class="inp" data-cf="server">${servers.map(s => `<option ${s === f.server ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
-            <label class="f">Klan (isteğe bağlı)<input class="inp" data-cf="clan" value="${esc(f.clan)}"></label>
-            <label class="f">Not (isteğe bağlı)<input class="inp" data-cf="note" value="${esc(f.note)}" placeholder="örn. farm karakteri"></label>
+            <label class="f">Seviye<input class="inp num" data-cf="level" value="${esc(f.level)}" inputmode="numeric" placeholder="1–83"></label>
+            <label class="f">Sunucu<select class="inp" data-cf="server">${servers.map(sv => `<option ${sv === f.server ? 'selected' : ''}>${esc(sv)}</option>`).join('')}</select><span class="hint">Yeni sunucu adı açıklanınca listeye eklenir; Ayarlar'dan da yazabilirsin.</span></label>
+            <label class="f">Klan (isteğe bağlı)<input class="inp" data-cf="clan" value="${esc(f.clan)}" maxlength="21"></label>
+            <label class="f full check" data-master-row ${lv >= 60 ? '' : 'hidden'}><input type="checkbox" data-cf-chk="master" ${f.master !== false ? 'checked' : ''}> Master görevi tamamlandı (${esc(side.master)})</label>
+            <label class="f full">Not (isteğe bağlı)<input class="inp" data-cf="note" value="${esc(f.note)}" placeholder="örn. farm karakteri, PK karakteri"></label>
           </div>
           ${isNew && DB.legacy && !CUR.acc.chars.length ? '<div class="callout y" style="font-size:12.5px">Önceki sürümdeki kayıtların bu karaktere aktarılacak.</div>' : ''}
           ${isNew && !CUR.acc.chars.length ? '<div class="hint">İlk karakterini oluştur. Daha sonra en fazla 4 karaktere kadar ekleyebilirsin.</div>' : ''}
           ${errLine()}
           <div class="row"><button class="btn pri" data-act="cf-save" style="min-width:180px;justify-content:center">${isNew ? 'Karakteri oluştur' : 'Kaydet'}</button></div>
         </div>
-        <div class="cf-preview" style="--nc:${NATIONS[f.nation].color};--cc:${CLASSES[f.cls].color}">
-          <div class="slot filled" style="--nc:${NATIONS[f.nation].color};--cc:${CLASSES[f.cls].color};cursor:default">
-            <div class="slot-top">${charEmblem(preview, 84)}</div>
-            <div class="slot-name" data-prev-name>${esc(preview.name)}</div>
-            <div class="slot-lv" data-prev-lv>Seviye ${esc(preview.level)}</div>
-            <div class="slot-meta"><span>${esc(classLabel(f.cls, f.nation))}</span><span>${esc(NATIONS[f.nation].label)}</span><span>${esc(f.race || '')}</span><span>${esc(f.server)}</span></div>
+        <div class="cf-preview">
+          <div class="slot filled preview" style="--nc:${n.color};--cc:${c.color}">
+            ${charArt(preview, 'slot-art')}
+            <span class="slot-nat">${esc(n.label)}</span>
+            <div class="slot-info">
+              <div class="slot-title" lang="en" data-prev-title>${esc(jobTitle(preview))}</div>
+              <div class="slot-name" data-prev-name>${esc(preview.name)}</div>
+              <div class="slot-sub"><b data-prev-lv>Lv ${esc(preview.level)}</b> · ${esc(f.server)} · ${esc(f.race || '')}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -188,8 +233,8 @@ const AUTH_VIEWS = {
 
 /* ---------- işlemler ---------- */
 function openCharForm(ch) {
-  auth.cf = ch ? { id: ch.id, name: ch.name, nation: ch.nation, cls: ch.cls, race: ch.race, level: ch.level, server: ch.server, clan: ch.clan || '', note: ch.note || '' }
-    : { name: '', nation: 'karus', cls: 'warrior', race: 'Arch Tuarek', level: 1, server: S.settings.server || DEFAULT_SERVERS[0], clan: '', note: '' };
+  auth.cf = ch ? { id: ch.id, name: ch.name, nation: ch.nation, cls: ch.cls, race: RACE_FIX[ch.race] || ch.race, level: ch.level, server: ch.server, clan: ch.clan || '', note: ch.note || '', master: ch.master !== false }
+    : { name: '', nation: 'karus', cls: 'warrior', race: 'Arch Tuarek', level: 1, server: S.settings.server || DEFAULT_SERVERS[0], clan: '', note: '', master: true };
   if (!$('#auth') || $('#auth').hidden) { authEl(); }
   showAuth('charForm');
 }
@@ -202,13 +247,13 @@ function saveCharForm() {
   if (acc.chars.some(c => c.id !== f.id && trLowA(c.name) === trLowA(f.name))) return showAuth('charForm', 'Bu hesapta aynı isimde bir karakter var.');
   if (f.id) {
     const ch = acc.chars.find(c => c.id === f.id);
-    Object.assign(ch, { name: f.name, nation: f.nation, cls: f.cls, race: f.race, level, server: f.server, clan: f.clan.trim(), note: f.note.trim() });
+    Object.assign(ch, { name: f.name, nation: f.nation, cls: f.cls, race: f.race, level, server: f.server, clan: f.clan.trim(), note: f.note.trim(), master: f.master !== false });
     save();
     if (CUR.ch === ch && auth.returnToApp) { auth.returnToApp = false; enterChar(ch); return; }
     return showAuth('chars');
   }
   if (acc.chars.length >= MAX_CHARS) return showAuth('charForm', 'Bir hesapta en fazla 4 karakter olabilir.');
-  const ch = { id: uid(), name: f.name, nation: f.nation, cls: f.cls, race: f.race, level, server: f.server, clan: f.clan.trim(), note: f.note.trim(), created: new Date().toISOString(), data: newCharData(level) };
+  const ch = { id: uid(), name: f.name, nation: f.nation, cls: f.cls, race: f.race, level, server: f.server, clan: f.clan.trim(), note: f.note.trim(), master: f.master !== false, created: new Date().toISOString(), data: newCharData(level) };
   if (DB.legacy && !acc.chars.length) { ch.data = DB.legacy; DB.legacy = null; }
   acc.chars.push(ch);
   save();
@@ -242,7 +287,7 @@ Object.assign(ACTIONS, {
   'char-select': () => { closeModal(); document.body.classList.remove('nav-open'); showAuth('chars'); },
   'cf-set': el => {
     readCharInputs(); auth.cf[el.dataset.k] = el.dataset.v;
-    const f = auth.cf; f.race = f.cls === 'kurian' ? raceOptions(f.nation, f.cls)[0] : (RACE_DEFAULT[f.nation] || {})[f.cls] || '';
+    const f = auth.cf; if (el.dataset.k !== 'race') f.race = (RACE_DEFAULT[f.nation] || {})[f.cls] || '';
     showAuth('charForm');
   },
   'cf-save': () => { readCharInputs(); saveCharForm(); },
@@ -254,16 +299,31 @@ Object.assign(ACTIONS, {
 });
 function readCharInputs() {
   document.querySelectorAll('#auth [data-cf]').forEach(el => { auth.cf[el.dataset.cf] = el.value; });
+  document.querySelectorAll('#auth [data-cf-chk]').forEach(el => { auth.cf[el.dataset.cfChk] = el.checked; });
 }
 document.addEventListener('input', e => {
   const d = e.target.dataset;
   if (d.cf && auth.cf) {
     auth.cf[d.cf] = e.target.value;
     if (d.cf === 'name') { const p = document.querySelector('[data-prev-name]'); if (p) p.textContent = e.target.value || 'Karakter adı'; }
-    if (d.cf === 'level') { const p = document.querySelector('[data-prev-lv]'); if (p) p.textContent = 'Seviye ' + e.target.value; }
+    if (d.cf === 'level') {
+      const p = document.querySelector('[data-prev-lv]'); if (p) p.textContent = 'Lv ' + (e.target.value || 1);
+      const lvN = Math.round(parseNum(e.target.value)) || 1;
+      const mr = document.querySelector('[data-master-row]'); if (mr) mr.hidden = lvN < 60;
+      readCharInputs();
+      const t = document.querySelector('[data-prev-title]'); if (t) t.textContent = jobTitle({ ...auth.cf, level: lvN });
+    }
   }
 });
-document.addEventListener('change', e => { if (e.target.dataset.cf && auth.cf && e.target.tagName === 'SELECT') { readCharInputs(); showAuth('charForm', auth.err); } });
+document.addEventListener('change', e => {
+  if (!auth.cf || !e.target.closest('#auth')) return;
+  if (e.target.dataset.cf && e.target.tagName === 'SELECT') { readCharInputs(); showAuth('charForm', auth.err); }
+  else if (e.target.dataset.cfChk) { readCharInputs(); const t = document.querySelector('[data-prev-title]'); if (t) t.textContent = jobTitle({ ...auth.cf, level: Math.round(parseNum(auth.cf.level)) || 1 }); }
+});
+// kart klavyeyle de seçilebilsin
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('slot') && e.target.dataset.act === 'char-play') { e.preventDefault(); e.target.click(); }
+});
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !e.target.closest('#auth')) return;
   const form = e.target.closest('[data-auth-form]'); if (!form) return;
@@ -278,7 +338,7 @@ renderTicker = function () {
   const b = document.querySelector('.brand');
   if (!b) return;
   if (CUR.ch) {
-    b.innerHTML = `${charEmblem(CUR.ch, 38)}<div style="min-width:0;flex:1"><div class="brand-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(CUR.ch.name)}</div><div class="brand-sub">Lv ${CUR.ch.level} · ${esc(classLabel(CUR.ch.cls, CUR.ch.nation))}${CUR.ch.server ? ' · ' + esc(CUR.ch.server) : ''}</div></div>`;
+    b.innerHTML = `${charEmblem(CUR.ch, 38)}<div style="min-width:0;flex:1"><div class="brand-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(CUR.ch.name)}</div><div class="brand-sub">Lv ${CUR.ch.level} · ${esc(jobTitle(CUR.ch))}${CUR.ch.server ? ' · ' + esc(CUR.ch.server) : ''}</div></div>`;
     b.dataset.act = 'char-select'; b.title = 'Karakter değiştir'; b.style.cursor = 'pointer';
   }
   sideExtra();

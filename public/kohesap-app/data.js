@@ -43,23 +43,43 @@ const USKO_EVENTS = [
 ];
 const USKO_EVENTS_INFO = 'USKO takvimi · Ekim 2026 · kaynak: ucuzagb.com, knightpin.com, korehberi.com';
 
-/* Karakter seçenekleri */
-const NATIONS = { karus: { label: 'Karus', color: '#e05252' }, human: { label: 'Human (El Morad)', color: '#4f8fe8' } };
+/* Karakter seçenekleri — resmi NTT oyun rehberine göre
+   (nttgame.com/knight/tr/guide/character): ulus, sınıf, ırk ve meslek unvanları.
+   1. meslek değişimi 10. seviyede, master görevi 60. seviyeden itibaren. */
+const NATIONS = { karus: { label: 'Karus', color: '#e05252', art: 'karus' }, human: { label: 'El Morad', color: '#4f8fe8', art: 'elmorad' } };
+const EM_M = 'El Moradian (Erkek)', EM_F = 'El Moradian (Kadın)';
 const CLASSES = {
-  warrior: { label: 'Warrior', color: '#ef5b5b' },
-  rogue: { label: 'Rogue', color: '#3ec27a' },
-  mage: { label: 'Mage', color: '#a58bff' },
-  priest: { label: 'Priest', color: '#e3b554' },
-  kurian: { label: 'Kurian / Porutu', color: '#ff9f5a' },
+  warrior: { label: 'Warrior', color: '#ef5b5b', art: 1, role: 'Ön saf · tank', stat: 'STR · HP', gear: 'Kılıç, balta, mızrak, kalkan',
+    karus: { job: 'Berserker', master: 'Berserker Hero', races: ['Arch Tuarek'] },
+    human: { job: 'Blade', master: 'Blade Master', races: ['Barbarian', EM_M, EM_F] } },
+  rogue: { label: 'Rogue', color: '#3ec27a', art: 2, role: 'Okçu · suikastçı', stat: 'DEX', gear: 'Yay, hançer',
+    karus: { job: 'Hunter', master: 'Shadow Bane', races: ['Tuarek'] },
+    human: { job: 'Ranger', master: 'Kasar Hood', races: [EM_M, EM_F] } },
+  mage: { label: 'Mage', color: '#a58bff', art: 3, role: 'Ateş · buz · yıldırım', stat: 'INT · MP', gear: 'Asa',
+    karus: { job: 'Sorcerer', master: 'Elemental Lord', races: ['Wrinkle Tuarek', 'Puri Tuarek'] },
+    human: { job: 'Mage', master: 'Arc Mage', races: [EM_M, EM_F] } },
+  priest: { label: 'Priest', color: '#e3b554', art: 4, role: 'İyileştirme · buff · lanet', stat: 'MP · STR', gear: 'Topuz, asa, kalkan',
+    karus: { job: 'Shaman', master: 'Shadow Knight', races: ['Tuarek', 'Puri Tuarek'] },
+    human: { job: 'Cleric', master: 'Paladin', races: [EM_M, EM_F] } },
+  kurian: { label: 'Kurian / Portu', color: '#ff9f5a', art: 5, role: 'Ön saf yakın dövüş', stat: 'STR · HP', gear: 'Savaşçı silahları (kalkansız)',
+    karus: { name: 'Kurian', job: 'Daphne', master: 'Daphne Hero', races: ['Mutant Barbarian'] },
+    human: { name: 'Portu', job: 'Burka', master: 'Burka Master', races: ['Mutant Barbarian'] } },
 };
-// Irk seçimi: ulusa göre tüm ırklar sunulur (Kurian/Porutu sınıfı kendi ırkıyla gelir)
-const RACES = {
-  karus: ['Arch Tuarek', 'Tuarek', 'Wrinkle Tuarek', 'Puri Tuarek'],
-  human: ['Barbarian', 'El Morad (Erkek)', 'El Morad (Kadın)'],
-};
-const RACE_DEFAULT = { karus: { warrior: 'Arch Tuarek', rogue: 'Tuarek', mage: 'Wrinkle Tuarek', priest: 'Tuarek' }, human: { warrior: 'Barbarian', rogue: 'El Morad (Erkek)', mage: 'El Morad (Erkek)', priest: 'El Morad (Erkek)' } };
-const raceOptions = (nation, cls) => cls === 'kurian' ? [nation === 'human' ? 'Porutu' : 'Kurian'] : RACES[nation] || [];
-const classLabel = (cls, nation) => cls === 'kurian' ? (nation === 'human' ? 'Porutu' : 'Kurian') : (CLASSES[cls] || {}).label || cls;
+const RACE_FIX = { 'El Morad (Erkek)': EM_M, 'El Morad (Kadın)': EM_F, Kurian: 'Mutant Barbarian', Porutu: 'Mutant Barbarian', Portu: 'Mutant Barbarian' };
+const classSide = (cls, nation) => (CLASSES[cls] || CLASSES.warrior)[nation === 'human' ? 'human' : 'karus'];
+const raceOptions = (nation, cls) => classSide(cls, nation).races;
+const RACE_DEFAULT = Object.fromEntries(['karus', 'human'].map(n => [n, Object.fromEntries(Object.keys(CLASSES).map(c => [c, classSide(c, n).races[0]]))]));
+const classLabel = (cls, nation) => cls === 'kurian' ? classSide(cls, nation).name : (CLASSES[cls] || {}).label || cls;
+/** Oyundaki unvan: 1–9 temel sınıf, 10+ 1. meslek, 60+ (master görevi yapıldıysa) master unvanı. */
+function jobTitle(ch) {
+  const side = classSide(ch.cls, ch.nation), lv = +ch.level || 1;
+  if (lv >= 60 && ch.master !== false) return side.master;
+  if (lv >= 10) return side.job;
+  return classLabel(ch.cls, ch.nation);
+}
+/** Resmi sınıf görseli (NTT oyun rehberi). */
+const classArt = (cls, nation) => `https://image.nttgame.com/knight/ver2018/assets/images/guide/character_${(NATIONS[nation] || NATIONS.karus).art}${(CLASSES[cls] || CLASSES.warrior).art}.png`;
+const NEW_SERVER = { open: '2026-11-12T16:00:00+03:00', cap: 70, preReg2: '2026-10-29', charCreate: '2026-11-10' };
 const DEFAULT_SERVERS = ['Zero', 'Felis', 'Agartha', 'Pandora', 'Dryads', 'Destan', 'Minark', 'Oreads'];
 
 /* PUS item ikonları: katalogla aynı sırada (p0…p108), kaynak sitenin /img/pus/ klasörü */
