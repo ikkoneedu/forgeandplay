@@ -445,6 +445,38 @@ async function listDevices() {
   } catch { }
   voicePaint();
 }
+/* Bilgisayar sesini kaydeden girişler (Stereo Karışımı vb.) mikrofon değildir: müziği duyar, sesini duymaz */
+const LOOPBACK = /stereo\s*(mix|karışım|karisim)|what\s*u\s*hear|wave\s*out|cable\s*output|voicemeeter|loopback|monitor of|sanal|virtual/i;
+const micLabel = id => { const d = VOICE.devices.in.find(x => x.deviceId === (id || 'default')) || VOICE.devices.in.find(x => x.deviceId === 'default'); return d ? d.label || '' : ''; };
+/* "Doğru mikrofonu bul": kullanıcı konuşurken her girişi 1.6 sn dinler, sesi en yüksek olanı seçer */
+VOICE.scan = null;
+async function micScan() {
+  if (VOICE.scan && VOICE.scan.busy) return;
+  await listDevices();
+  const devs = VOICE.devices.in.filter(d => d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications');
+  if (!devs.length) return toast('Başka mikrofon bulunamadı', 'err');
+  VOICE.scan = { busy: true, i: 0, n: devs.length, res: [] }; voicePaint();
+  const ctx = VOICE.ctx || (VOICE.ctx = new AudioContext());
+  if (ctx.state !== 'running') await ctx.resume().catch(() => { });
+  for (const d of devs) {
+    VOICE.scan.i++; VOICE.scan.cur = d.label || 'Mikrofon'; voicePaint();
+    let peak = 0, avg = 0, n = 0, st = null;
+    try {
+      st = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: d.deviceId }, echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+      const an = analyser(st), t0 = Date.now();
+      while (Date.now() - t0 < 1600) { await new Promise(r => setTimeout(r, 50)); const v = an.read(); peak = Math.max(peak, v); avg += v; n++; }
+      try { an.src.disconnect(); } catch { }
+    } catch (e) { peak = -1; }
+    if (st) st.getTracks().forEach(t => t.stop());
+    VOICE.scan.res.push({ id: d.deviceId, label: d.label || 'Mikrofon', peak, avg: n ? avg / n : 0, loop: LOOPBACK.test(d.label || '') });
+  }
+  VOICE.scan.busy = false;
+  const ok = VOICE.scan.res.filter(r => r.peak > 0 && !r.loop).sort((a, b) => b.avg - a.avg);
+  const best = ok[0];
+  if (best && best.avg > 2) { await switchMic(best.id); VOICE.scan.best = best.id; toast('Mikrofon seçildi: ' + best.label, 'ok'); }
+  else toast('Hiçbir mikrofonda konuşma algılanmadı. Kulaklığın takılı ve sesi açık mı?', 'err');
+  voicePaint();
+}
 async function switchMic(id) {
   VOICE.pref.mic = id; vprefSave();
   if (!VOICE.on) return;
@@ -547,7 +579,10 @@ function voiceSettings() {
     ${p.mode === 'ptt' ? `<div class="vc-row"><span class="vc-lbl">Bas-konuş tuşu</span><select class="inp" data-vkey>${PTT_KEYS.map(k => `<option value="${k.id}" ${k.id === p.key ? 'selected' : ''}>${esc(k.label)}</option>`).join('')}</select>
       <span class="hint">${VOICE.pttGlobal ? 'Oyun öndeyken de çalışıyor.' : serverMode ? 'Bağlanıyor…' : 'Web sürümünde yalnızca bu sekme öndeyken çalışır; oyun içinde kullanmak için Windows uygulamasını kullan.'} Fare yan tuşu önerilir; harf tuşları oyuna da gider.</span></div>` : ''}
     <div class="vc-row two">
-      <label class="f">Mikrofon<select class="inp" data-vmic><option value="">Varsayılan</option>${VOICE.devices.in.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.mic ? 'selected' : ''}>${esc(d.label || 'Mikrofon')}</option>`).join('')}</select></label>
+      <label class="f">Mikrofon<select class="inp" data-vmic><option value="">Varsayılan${micLabel('') ? ' (' + esc(micLabel('').replace(/^(Varsayılan|Default)\s*-\s*/i, '')) + ')' : ''}</option>${VOICE.devices.in.filter(d => d.deviceId !== 'default' && d.deviceId !== 'communications').map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.mic ? 'selected' : ''}>${LOOPBACK.test(d.label) ? '⚠ ' : ''}${esc(d.label || 'Mikrofon')}</option>`).join('')}</select>
+        ${LOOPBACK.test(micLabel(p.mic)) ? '<span class="hint" style="color:var(--red)">⚠ Seçili giriş bilgisayarın sesini kaydediyor (müzik vb.), mikrofon değil. Kulaklık mikrofonunu seç ya da "Doğru mikrofonu bul"a bas.</span>' : ''}
+        <button type="button" class="btn sm" data-act="v-scan" ${VOICE.scan && VOICE.scan.busy ? 'disabled' : ''} style="margin-top:6px">${VOICE.scan && VOICE.scan.busy ? `🎙️ Konuşmaya devam et… (${VOICE.scan.i}/${VOICE.scan.n}: ${esc(VOICE.scan.cur || '')})` : '🎙️ Doğru mikrofonu bul (konuşurken bas)'}</button>
+        ${VOICE.scan && !VOICE.scan.busy && VOICE.scan.res.length ? `<div class="mscan">${VOICE.scan.res.map(r => `<div class="${r.id === VOICE.scan.best ? 'best' : ''}"><span>${r.loop ? '⚠ ' : ''}${esc(r.label)}</span><i style="--w:${Math.max(0, Math.min(100, r.avg * 2))}%"></i><b>${r.peak < 0 ? 'açılamadı' : r.id === VOICE.scan.best ? '✓ seçildi' : Math.round(r.avg)}</b></div>`).join('')}</div>` : ''}</label>
       ${VOICE.devices.out.length && 'setSinkId' in HTMLMediaElement.prototype ? `<label class="f">Hoparlör / kulaklık<select class="inp" data-vspk><option value="">Varsayılan</option>${VOICE.devices.out.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.spk ? 'selected' : ''}>${esc(d.label || 'Çıkış')}</option>`).join('')}</select></label>` : '<span></span>'}
       <label class="f">Ses kalitesi<select class="inp" data-vq>${Object.entries(VQUAL).map(([k, v]) => `<option value="${k}" ${k === (p.q || 'hi') ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select><span class="hint">Herkes için 8 kişide bile rahat; internet zayıfsa Standart seç.</span></label>
       <div class="f"><span class="vc-lbl">Bağlantı</span>${usageLine()}<span class="hint">${VOICE.limitHit ? '⛔ Bu ayın ses aktarma kotası doldu: telefon / kısıtlı ağ bağlantıları ay başına kadar kapalı.' : hasRelay() ? '✅ Aktarma sunucusu hazır: telefon ve kısıtlı ağlarda da bağlanır.' : '⚠️ Aktarma (TURN) sunucusu tanımlı değil: telefonlar ve bazı ev ağları birbirine bağlanamayabilir.' + (typeof isAdmin === 'function' && isAdmin() ? (VOICE.iceErr ? ' Aktarma bilgisi alınamadı (' + esc(VOICE.iceErr) + ').' : ' Admin: Vercel\'de CF_TURN_KEY_ID ve CF_TURN_API_TOKEN değişkenlerini ekle.') : ' Admin\'e haber ver.')}</span></div>
@@ -651,6 +686,7 @@ Object.assign(ACTIONS, {
   'v-leave': () => voiceLeave(),
   'v-mute': () => voiceMute(),
   'v-deaf': () => voiceDeaf(),
+  'v-scan': () => micScan(),
   'v-set': () => { ui.vset = !ui.vset; if (ui.vset) listDevices(); voicePaint(); },
   'v-mode': el => { VOICE.pref.mode = el.dataset.v; vprefSave(); VOICE.gateUntil = 0; pttStart(); voiceTick(); voicePaint(); },
 });

@@ -1054,3 +1054,9 @@ button.ar-item:hover b{color:var(--gold2);text-decoration:underline;text-underli
 .chat-form textarea.inp{resize:none;min-height:40px;max-height:140px;line-height:1.4;padding:9px 12px;border-radius:20px;overflow-y:auto}
 .chat-sendbtn{width:42px;height:42px;border-radius:50%!important;padding:0!important;justify-content:center;flex:none}
 @media (hover:none){.msg-acts{display:none}.msg.sel .msg-acts{display:flex;opacity:1}.msg.sel .msg-bub{box-shadow:0 0 0 2px rgba(227,181,84,.5)}.msg-acts .icon-btn{width:34px;height:34px;background:var(--panel2)}}
+.mscan{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:12px}
+.mscan div{display:grid;grid-template-columns:minmax(0,1fr) 90px 60px;gap:8px;align-items:center;color:var(--tx2)}
+.mscan div span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mscan i{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--green) var(--w),var(--panel2) var(--w))}
+.mscan .best{color:var(--green)}
+.mscan b{text-align:right;font-weight:600}
