@@ -16,7 +16,7 @@ let LOCAL_DB = null; // exe: bu bilgisayardaki eski (yerel hesaplı) veri
    belgesinde tutulur; tüm kullanıcıların uygulaması bunları kullanır, ama
    arayüzde yalnızca admin görür. (Kurallar: config herkese okunur, admin yazar.) */
 const ADMIN_EMAILS = ['carkci.caner@gmail.com'];
-const GLOBAL_KEYS = ['gbUrl', 'gbUrl2', 'marketUrl', 'eventsUrl', 'marketMaxPages', 'marketRefreshSec', 'gbRefreshMin'];
+const GLOBAL_KEYS = ['gbUrl', 'gbUrl2', 'marketUrl', 'eventsUrl', 'marketMaxPages', 'marketRefreshSec', 'gbRefreshMin', 'voiceTurn'];
 const isAdmin = () => !!(typeof CLOUD !== 'undefined' && CLOUD.user && ADMIN_EMAILS.includes(String(CLOUD.user.email || '').toLowerCase()));
 async function loadGlobalConfig() {
   try {

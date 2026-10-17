@@ -118,6 +118,26 @@ service cloud.firestore {
             && onlyMyEntry())
       );
       allow delete: if signedIn() && resource.data.owner == me();
+
+      // Sesli sohbet odası: yalnızca ekip üyeleri görür; herkes yalnızca kendi kaydını yazar.
+      function isMember() {
+        return request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/kohesapTeams/$(code)).data.memberUids;
+      }
+      match /voice/{uid} {
+        allow read: if isMember();
+        allow create, update: if isMember() && request.auth.uid == uid;
+        allow delete: if isMember() && (request.auth.uid == uid
+          || get(/databases/$(database)/documents/kohesapTeams/$(code)).data.owner == request.auth.uid);
+        // Bağlantı mesajları: üye başka bir üyenin kutusuna yazar, kutu sahibi okur ve siler.
+        match /inbox/{msgId} {
+          allow create: if isMember()
+            && request.resource.data.from == request.auth.uid
+            && request.resource.data.keys().hasOnly(['t', 'sdp', 'c', 'from', 'fs', 'ts', 'at'])
+            && (!('sdp' in request.resource.data) || request.resource.data.sdp.size() < 20000);
+          allow read, delete: if request.auth != null && request.auth.uid == uid;
+        }
+      }
     }
 
     // Public leaderboard stats (name / wins / earnings); written by admin payouts.

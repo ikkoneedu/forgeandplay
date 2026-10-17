@@ -968,6 +968,7 @@ VIEWS.internet = () => {
       <label class="f">GB yenileme (dakika)<input class="inp num" data-fk="s-gbr" data-set="gbRefreshMin" data-num="1" value="${st.gbRefreshMin}"></label>
       <label class="f">Pazar yenileme (saniye)<input class="inp num" data-fk="s-mkr" data-set="marketRefreshSec" data-num="1" value="${st.marketRefreshSec}"></label>
       <label class="f">Pazarda en fazla sayfa<input class="inp num" data-fk="s-mkp" data-set="marketMaxPages" data-num="1" value="${st.marketMaxPages || 30}"></label>
+      <label class="f full">Sesli sohbet TURN sunucusu (isteğe bağlı)<input class="inp" data-fk="s-turn" data-set="voiceTurn" value="${esc(st.voiceTurn || '')}" placeholder='{"urls":"turn:sunucu:3478","username":"…","credential":"…"}'><span class="hint">Boşsa doğrudan bağlantı denenir. Bazı mobil/ev ağlarında ses kurulamazsa buraya TURN bilgisi gir (ör. Cloudflare veya metered.ca). JSON tek nesne ya da liste.</span></label>
     </div>
     <div class="row" style="margin-top:14px">
       <button class="btn pri" data-act="adm-save-sources" ${ui.admDirty ? '' : 'disabled'}>📢 Herkese kaydet</button>

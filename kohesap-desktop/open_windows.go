@@ -42,7 +42,10 @@ func hideConsole(cmd *exec.Cmd) {
 func openWindow(u string) {
 	profile := filepath.Join(os.Getenv("LOCALAPPDATA"), "KOHesap", "pencere")
 	_ = os.MkdirAll(profile, 0o755)
-	args := []string{"--app=" + u, "--window-size=1440,920", "--user-data-dir=" + profile, "--no-first-run", "--no-default-browser-check"}
+	args := []string{"--app=" + u, "--window-size=1440,920", "--user-data-dir=" + profile, "--no-first-run", "--no-default-browser-check",
+		// sesli sohbet: oyun öndeyken de pencere yavaşlatılmasın, ses kendiliğinden çalsın
+		"--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows",
+		"--autoplay-policy=no-user-gesture-required"}
 	if b := findBrowser(); b != "" {
 		if exec.Command(b, args...).Start() == nil {
 			return

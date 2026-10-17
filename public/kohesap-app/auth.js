@@ -26,8 +26,16 @@ function charEmblem(ch, size = 44) {
 const charLine = ch => `Lv ${ch.level} · ${jobTitle(ch)} · ${(NATIONS[ch.nation] || {}).label || ''}${ch.server ? ' · ' + ch.server : ''}`;
 
 /* ---------- resmi sınıf görseli (yüklenmezse amblem kalır) ---------- */
+function artImg(ch) {
+  return `<img src="${esc(classArtProxy(ch.cls, ch.nation))}" data-d="${esc(classArt(ch.cls, ch.nation))}" alt="${esc(classLabel(ch.cls, ch.nation))}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onload="this.parentNode.classList.add('ok')" onerror="iconFail(this)">`;
+}
 function charArt(ch, cls = '') {
-  return `<div class="art ${cls}"><span class="art-fb">${charEmblem(ch, 84)}</span><img src="${esc(classArt(ch.cls, ch.nation))}" alt="${esc(classLabel(ch.cls, ch.nation))}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"></div>`;
+  return `<div class="art ${cls}"><span class="art-fb">${charEmblem(ch, 84)}</span>${artImg(ch)}</div>`;
+}
+/** Yuvarlak karakter fotoğrafı (sınıf görselinin yüz kısmı); yüklenmezse amblem görünür. */
+function charAvatar(ch, size = 40) {
+  const n = NATIONS[ch.nation] || NATIONS.karus;
+  return `<span class="cav" style="--s:${size}px;--nc:${n.color}"><span class="cav-fb">${charEmblem(ch, size)}</span>${artImg(ch)}</span>`;
 }
 /** Bir karakterin verisi üzerinde geçici olarak hesap yapar (seçim ekranı / ekip kartı için). */
 function withChar(ch, fn) {
@@ -338,7 +346,7 @@ renderTicker = function () {
   const b = document.querySelector('.brand');
   if (!b) return;
   if (CUR.ch) {
-    b.innerHTML = `${charEmblem(CUR.ch, 38)}<div style="min-width:0;flex:1"><div class="brand-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(CUR.ch.name)}</div><div class="brand-sub">Lv ${CUR.ch.level} · ${esc(jobTitle(CUR.ch))}${CUR.ch.server ? ' · ' + esc(CUR.ch.server) : ''}</div></div>`;
+    b.innerHTML = `${charAvatar(CUR.ch, 42)}<div style="min-width:0;flex:1"><div class="brand-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(CUR.ch.name)}</div><div class="brand-sub">Lv ${CUR.ch.level} · ${esc(jobTitle(CUR.ch))}${CUR.ch.server ? ' · ' + esc(CUR.ch.server) : ''}</div></div>`;
     b.dataset.act = 'char-select'; b.title = 'Karakter değiştir'; b.style.cursor = 'pointer';
   }
   sideExtra();

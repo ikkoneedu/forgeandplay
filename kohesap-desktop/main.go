@@ -29,7 +29,7 @@ var webFS embed.FS
 
 const (
 	appName    = "KO Hesap"
-	appVersion = "0.6.4"
+	appVersion = "0.6.6"
 	port       = 47811
 )
 
@@ -108,6 +108,7 @@ func main() {
 	mux.HandleFunc("/api/siteconfig", handleSiteConfig)
 	mux.HandleFunc("/api/ares", handleAres)
 	mux.HandleFunc("/api/img", handleImg)
+	mux.HandleFunc("/api/ptt", handlePTT)
 	mux.HandleFunc("/api/eitem", handleItem)
 	mux.HandleFunc("/api/browserfetch", handleBrowserFetch)
 	mux.HandleFunc("/api/info", handleInfo)

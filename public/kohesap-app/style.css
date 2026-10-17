@@ -630,3 +630,87 @@ button.ar-item:hover b{color:var(--gold2);text-decoration:underline;text-underli
   .team-stats>div:nth-child(-n+2){grid-column:span 5}
   .team-stats .tc span{font-size:10px}
 }
+
+/* ===== ekip sesli sohbet ===== */
+.vc{padding:18px;margin-bottom:16px;border-color:rgba(62,194,122,.25)}
+.vc-off{border-color:var(--line)}
+.vc-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.vc-head h3{margin:0 0 2px;font:600 16px var(--head);display:flex;align-items:center;gap:8px}
+.vc-head .mut{font-size:12.5px}
+.vc-head .btn svg{width:18px;height:18px}
+.vc-ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--bg2);border:1px solid var(--line);color:var(--tx2);flex:none}
+.vc-ico svg{width:22px;height:22px}
+.vc-ico.live{color:var(--green);border-color:rgba(62,194,122,.4);background:rgba(62,194,122,.08)}
+.vc-ctrl{display:flex;gap:8px}
+.vbtn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line2);background:var(--panel2);color:var(--tx);cursor:pointer;transition:.15s}
+.vbtn svg{width:20px;height:20px}
+.vbtn:hover{border-color:var(--tx3)}
+.vbtn.off{background:var(--red-bg);color:var(--red);border-color:rgba(239,91,91,.45)}
+.vbtn.leave{background:var(--red);color:#fff;border-color:transparent}
+.vbtn.leave:hover{filter:brightness(1.1)}
+.vbtn.sm{width:32px;height:32px}
+.vbtn.sm svg{width:16px;height:16px}
+.vc-people{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:16px}
+.vp{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);flex-wrap:wrap;transition:border-color .12s,box-shadow .12s}
+.vp.me{background:linear-gradient(180deg,rgba(255,255,255,.02),var(--bg2))}
+.vp.talk{border-color:var(--green);box-shadow:0 0 0 2px rgba(62,194,122,.35),0 0 18px rgba(62,194,122,.15)}
+.vp-av{position:relative;flex:none}
+.vp.talk .vp-av .emblem{box-shadow:0 0 0 3px var(--green)}
+.vp-m{position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;border:2px solid var(--bg2)}
+.vp-m svg{width:11px;height:11px}
+.vp-tx{display:flex;flex-direction:column;min-width:0;flex:1}
+.vp-tx b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vp-tx span{font-size:11.5px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vp-st.ok{color:var(--green)}
+.vp-st.bad{color:var(--red)}
+.vp-vol{width:100%;accent-color:var(--gold);height:16px}
+.vp.empty{grid-column:1/-1;justify-content:center;text-align:center;border-style:dashed;font-size:12.5px}
+.vc-set{display:flex;flex-direction:column;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.vc-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.vc-row.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.vc-row .hint{flex-basis:100%}
+.vc-row select.inp{width:auto;min-width:200px}
+.vc-lbl{font-size:12.5px;color:var(--tx2);min-width:110px}
+.vc-meter{position:relative;flex:1;min-width:200px;height:22px;border-radius:999px;background:var(--bg2);border:1px solid var(--line);overflow:hidden}
+.vc-meter i{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(108,118,133,.45);transition:width .06s linear}
+.vc-meter i.hot{background:rgba(62,194,122,.55)}
+.vc-meter input{position:absolute;inset:0;width:100%;margin:0;background:transparent;accent-color:var(--gold);-webkit-appearance:none;appearance:none}
+.vc-meter input::-webkit-slider-runnable-track{background:transparent;height:22px}
+.vc-meter input::-webkit-slider-thumb{-webkit-appearance:none;width:4px;height:22px;background:var(--gold);border-radius:2px}
+.vc-meter input::-moz-range-thumb{width:4px;height:22px;background:var(--gold);border:0;border-radius:2px}
+.vc-snd{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tx2)}
+/* kenar çubuğu ses çubuğu */
+#voiceBar{margin:0 0 8px}
+.vbar{display:flex;align-items:center;gap:6px;padding:8px;border-radius:12px;background:rgba(62,194,122,.08);border:1px solid rgba(62,194,122,.35)}
+.vbar.talk{box-shadow:0 0 0 1px var(--green) inset}
+.vbar-main{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--tx);cursor:pointer;text-align:left;padding:0 2px;font:inherit}
+.vbar-main span:last-child{display:flex;flex-direction:column;min-width:0}
+.vbar-main b{font-size:12.5px}
+.vbar-main small{font-size:11px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vdot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none;box-shadow:0 0 0 0 rgba(62,194,122,.6);animation:vpulse 2s infinite}
+@keyframes vpulse{70%{box-shadow:0 0 0 7px rgba(62,194,122,0)}100%{box-shadow:0 0 0 0 rgba(62,194,122,0)}}
+@media (max-width:600px){
+  .vc{padding:14px}
+  .vc-head .btn{width:100%;justify-content:center}
+  .vc-ctrl{width:100%;justify-content:center;gap:14px}
+  .vc-people{grid-template-columns:1fr}
+  .vc-row.two{grid-template-columns:1fr}
+  .vc-row select.inp{width:100%}
+  .vc-lbl{min-width:0;flex-basis:100%}
+  .vc-row .seg{width:100%}.vc-row .seg button{flex:1}
+}
+@media (max-width:600px){.vc-row .seg button{white-space:nowrap;font-size:12.5px;padding:8px 4px}}
+
+/* ===== yuvarlak karakter fotoğrafı ===== */
+.cav{--s:40px;position:relative;display:inline-block;flex:none;width:var(--s);height:var(--s);border-radius:50%;overflow:hidden;
+  background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--nc) 45%,#1a1f28),#0b0e13);box-shadow:0 0 0 2px color-mix(in srgb,var(--nc) 70%,transparent)}
+.cav .cav-fb{position:absolute;inset:0;display:grid;place-items:center}
+.cav .cav-fb .emblem{box-shadow:none}
+.cav img{position:absolute;left:50%;top:0;width:auto;height:340%;max-width:none;transform:translate(-50%,-2%);object-fit:contain;filter:none}
+.cav.ok .cav-fb{opacity:0}
+.vp.talk .vp-av .cav{box-shadow:0 0 0 3px var(--green)}
+.tm-who .cav{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--nc) 70%,transparent)}
+.rules-box{margin-bottom:16px;border-color:rgba(227,181,84,.5);background:linear-gradient(180deg,rgba(227,181,84,.08),var(--panel))}
+.rules-steps{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:10px;font-size:13.5px;color:var(--tx2)}
+.rules-steps li::marker{color:var(--gold);font-weight:700}
+.rules-steps code{background:var(--bg2);padding:1px 6px;border-radius:4px;font-size:12px}

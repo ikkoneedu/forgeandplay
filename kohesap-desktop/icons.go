@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,6 +18,26 @@ import (
 
 var iconPathRe = regexp.MustCompile(`^/(ItemIcon|img/pus|img/items?)/[A-Za-z0-9_.\-]+\.(png|jpe?g|webp|gif)$`)
 
+// NTT Game resmi oyun rehberindeki sınıf görselleri (karakter seçim ekranı)
+var nttPathRe = regexp.MustCompile(`^/knight/ver2018/assets/images/guide/character_(karus|elmorad)[1-5]\.png$`)
+
+const nttOrigin = "https://image.nttgame.com"
+const nttReferer = "https://www.nttgame.com/knight/tr/guide/character"
+
+func fetchImage(u, referer string) (int, []byte, error) {
+	req, _ := http.NewRequest("GET", u, nil)
+	req.Header.Set("User-Agent", browserUA)
+	req.Header.Set("Accept", "image/avif,image/webp,image/png,image/*,*/*;q=0.8")
+	req.Header.Set("Referer", referer)
+	resp, err := httpCli.Do(req)
+	if err != nil {
+		return 0, nil, err
+	}
+	defer resp.Body.Close()
+	b, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
+	return resp.StatusCode, b, err
+}
+
 func siteBase(r *http.Request) string {
 	b := r.URL.Query().Get("base")
 	if u, err := url.Parse(b); err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != "" {
@@ -27,11 +48,15 @@ func siteBase(r *http.Request) string {
 
 func handleImg(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Query().Get("p")
-	if !iconPathRe.MatchString(p) {
+	ntt := r.URL.Query().Get("h") == "ntt"
+	if (ntt && !nttPathRe.MatchString(p)) || (!ntt && !iconPathRe.MatchString(p)) {
 		http.Error(w, "izin yok", 400)
 		return
 	}
 	base := siteBase(r)
+	if ntt {
+		base = nttOrigin
+	}
 	sum := sha1.Sum([]byte(base + p))
 	dir := filepath.Join(dataDir, "ikonlar")
 	file := filepath.Join(dir, hex.EncodeToString(sum[:])+filepath.Ext(p))
@@ -39,7 +64,14 @@ func handleImg(w http.ResponseWriter, r *http.Request) {
 		serveImg(w, b)
 		return
 	}
-	status, body, err := fetchPassing(base + p)
+	var status int
+	var body []byte
+	var err error
+	if ntt {
+		status, body, err = fetchImage(base+p, nttReferer)
+	} else {
+		status, body, err = fetchPassing(base + p)
+	}
 	if err != nil || status != 200 || !strings.HasPrefix(http.DetectContentType(body), "image/") {
 		w.Header().Set("Cache-Control", "no-store")
 		http.Error(w, "bulunamadı", 404)

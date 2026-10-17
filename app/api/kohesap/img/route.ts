@@ -10,15 +10,20 @@ export const runtime = "nodejs";
  */
 const ORIGIN = process.env.KOHESAP_MARKET_ORIGIN || "https://www.enucuzgb.com";
 const ICON_PATH = /^\/(ItemIcon|img\/pus|img\/items?)\/[A-Za-z0-9_.\-]+\.(png|jpe?g|webp|gif)$/;
+// NTT Game resmi oyun rehberindeki sınıf görselleri (karakter seçim ekranı)
+const NTT_ORIGIN = "https://image.nttgame.com";
+const NTT_REFERER = "https://www.nttgame.com/knight/tr/guide/character";
+const NTT_PATH = /^\/knight\/ver2018\/assets\/images\/guide\/character_(karus|elmorad)[1-5]\.png$/;
 
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams.get("p") ?? "";
-  if (!ICON_PATH.test(p)) return new Response("izin yok", { status: 400 });
+  const ntt = req.nextUrl.searchParams.get("h") === "ntt";
+  if (ntt ? !NTT_PATH.test(p) : !ICON_PATH.test(p)) return new Response("izin yok", { status: 400 });
   try {
-    const { res, bytes } = await fetchPassing(new URL(p, ORIGIN), {
+    const { res, bytes } = await fetchPassing(new URL(p, ntt ? NTT_ORIGIN : ORIGIN), {
       binary: true,
       accept: "image/avif,image/webp,image/png,image/*,*/*;q=0.8",
-      referer: ORIGIN + "/",
+      referer: ntt ? NTT_REFERER : ORIGIN + "/",
     });
     const ct = res.headers.get("content-type") ?? "";
     if (!res.ok || !bytes || !/^image\//i.test(ct)) {

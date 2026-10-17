@@ -25,6 +25,31 @@ function myTeamEntry() {
 }
 const entrySig = e => JSON.stringify({ ...e, updated: '' });
 
+/* ---------- Firebase kuralları yayınlanmış mı? ---------- */
+const isPermErr = e => e && (e.code === 'permission-denied' || /insufficient permissions/i.test(e.message || ''));
+async function teamRulesProbe() {
+  if (TEAM.rulesChecked || !CLOUD.db || !myUid()) return;
+  TEAM.rulesChecked = true;
+  try { await FB.getDoc(teamRef('KURALCHK')); TEAM.rulesMissing = false; }
+  catch (e) { TEAM.rulesMissing = isPermErr(e); }
+  if (ui.page === 'ekip') render();
+}
+function rulesBox() {
+  if (!TEAM.rulesMissing) return '';
+  const pid = (CLOUD.cfg && CLOUD.cfg.firebase && CLOUD.cfg.firebase.projectId) || '';
+  if (!isAdmin()) return `<div class="callout r" style="margin-bottom:16px"><b>Ekip özelliği henüz açılmadı.</b> Sunucu tarafındaki izin ayarı (Firebase kuralları) güncellenmemiş. Site yöneticisine haber ver.</div>`;
+  return `<div class="card rules-box">
+    <div class="card-h"><div><h3>Ekip ve sesli sohbet için Firebase kurallarını yayınla <span class="badge y">admin</span></h3>
+      <div class="sub">Yeni kurallar Firebase'de yayınlanmadığı için ekip kurma ve sese katılma "izin yok" hatası veriyor. Kurallar Vercel ile otomatik gitmez; bir kez elle yapıştırman gerekiyor.</div></div></div>
+    <ol class="rules-steps">
+      <li><button class="btn pri sm" data-act="rules-copy">Kuralları kopyala</button> (repodaki <code>firestore.rules</code> dosyasının tamamı)</li>
+      <li>${pid ? `<a class="btn sm" href="https://console.firebase.google.com/project/${esc(pid)}/firestore/rules" target="_blank" rel="noopener">Firebase kural sayfasını aç ↗</a>` : 'Firebase Console → Firestore Database → Rules sekmesini aç'}</li>
+      <li>Oradaki metnin tamamını sil, kopyaladığını yapıştır ve <b>Publish</b> de.</li>
+      <li><button class="btn sm ghost" data-act="rules-recheck">Tekrar kontrol et</button></li>
+    </ol>
+  </div>`;
+}
+
 /* ---------- canlı izleme ---------- */
 function teamWatch() {
   if (TEAM.unsub) { TEAM.unsub(); TEAM.unsub = null; }
@@ -118,6 +143,10 @@ ICON.ekip = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 
 VIEWS.ekip = () => {
   if (!CLOUD.user) return `<div class="card">${empty('Giriş gerekli', 'Ekip özelliği Google hesabıyla çalışır.')}</div>`;
+  if (!TEAM.rulesChecked) setTimeout(teamRulesProbe, 0);
+  return rulesBox() + ekipBody();
+};
+function ekipBody() {
   if (teamCodeOf() && !TEAM.loaded) return `<div class="card">${empty('Ekip yükleniyor…', '')}</div>`;
   if (!TEAM.doc) return `
     <div class="grid g2 team-start">
@@ -152,14 +181,14 @@ VIEWS.ekip = () => {
     return `<div class="tm-card" style="--nc:${n.color};--cc:${c.color}">
       ${mc ? charArt(mc, 'tm-art') : '<div class="tm-art art"></div>'}
       <div class="tm-body">
-        <div class="tm-who">${m.photo ? `<img src="${esc(m.photo)}" alt="" referrerpolicy="no-referrer">` : ''}<span>${esc(m.name)}</span>${m.uid === d.owner ? '<span class="badge y">Lider</span>' : ''}${m.uid === me ? '<span class="badge b">Sen</span>' : ''}
+        <div class="tm-who">${mc ? charAvatar(mc, 24) : m.photo ? `<img src="${esc(m.photo)}" alt="" referrerpolicy="no-referrer">` : ''}<span>${esc(m.name)}</span>${m.uid === d.owner ? '<span class="badge y">Lider</span>' : ''}${m.uid === me ? '<span class="badge b">Sen</span>' : ''}
           ${isOwner && m.uid !== me ? `<button class="icon-btn danger tm-kick" data-act="team-kick" data-uid="${esc(m.uid)}" title="Ekipten çıkar">${ICON.del}</button>` : ''}</div>
         ${mc ? `<div class="slot-title" lang="en">${esc(jobTitle(mc))}</div>
         <div class="tm-name">${esc(mc.name)}</div>
         <div class="slot-sub"><b>Lv ${mc.level}</b> · ${esc(n.label)}${mc.server ? ' · ' + esc(mc.server) : ''}${mc.clan ? ' · ' + esc(mc.clan) : ''}</div>
         <div class="slot-exp"><i style="width:${Math.min(100, mc.exp || 0)}%"></i></div>
         <div class="slot-kv"><span>%${nf2.format(mc.exp || 0)} EXP</span><span>${esc(mc.race || '')}</span></div>` : '<div class="mut">Henüz karakter yok</div>'}
-        ${(m.chars || []).length > 1 ? `<div class="tm-alts">${m.chars.filter(x => !mc || x.id !== mc.id).map(x => `<span title="${esc(jobTitle(x))}">${charEmblem(x, 20)}${esc(x.name)} <b>${x.level}</b></span>`).join('')}</div>` : ''}
+        ${(m.chars || []).length > 1 ? `<div class="tm-alts">${m.chars.filter(x => !mc || x.id !== mc.id).map(x => `<span title="${esc(jobTitle(x))}">${charAvatar(x, 20)}${esc(x.name)} <b>${x.level}</b></span>`).join('')}</div>` : ''}
         <div class="tm-upd">${m.updated ? 'Güncellendi ' + agoDay(m.updated) : ''}</div>
       </div>
     </div>`;
@@ -186,7 +215,7 @@ VIEWS.ekip = () => {
   </div>
   <div class="tm-grid">${members.map(memberCard).join('')}${Array.from({ length: Math.max(0, TEAM_MAX - members.length) }, (_, i) => `<div class="tm-card empty"><div class="slot-plus">${ICON.plus}</div><b>Boş yer</b><span class="mut">Kodu paylaş: ${esc(TEAM.code)}</span></div>`).join('')}</div>
   <div class="hint" style="margin-top:12px">Ekip üyeleri yalnızca karakter bilgilerini görür; gelir, gider ve ticaret kayıtları paylaşılmaz. Bilgiler her girişte ve değişiklikte kendiliğinden güncellenir.</div>`;
-};
+}
 
 /* ---------- parti: ekipten doldur ---------- */
 function partyFromTeam() {
@@ -205,14 +234,14 @@ Object.assign(ACTIONS, {
     if (!name.trim()) return toast('Ekip adı girin', 'err');
     TEAM.busy = true; render();
     try { await teamCreate(name.trim()); toast('Ekip kuruldu. Kodu arkadaşlarına gönder.', 'ok'); }
-    catch (e) { toast('Ekip kurulamadı: ' + e.message, 'err'); }
+    catch (e) { if (isPermErr(e)) { TEAM.rulesMissing = true; toast('Ekip kurulamadı: Firebase kuralları yayınlanmamış', 'err'); } else toast('Ekip kurulamadı: ' + e.message, 'err'); }
     TEAM.busy = false; render();
   },
   'team-join': async () => {
     const code = ($('#teamJoin') || {}).value || '';
     TEAM.busy = true; render();
     try { await teamJoin(code); toast('Ekibe katıldın', 'ok'); }
-    catch (e) { toast(e.message, 'err'); }
+    catch (e) { if (isPermErr(e)) { TEAM.rulesMissing = true; toast('Katılınamadı: Firebase kuralları yayınlanmamış', 'err'); } else toast(e.message, 'err'); }
     TEAM.busy = false; render();
   },
   'team-copy': () => {
@@ -229,6 +258,14 @@ Object.assign(ACTIONS, {
   'team-rename': () => openForm({ title: 'Ekip adı', fields: [{ k: 'name', label: 'Ekip adı', type: 'text', full: true }], data: { name: TEAM.doc.name || '' },
     onSave: v => { if (!v.name.trim()) return false; teamRename(v.name.trim()).then(() => toast('Ekip adı güncellendi', 'ok')).catch(e => toast(e.message, 'err')); } }),
   'party-from-team': () => partyFromTeam(),
+  'rules-copy': async () => {
+    try {
+      const txt = await (await fetch('firestore.rules.txt', { cache: 'no-store' })).text();
+      await navigator.clipboard.writeText(txt);
+      toast('Kurallar kopyalandı (' + txt.split('\n').length + ' satır). Firebase\'e yapıştır.', 'ok');
+    } catch (e) { toast('Kopyalanamadı: ' + e.message, 'err'); }
+  },
+  'rules-recheck': () => { TEAM.rulesChecked = false; TEAM.rulesMissing = false; teamRulesProbe().then(() => toast(TEAM.rulesMissing ? 'Kurallar hâlâ eski görünüyor' : 'Kurallar yayınlanmış, ekip özelliği hazır', TEAM.rulesMissing ? 'err' : 'ok')); },
 });
 document.addEventListener('change', e => {
   if (e.target.dataset && e.target.dataset.teamMain != null) { DB.shared.teamMain = e.target.value; save(); teamSync(true); }

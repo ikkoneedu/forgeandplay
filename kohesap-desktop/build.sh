@@ -3,6 +3,8 @@
 # Arayüzün tek kaynağı ../public/kohesap-app klasörüdür; derlemeden önce buraya kopyalanır.
 set -euo pipefail
 cd "$(dirname "$0")"
+# Firebase kurallarının güncel kopyası (uygulamadaki "Kuralları kopyala" düğmesi için)
+cp ../firestore.rules ../public/kohesap-app/firestore.rules.txt
 rm -rf web && cp -r ../public/kohesap-app web
 VERSION=$(grep -oP 'appVersion = "\K[^"]+' main.go)
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -H windowsgui" -o KOHesap-raw.exe .

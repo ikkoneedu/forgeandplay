@@ -78,7 +78,10 @@ function jobTitle(ch) {
   return classLabel(ch.cls, ch.nation);
 }
 /** Resmi sınıf görseli (NTT oyun rehberi). */
-const classArt = (cls, nation) => `https://image.nttgame.com/knight/ver2018/assets/images/guide/character_${(NATIONS[nation] || NATIONS.karus).art}${(CLASSES[cls] || CLASSES.warrior).art}.png`;
+const classArtPath = (cls, nation) => `/knight/ver2018/assets/images/guide/character_${(NATIONS[nation] || NATIONS.karus).art}${(CLASSES[cls] || CLASSES.warrior).art}.png`;
+const classArt = (cls, nation) => 'https://image.nttgame.com' + classArtPath(cls, nation);
+/** Görsel bizim sunucumuz üzerinden gelir (NTT doğrudan bağlantıya izin vermeyebilir); olmazsa doğrudan denenir. */
+const classArtProxy = (cls, nation) => (typeof serverMode !== 'undefined' && serverMode ? '/api/img' : '/api/kohesap/img') + '?h=ntt&p=' + encodeURIComponent(classArtPath(cls, nation));
 const NEW_SERVER = { open: '2026-11-12T16:00:00+03:00', cap: 70, preReg2: '2026-10-29', charCreate: '2026-11-10' };
 const DEFAULT_SERVERS = ['Zero', 'Felis', 'Agartha', 'Pandora', 'Dryads', 'Destan', 'Minark', 'Oreads'];
 
