@@ -253,10 +253,20 @@ async function voiceSend(to, msg) {
   try { await FB.setDoc(inboxDoc(to, rnd() + rnd()), { ...msg, from: myUid(), fs: VOICE.sid, ts: p.sid, at: Date.now() }); }
   catch (e) { console.warn('ses mesajı gönderilemedi', e); }
 }
+VOICE.early = [];
 async function onInbox(d) {
   const m = d.data(); FB.deleteDoc(inboxDoc(myUid(), d.id)).catch(() => { });
   if (!m || m.ts !== VOICE.sid || !VOICE.on) return;          // eski oturuma ait
-  const pr = VOICE.presence[m.from]; if (!pr || pr.sid !== m.fs) return;
+  handleSignal(m);
+}
+/* Bağlantı mesajı, gönderenin oda kaydı bize ulaşmadan gelebilir (yeni katılan biri).
+   Böyle mesajlar atılmaz: 20 sn bekletilir, oda kaydı gelince işlenir → bağlantı beklemeden kurulur. */
+async function handleSignal(m) {
+  const pr = VOICE.presence[m.from];
+  if (!pr || pr.sid !== m.fs) {
+    if (Date.now() - (m.at || 0) < 20000 && VOICE.early.length < 50) VOICE.early.push({ m, until: Date.now() + 20000 });
+    return;
+  }
   const pe = peerFor(m.from, m.fs), pc = pe.pc;
   try {
     if (m.t === 'offer') {
@@ -281,6 +291,15 @@ function onPresence(snap) {
   const raw = {}; snap.forEach(d => { const v = d.data(); if (v) raw[d.id] = v; });
   VOICE.raw = raw; applyPresence();
 }
+function flushEarly() {
+  if (!VOICE.early.length) return;
+  const now = Date.now(), keep = [], ready = [];
+  VOICE.early.forEach(x => { if (x.until < now) return; const pr = VOICE.presence[x.m.from]; (pr && pr.sid === x.m.fs ? ready : keep).push(x); });
+  VOICE.early = keep;
+  // sırayla: önce teklif/cevap, sonra adaylar
+  ready.sort((a, b) => (a.m.t === 'ice') - (b.m.t === 'ice'));
+  (async () => { for (const x of ready) await handleSignal(x.m); })();
+}
 function applyPresence() {
   const now = Date.now(), seen = {};
   Object.entries(VOICE.raw).forEach(([u, v]) => { if (now - (v.hb || 0) < VOICE_STALE) seen[u] = v; });
@@ -299,6 +318,7 @@ function applyPresence() {
   });
   [...VOICE.peers.keys()].forEach(u => { if (!seen[u]) { closePeer(u); blip(false); } });
   if (VOICE.on && !seen[me]) beat();                            // kendi kaydımız silindiyse geri yaz
+  flushEarly();
   voicePaint();
 }
 
@@ -340,7 +360,7 @@ function voiceWatch() {
     if (!pe.offerer || pe.pc.signalingState === 'closed') return;
     const s = pe.pc.connectionState;
     if (s === 'connected') return;
-    const stuck = (s === 'new' || s === 'connecting' || s === 'failed') && now - (pe.offerAt || 0) > 7000;
+    const stuck = (s === 'new' || s === 'connecting' || s === 'failed') && now - (pe.offerAt || 0) > 6000;
     const lost = s === 'disconnected' && now - (pe.lostAt || now) > 6000 && now - (pe.offerAt || 0) > 6000;
     if (stuck || lost) makeOffer(u, true).catch(() => { });
   });
@@ -380,7 +400,7 @@ async function voiceJoin() {
 }
 async function voiceLeave(silent) {
   const was = VOICE.on;
-  VOICE.on = false;
+  VOICE.on = false; VOICE.early = [];
   VOICE.unsubs.splice(0).forEach(f => { try { f(); } catch { } });
   clearInterval(VOICE.hbTimer); clearInterval(VOICE.levelTimer); clearInterval(VOICE.watchTimer); clearInterval(VOICE.statsTimer); clearInterval(VOICE.reportTimer);
   // kapanmadan önce son ölçüm ve bildirim

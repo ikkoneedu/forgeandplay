@@ -180,7 +180,8 @@ service cloud.firestore {
           && request.resource.data.u == request.auth.uid
           && request.resource.data.t is string
           && request.resource.data.t.size() <= 600
-          && request.resource.data.keys().hasOnly(['u', 'n', 'c', 'cls', 'nat', 'race', 'rt', 't', 'at', 'ts', 'bot', 'kind']);
+          && request.resource.data.keys().hasOnly(['u', 'n', 'c', 'cls', 'nat', 'race', 'rt', 't', 'at', 'ts', 'bot', 'kind', 'r'])
+          && (!('r' in request.resource.data) || (request.resource.data.r is map && request.resource.data.r.size() <= 3));
         allow delete: if isMember() && (resource.data.u == request.auth.uid
           || get(/databases/$(database)/documents/kohesapTeams/$(code)).data.owner == request.auth.uid);
       }

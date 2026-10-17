@@ -23,7 +23,7 @@ function myTeamEntry() {
     updated: new Date().toISOString(),
   };
 }
-const entrySig = e => JSON.stringify({ ...e, updated: '' });
+const entrySig = e => JSON.stringify({ ...e, updated: '', cs: 0 });
 
 /* ---------- Firebase kuralları yayınlanmış mı? ---------- */
 const isPermErr = e => e && (e.code === 'permission-denied' || /insufficient permissions/i.test(e.message || ''));
@@ -68,6 +68,7 @@ function teamWatch() {
       teamSyncSoon();
     }
     if (ui.page === 'ekip') render();
+    if (ui.page === 'ses' && typeof chatPaint === 'function') chatPaint(); // okundu tikleri
     if (ui.page === 'ayar' && typeof repaintUsers === 'function') repaintUsers();
   }, err => { TEAM.loaded = true; TEAM.err = err.message; if (ui.page === 'ekip') render(); });
 }
