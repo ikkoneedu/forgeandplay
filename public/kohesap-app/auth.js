@@ -290,7 +290,7 @@ function saveCharForm() {
 
 Object.assign(ACTIONS, {
   'au-mode': el => { if (el.dataset.v === 'chars') auth.returnToApp = false; showAuth(el.dataset.v); },
-  'au-retry': () => { CLOUD.ready = false; startAuth(); },
+  'au-retry': () => location.reload(),
   'au-google': async () => {
     auth.busy = true; showAuth('login');
     try { await cloudSignIn(); auth.busy = false; }

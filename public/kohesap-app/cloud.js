@@ -82,7 +82,7 @@ const charMeta = ch => ({ name: ch.name, nation: ch.nation, cls: ch.cls, race: R
 async function cloudConfig() {
   // exe: program kendi içinden alır (tarayıcı CORS kısıtı yok, son ayar diskte saklı)
   const url = serverMode ? '/api/siteconfig' : '/api/kohesap/config';
-  const r = await fetch(url, { cache: 'no-store' });
+  const r = await fetchT(url, { cache: 'no-store' }, 12000).catch(e => { throw new Error(e.name === 'AbortError' ? 'Sunucu yanıt vermedi (bağlantını kontrol et)' : e.message); });
   if (!r.ok) throw new Error((await r.text().catch(() => '')) || ('Sunucu yapılandırması alınamadı (' + r.status + ')'));
   const c = await r.json();
   if (!c.firebase || !c.firebase.apiKey) throw new Error('Firebase yapılandırması eksik');
@@ -95,8 +95,9 @@ async function cloudInit() {
   const app = FB.getApps().length ? FB.getApp() : FB.initializeApp(CLOUD.cfg.firebase);
   CLOUD.auth = FB.getAuth(app);
   await FB.setPersistence(CLOUD.auth, FB.browserLocalPersistence);
+  let noCache = false; try { noCache = localStorage.getItem('koekip-nocache') === '1'; } catch { }
   try {
-    CLOUD.db = FB.initializeFirestore(app, { localCache: FB.persistentLocalCache({ tabManager: FB.persistentMultipleTabManager() }) });
+    CLOUD.db = noCache ? FB.initializeFirestore(app, {}) : FB.initializeFirestore(app, { localCache: FB.persistentLocalCache({ tabManager: FB.persistentMultipleTabManager() }) });
   } catch {
     CLOUD.db = FB.initializeFirestore(app, {});
   }
@@ -112,7 +113,11 @@ async function cloudSignIn() {
 async function cloudLoad(user) {
   const uid = user.uid;
   const mainRef = FB.doc(CLOUD.db, 'kohesap', uid);
-  const [mainSnap, charSnap] = await Promise.all([FB.getDoc(mainRef), FB.getDocs(FB.collection(CLOUD.db, 'kohesap', uid, 'chars'))]);
+  // telefonlarda tarayıcı veritabanı (IndexedDB) bazen takılır: 20 sn'de gelmezse bir dahaki açılışta önbelleksiz çalış
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('Kayıtlar zamanında yüklenemedi'), { slow: true })), 20000));
+  let mainSnap, charSnap;
+  try { [mainSnap, charSnap] = await Promise.race([Promise.all([FB.getDoc(mainRef), FB.getDocs(FB.collection(CLOUD.db, 'kohesap', uid, 'chars'))]), timeout]); }
+  catch (e) { if (e.slow) { try { localStorage.setItem('koekip-nocache', '1'); } catch { } } throw e; }
   const remoteChars = {};
   charSnap.forEach(d => { remoteChars[d.id] = d.data(); });
   const acc = { id: uid, user: user.email || user.displayName || 'Google', name: user.displayName || '', photo: user.photoURL || '', chars: [] };
@@ -140,9 +145,9 @@ async function cloudLoad(user) {
   DB = built;
   CUR.acc = DB.accounts[0];
   // son kaydedilen hali (değişiklik tespiti için)
-  CLOUD.last.shared = mainSnap.exists() ? JSON.stringify(sharedForCloud()) + '|' + JSON.stringify(CUR.acc.chars.map(c => c.id)) : '';
-  CLOUD.last.chars = {};
-  if (!CLOUD.imported) CUR.acc.chars.forEach(c => { CLOUD.last.chars[c.id] = JSON.stringify({ ...charMeta(c), data: c.data }); });
+  CLOUD.last.chars = {}; CLOUD.base = { main: null, chars: {} };
+  setBase(mainSnap.exists() ? { shared: sharedForCloud(), charIds: CUR.acc.chars.map(c => c.id) } : null);
+  if (!CLOUD.imported) CUR.acc.chars.forEach(c => setBase(undefined, { [c.id]: charBody(c) }));
   CLOUD.user = user;
   await loadGlobalConfig();
   await loadGlobalContent();
@@ -150,35 +155,138 @@ async function cloudLoad(user) {
   watchRemote(uid);
 }
 
-/* ---------- kaydetme ---------- */
+/* ---------- kaydetme ----------
+   Kayıt kaybı olmasın diye her kayıt SUNUCUDAKİ son hâlle birleştirilerek yazılır (işlem / transaction):
+   - "taban" = bu cihazın en son eşitlediği hâl, "yerel" = şimdiki hâl, "uzak" = sunucudaki hâl.
+   - Kimlikli listeler (gelir-gider, ticaret, parti, drop, PUS alımı, EXP oturumu …) kayıt kayıt birleşir:
+     iki cihaz aynı anda farklı kayıt eklese de ikisi de kalır; silinen silinmiş kalır.
+   - Aynı alan iki yerde farklı değiştiyse bu cihazdaki değer geçerli olur.
+   Bağlantı yoksa kayıt cihazda sıraya alınır ve internet gelince gönderilir. */
+const stable = v => JSON.stringify(v, (k, x) => x && typeof x === 'object' && !Array.isArray(x) ? Object.keys(x).sort().reduce((o, kk) => { o[kk] = x[kk]; return o; }, {}) : x);
+const same = (a, b) => stable(a) === stable(b);
+const hasIds = a => Array.isArray(a) && a.length > 0 && a.every(x => x && typeof x === 'object' && x.id != null);
+function merge3(b, l, r) {
+  if (same(l, r)) return l;
+  if (b !== undefined && same(l, b)) return r;
+  if (b !== undefined && same(r, b)) return l;
+  if (Array.isArray(l) && Array.isArray(r)) {
+    if ((hasIds(l) || !l.length) && (hasIds(r) || !r.length) && (l.length || r.length)) {
+      const B = new Map((Array.isArray(b) ? b : []).filter(x => x && x.id != null).map(x => [x.id, x]));
+      const L = new Map(l.map(x => [x.id, x])), R = new Map(r.map(x => [x.id, x]));
+      const out = [], seen = new Set();
+      const pick = id => {
+        const bx = B.get(id), lx = L.get(id), rx = R.get(id);
+        if (lx && rx) return merge3(bx, lx, rx);
+        if (lx) return bx && same(bx, lx) ? null : lx;   // uzakta silinmiş: burada değişmediyse silinsin
+        if (rx) return bx && same(bx, rx) ? null : rx;   // burada silinmiş: uzakta değişmediyse silinsin
+        return null;
+      };
+      // sıra: yerel sıra korunur, uzaktan gelen yeniler sona eklenir
+      for (const x of l) { if (seen.has(x.id)) continue; seen.add(x.id); const v = pick(x.id); if (v) out.push(v); }
+      for (const x of r) { if (seen.has(x.id)) continue; seen.add(x.id); const v = pick(x.id); if (v) out.push(v); }
+      return out;
+    }
+    if (l.every(x => typeof x !== 'object') && r.every(x => typeof x !== 'object')) {
+      // düz listeler (ör. karakter sırası): yerel + uzakta yeni eklenenler, burada silinenler hariç
+      const bb = Array.isArray(b) ? b : [];
+      return l.concat(r.filter(x => !l.includes(x) && !bb.includes(x)));
+    }
+    return l;
+  }
+  if (l && r && typeof l === 'object' && typeof r === 'object' && !Array.isArray(l) && !Array.isArray(r)) {
+    const bo = b && typeof b === 'object' && !Array.isArray(b) ? b : {};
+    const out = {};
+    new Set([...Object.keys(l), ...Object.keys(r)]).forEach(k => {
+      if (!(k in l)) { if (k in bo && same(r[k], bo[k])) return; out[k] = r[k]; return; }
+      if (!(k in r)) { if (k in bo && same(l[k], bo[k])) return; out[k] = l[k]; return; }
+      out[k] = merge3(bo[k], l[k], r[k]);
+    });
+    return out;
+  }
+  return l;
+}
+const charBody = ch => strip({ ...charMeta(ch), data: ch.data });
+CLOUD.base = { main: null, chars: {} };
+function setBase(main, chars) {
+  if (main !== undefined) { CLOUD.base.main = main ? strip(main) : null; CLOUD.last.shared = main ? stable(main) : ''; }
+  if (chars) Object.entries(chars).forEach(([id, b]) => { if (b) { CLOUD.base.chars[id] = strip(b); CLOUD.last.chars[id] = stable(b); } else { delete CLOUD.base.chars[id]; delete CLOUD.last.chars[id]; } });
+}
 async function cloudSave(force) {
   if (!CLOUD.user || !DB || !CUR.acc) return;
   const uid = CLOUD.user.uid;
-  const batch = FB.writeBatch(CLOUD.db);
-  let n = 0;
   const ids = CUR.acc.chars.map(c => c.id);
-  const shJSON = JSON.stringify(sharedForCloud()) + '|' + JSON.stringify(ids);
-  if (force || shJSON !== CLOUD.last.shared) {
-    batch.set(FB.doc(CLOUD.db, 'kohesap', uid), { shared: sharedForCloud(), charIds: ids, updatedAt: FB.serverTimestamp(), app: serverMode ? 'exe' : 'web' });
-    n++;
-  }
-  const nextChars = {};
+  const mainLocal = { shared: sharedForCloud(), charIds: ids };
+  const mainChanged = force || stable(mainLocal) !== CLOUD.last.shared;
+  const charsChanged = [];
   for (const ch of CUR.acc.chars) {
-    const body = { ...charMeta(ch), data: strip(ch.data) };
-    const j = JSON.stringify(body);
-    nextChars[ch.id] = j;
+    const body = charBody(ch), j = stable(body);
     if (j.length > 900000) { toast(`${ch.name}: kayıtlar çok büyüdü (${Math.round(j.length / 1024)} KB). Eski kayıtları dışa aktarıp temizleyin.`, 'err'); continue; }
-    if (force || j !== CLOUD.last.chars[ch.id]) { batch.set(FB.doc(CLOUD.db, 'kohesap', uid, 'chars', ch.id), { ...body, updatedAt: FB.serverTimestamp() }); n++; }
+    if (force || j !== CLOUD.last.chars[ch.id]) charsChanged.push({ ch, body });
   }
-  for (const id of Object.keys(CLOUD.last.chars)) if (!nextChars[id]) { batch.delete(FB.doc(CLOUD.db, 'kohesap', uid, 'chars', id)); n++; }
-  if (!n) return;
+  const removed = Object.keys(CLOUD.last.chars).filter(id => !ids.includes(id));
+  if (!mainChanged && !charsChanged.length && !removed.length) return;
   CLOUD.saving = true;
+  const mainRef = FB.doc(CLOUD.db, 'kohesap', uid), charRef = id => FB.doc(CLOUD.db, 'kohesap', uid, 'chars', id);
   try {
-    await batch.commit();
-    CLOUD.last.shared = shJSON;
-    CLOUD.last.chars = nextChars;
+    let result;
+    try {
+      result = await FB.runTransaction(CLOUD.db, async t => {
+        const mSnap = mainChanged ? await t.get(mainRef) : null;
+        const cSnaps = [];
+        for (const x of charsChanged) cSnaps.push(await t.get(charRef(x.ch.id)));
+        const res = { main: undefined, chars: {} };
+        if (mainChanged) {
+          const rm = mSnap && mSnap.exists() ? mSnap.data() : null;
+          const remote = rm ? strip({ shared: rm.shared || {}, charIds: rm.charIds || [] }) : null;
+          const merged = remote && CLOUD.base.main ? merge3(CLOUD.base.main, strip(mainLocal), remote) : strip(mainLocal);
+          // bu cihazda silinen karakter, uzaktan geri gelmesin
+          merged.charIds = (merged.charIds || []).filter(id => ids.includes(id) || !(CLOUD.base.main && (CLOUD.base.main.charIds || []).includes(id))).slice(0, MAX_CHARS);
+          t.set(mainRef, { ...merged, updatedAt: FB.serverTimestamp(), app: serverMode ? 'exe' : 'web' });
+          res.main = merged;
+        }
+        charsChanged.forEach((x, i) => {
+          const rs = cSnaps[i], rd = rs && rs.exists() ? rs.data() : null;
+          const remote = rd ? strip({ ...charMeta(rd), data: rd.data || {} }) : null;
+          const base = CLOUD.base.chars[x.ch.id];
+          const merged = remote && base ? merge3(base, x.body, remote) : x.body;
+          t.set(charRef(x.ch.id), { ...merged, updatedAt: FB.serverTimestamp() });
+          res.chars[x.ch.id] = merged;
+        });
+        removed.forEach(id => t.delete(charRef(id)));
+        return res;
+      });
+    } catch (e) {
+      if (isPermLike(e)) throw e;
+      // çevrimdışı / geçici hata: birleştirmeden sıraya al (internet gelince gider)
+      const batch = FB.writeBatch(CLOUD.db), res = { main: undefined, chars: {} };
+      if (mainChanged) { batch.set(mainRef, { ...strip(mainLocal), updatedAt: FB.serverTimestamp(), app: serverMode ? 'exe' : 'web' }); res.main = strip(mainLocal); }
+      charsChanged.forEach(x => { batch.set(charRef(x.ch.id), { ...x.body, updatedAt: FB.serverTimestamp() }); res.chars[x.ch.id] = x.body; });
+      removed.forEach(id => batch.delete(charRef(id)));
+      const commit = batch.commit();
+      // bağlantı yokken commit bitmez; yerel kuyruğa yazıldığı an yeterli
+      await Promise.race([commit, new Promise(r => setTimeout(r, 4000))]);
+      result = res;
+    }
+    // birleşen sonuç bu cihaza uygulanır (diğer cihazdan gelen kayıtlar görünsün)
+    let changedHere = false;
+    if (result.main) {
+      if (!same(result.main.shared, mainLocal.shared)) {
+        const gb = DB.shared.gbMarket;
+        DB.shared = migrateDB({ v: 2, shared: strip(result.main.shared), accounts: [] }).shared; DB.shared.gbMarket = gb; changedHere = true;
+      }
+      if (!same(result.main.charIds, ids)) { CUR.acc.chars = result.main.charIds.map(id => CUR.acc.chars.find(c => c.id === id)).filter(Boolean); changedHere = true; }
+      setBase(result.main);
+    }
+    Object.entries(result.chars).forEach(([id, merged]) => {
+      const c = CUR.acc.chars.find(x => x.id === id);
+      if (c && !same(merged, charBody(c))) { Object.assign(c, charMeta(merged)); c.data = Object.assign(newCharData(c.level), merged.data || {}); changedHere = true; }
+      setBase(undefined, { [id]: merged });
+    });
+    removed.forEach(id => setBase(undefined, { [id]: null }));
+    if (changedHere) { bindView(); const au = $('#auth'); if (CUR.ch && (!au || au.hidden)) render(); }
   } finally { CLOUD.saving = false; }
 }
+const isPermLike = e => e && (e.code === 'permission-denied' || e.code === 'unauthenticated' || /insufficient permissions/i.test(e.message || ''));
 
 /* ---------- başka cihazdan gelen değişiklikler ---------- */
 function watchRemote(uid) {
@@ -186,12 +294,12 @@ function watchRemote(uid) {
   CLOUD.unsub.push(FB.onSnapshot(FB.doc(CLOUD.db, 'kohesap', uid), snap => {
     if (!snap.exists() || snap.metadata.hasPendingWrites || saveTimer || CLOUD.saving) return;
     const m = snap.data();
-    const j = JSON.stringify(strip(m.shared)) + '|' + JSON.stringify(m.charIds || []);
-    if (j === CLOUD.last.shared) return;
+    const remote = strip({ shared: m.shared || {}, charIds: m.charIds || [] });
+    if (stable(remote) === CLOUD.last.shared) return;
     const gb = DB.shared.gbMarket;
     DB.shared = migrateDB({ v: 2, shared: m.shared, accounts: [] }).shared;
     DB.shared.gbMarket = gb;
-    CLOUD.last.shared = JSON.stringify(sharedForCloud()) + '|' + JSON.stringify(m.charIds || []);
+    setBase(remote);
     // karakter sırası / silinenler
     if (m.charIds) CUR.acc.chars = m.charIds.map(id => CUR.acc.chars.find(c => c.id === id)).filter(Boolean);
     remoteApplied();
@@ -202,18 +310,18 @@ function watchRemote(uid) {
     qs.docChanges().forEach(ch => {
       const id = ch.doc.id;
       if (ch.type === 'removed') {
-        if (CUR.acc.chars.some(c => c.id === id)) { CUR.acc.chars = CUR.acc.chars.filter(c => c.id !== id); delete CLOUD.last.chars[id]; changed = true; }
+        if (CUR.acc.chars.some(c => c.id === id)) { CUR.acc.chars = CUR.acc.chars.filter(c => c.id !== id); setBase(undefined, { [id]: null }); changed = true; }
         return;
       }
       const d = ch.doc.data();
-      const body = { ...charMeta(d), data: d.data };
-      const j = JSON.stringify(body);
+      const body = strip({ ...charMeta(d), data: d.data || {} });
+      const j = stable(body);
       if (j === CLOUD.last.chars[id]) return;
       let c = CUR.acc.chars.find(x => x.id === id);
       if (!c) { if (CUR.acc.chars.length >= MAX_CHARS) return; c = { id }; CUR.acc.chars.push(c); }
       Object.assign(c, charMeta(d));
       c.data = Object.assign(newCharData(c.level), d.data || {});
-      CLOUD.last.chars[id] = j;
+      setBase(undefined, { [id]: body });
       changed = true;
     });
     if (changed) remoteApplied();
@@ -252,8 +360,8 @@ function sideExtra() {
   const el = $('#sideExtra'); if (!el) return;
   const cur = ($('#ver').textContent || '').replace(/^v/, '');
   if (!serverMode) {
-    el.innerHTML = `<a class="side-dl" href="/downloads/KOHesap.exe" download>${ICON.dl}<span>Windows uygulamasını indir<small>aynı Google hesabıyla senkron</small></span></a>`;
+    el.innerHTML = `<a class="side-dl" href="/downloads/KOEkip.exe" download>${ICON.dl}<span>Windows uygulamasını indir<small>aynı Google hesabıyla senkron</small></span></a>`;
   } else if (CLOUD.cfg && CLOUD.cfg.exeVersion && versionNewer(CLOUD.cfg.exeVersion, cur)) {
-    el.innerHTML = `<a class="side-dl new" href="${SITE}${CLOUD.cfg.exeUrl || '/downloads/KOHesap.exe'}" target="_blank" rel="noopener">${ICON.dl}<span>Yeni sürüm: v${esc(CLOUD.cfg.exeVersion)}<small>indirip eskisinin yerine koy</small></span></a>`;
+    el.innerHTML = `<a class="side-dl new" href="${SITE}${CLOUD.cfg.exeUrl || '/downloads/KOEkip.exe'}" target="_blank" rel="noopener">${ICON.dl}<span>Yeni sürüm: v${esc(CLOUD.cfg.exeVersion)}<small>indirip eskisinin yerine koy</small></span></a>`;
   } else el.innerHTML = '';
 }

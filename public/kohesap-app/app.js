@@ -114,8 +114,20 @@ function setSaveState(cls, txt) { const el = $('#saveState'); el.className = 'sa
 function save() {
   setSaveState('busy', 'Kaydediliyor…');
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    saveTimer = null;
+  saveTimer = setTimeout(doSave, 500);
+}
+/* Uygulama arka plana atılınca / kapanırken bekleyen kayıt hemen gönderilir (telefonda kayıt kaybolmasın) */
+function flushSave() { if (saveTimer) { clearTimeout(saveTimer); doSave(); } }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSave(); });
+window.addEventListener('pagehide', flushSave);
+let saveChain = Promise.resolve();
+function doSave() {
+  saveTimer = null;
+  saveChain = saveChain.then(doSaveNow, doSaveNow);
+  return saveChain;
+}
+async function doSaveNow() {
+  {
     if (!DB) { setSaveState('', 'Kaydedildi'); return; }
     try {
       // exe: bu bilgisayarda da bir kopya (yedek / çevrimdışı) tutulur
@@ -125,18 +137,27 @@ function save() {
       }
       if (typeof CLOUD !== 'undefined' && CLOUD.user) { await cloudSave(); setSaveState('', 'Buluta kaydedildi'); }
       else setSaveState('', 'Kaydedildi');
-    } catch (e) { setSaveState('err', 'Kayıt hatası'); toast('Kaydedilemedi: ' + e.message, 'err'); }
-  }, 700);
+    } catch (e) {
+      setSaveState('err', 'Kayıt hatası');
+      toast('Kaydedilemedi: ' + e.message + ' · 10 sn sonra tekrar denenecek', 'err');
+      clearTimeout(saveTimer); saveTimer = setTimeout(doSave, 10000);
+    }
+  }
 }
+/* Windows uygulaması yalnızca kendi yerel adresinden çalışır; web'de yerel sunucu aranmaz
+   (telefon uygulaması arka plandan dönerken bu istek asılı kalıp açılışı kilitliyordu). */
+const IS_EXE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.port === '47811';
+const fetchT = (url, opt = {}, ms = 5000) => { const c = new AbortController(); const t = setTimeout(() => c.abort(), ms); return fetch(url, { ...opt, signal: c.signal }).finally(() => clearTimeout(t)); };
 async function load() {
+  if (!IS_EXE && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) { serverMode = false; DB = defaultDB(); return; }
   try {
-    const r = await fetch('/api/data');
+    const r = await fetchT('/api/data');
     if (!r.ok) throw 0;
     const d = await r.json();
     DB = migrateDB(d);
     LOCAL_DB = d ? migrateDB(d) : null;
     if (LOCAL_DB && d && d.cloudUid) LOCAL_DB.cloudUid = d.cloudUid;
-    const info = await (await fetch('/api/info')).json();
+    const info = await (await fetchT('/api/info')).json();
     $('#ver').textContent = 'v' + info.version;
     ui.dataDir = info.dataDir;
   } catch {
@@ -461,14 +482,36 @@ VIEWS.panel = () => {
 };
 
 /* ---------- GELİR / GİDER ---------- */
+/* Gelir / Gider listesine diğer sayfalardaki hareketler de otomatik düşer:
+   PUS alımları (gider), parti / drop payın (gelir), satılan itemlerin kârı / zararı. */
+function autoTx() {
+  const out = [];
+  S.pus.buys.forEach(b => {
+    const tl = pusTL(b), noah = noahOfTL(tl);
+    out.push({ id: 'pus-' + b.id, auto: 'pus', date: b.date, type: 'gider', cat: 'PUS', desc: `${b.item}${b.qty > 1 ? ' ×' + b.qty : ''} · ${fmtN((b.kc || 0) * (b.qty || 1))} KC`, amount: tl, unit: 'tl', noah: noah ?? null });
+  });
+  S.parties.forEach(p => {
+    const c = partyCalc(p), me = c.res.find(r => r.m.me);
+    if (!me || !me.income) return;
+    const items = p.drops.map(d => d.item + (d.qty > 1 ? ' ×' + d.qty : '')).slice(0, 4).join(', ');
+    out.push({ id: 'pt-' + p.id, auto: 'parti', date: p.date, type: me.income > 0 ? 'gelir' : 'gider', cat: 'Parti / Drop', desc: `${p.name}${items ? ' · ' + items + (p.drops.length > 4 ? '…' : '') : ''}`, amount: Math.abs(me.income), unit: 'noah' });
+  });
+  S.trades.filter(t => t.status === 'satildi' && t.sellDate).forEach(t => {
+    const pr = tradeCalc(t).profit; if (!pr) return;
+    out.push({ id: 'tr-' + t.id, auto: 'ticaret', date: t.sellDate, type: pr > 0 ? 'gelir' : 'gider', cat: 'Item ticareti', desc: `${t.item}${t.qty > 1 ? ' ×' + t.qty : ''} ${pr > 0 ? 'kârı' : 'zararı'}`, amount: Math.abs(pr), unit: 'noah' });
+  });
+  return out;
+}
+const rowNoah = t => t.auto === 'pus' ? (t.noah ?? 0) : txNoah(t);
+const AUTO_LBL = { pus: 'PUS', parti: 'Parti', ticaret: 'Ticaret' };
 VIEWS.kasa = () => {
-  let list = S.tx.filter(t => ui.allMonths || inMonth(t.date, ui.month));
+  let list = S.tx.concat(autoTx()).filter(t => ui.allMonths || inMonth(t.date, ui.month));
   if (ui.txType !== 'all') list = list.filter(t => t.type === ui.txType);
   if (ui.txQ) { const q = ui.txQ.toLocaleLowerCase('tr'); list = list.filter(t => (t.cat + ' ' + t.desc).toLocaleLowerCase('tr').includes(q)); }
   list.sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id));
-  const tIn = sum(list.filter(t => t.type === 'gelir'), txNoah), tOut = sum(list.filter(t => t.type === 'gider'), txNoah);
+  const tIn = sum(list.filter(t => t.type === 'gelir'), rowNoah), tOut = sum(list.filter(t => t.type === 'gider'), rowNoah);
   const cats = {};
-  list.forEach(t => { const k = t.type + '|' + t.cat; cats[k] = (cats[k] || 0) + txNoah(t); });
+  list.forEach(t => { const k = t.type + '|' + t.cat; cats[k] = (cats[k] || 0) + rowNoah(t); });
   const catArr = Object.entries(cats).sort((a, b) => b[1] - a[1]);
   const cMax = Math.max(1, ...catArr.map(c => c[1]));
   return `
@@ -481,6 +524,8 @@ VIEWS.kasa = () => {
     <button class="btn" data-act="tx-add" data-type="gider">${ICON.plus} Gider</button>
     <button class="btn pri" data-act="tx-add" data-type="gelir">${ICON.plus} Gelir</button>
   </div>
+  ${list.some(t => t.auto === 'pus' && !t.amount) ? `<div class="callout y" style="margin-bottom:12px">PUS alımların listede ama tutarı 0 görünüyor: <b>PUS Hesabı</b> sayfasında KC paket fiyatını (ör. 400 KC = 250 TL) bir kez gir, tüm PUS harcamaların gidere TL ve noah olarak yansısın. <button class="btn sm" data-act="go" data-id="pus">PUS sayfasına git</button></div>` : ''}
+  ${list.some(t => t.unit === 'tl' && !S.settings.gbTL && (t.auto !== 'pus' || t.amount)) ? `<div class="callout y" style="margin-bottom:12px">TL ile girilen harcamaların noah karşılığı için GB fiyatı gerekiyor. <button class="btn sm" data-act="go" data-id="gb">GB fiyatlarına git</button></div>` : ''}
   <div class="grid g3" style="margin-bottom:16px">
     ${stat('Gelir', moneyHTML(tIn), tlSub(tIn), 'var(--green)')}
     ${stat('Gider', moneyHTML(tOut), tlSub(tOut), 'var(--red)')}
@@ -494,10 +539,10 @@ VIEWS.kasa = () => {
         <td class="mut">${fmtDate(t.date)}</td>
         <td>${t.type === 'gelir' ? '<span class="badge g">Gelir</span>' : '<span class="badge r">Gider</span>'}</td>
         <td>${esc(t.cat)}</td><td>${esc(t.desc) || '<span class="mut">—</span>'}</td>
-        <td class="num">${t.unit === 'tl' && !S.settings.gbTL ? '<span class="mut">GB fiyatı yok</span>' : moneyHTML(t.type === 'gelir' ? txNoah(t) : -txNoah(t), { sign: true })}</td>
-        <td class="num mut">${fmtTL(txTL(t))}${t.unit === 'tl' ? ' <span class="badge y">TL</span>' : ''}</td>
-        <td>${actBtns('tx', t.id)}</td></tr>`).join('')}</tbody></table></div>`
-      : empty('Bu filtrede kayıt yok', 'Sağ üstten gelir veya gider ekleyin.')}
+        <td class="num">${t.auto === 'pus' && !t.amount ? '<span class="mut">KC fiyatı girilmemiş</span>' : t.unit === 'tl' && !S.settings.gbTL ? '<span class="mut">GB fiyatı yok</span>' : moneyHTML(t.type === 'gelir' ? rowNoah(t) : -rowNoah(t), { sign: true })}</td>
+        <td class="num mut">${fmtTL(t.auto === 'pus' ? t.amount : txTL(t))}${t.unit === 'tl' ? ' <span class="badge y">TL</span>' : ''}</td>
+        <td>${t.auto ? `<button class="btn sm ghost" data-act="go" data-id="${t.auto === 'parti' ? 'parti' : t.auto}" title="Bu kayıt ${AUTO_LBL[t.auto]} sayfasından gelir; orada düzenlenir"><span class="badge b">${AUTO_LBL[t.auto]}</span> aç ›</button>` : actBtns('tx', t.id)}</td></tr>`).join('')}</tbody></table></div>`
+      : empty('Bu filtrede kayıt yok', 'Sağ üstten gelir veya gider ekleyin. PUS alımları, parti payın ve item ticareti kârın da buraya kendiliğinden düşer.')}
     </div>
     <div class="card"><div class="card-h"><h3>Kategoriler</h3><span class="sub">${ui.allMonths ? 'Tüm zamanlar' : monthName(ui.month)}</span></div>
       ${catArr.length ? `<div class="stack" style="gap:11px">${catArr.map(([k, v]) => { const [tp, c] = k.split('|'); return `
@@ -1461,9 +1506,17 @@ function demoState() {
 
 /* ---------- başlat ---------- */
 (async function init() {
-  await load();
-  bindView();
+  try { await load(); bindView(); }
+  catch (e) { console.error('açılış', e); DB = DB || defaultDB(); try { bindView(); } catch { } }
   startAuth();
+  // güvenlik ağı: 15 sn içinde ne giriş ekranı ne uygulama çizilmediyse yenileme öner
+  setTimeout(() => {
+    const a = document.getElementById('auth');
+    const drawn = (a && !a.hidden && a.innerHTML) || (CUR.ch && document.getElementById('content').innerHTML);
+    if (!drawn) showAuth('offline', 'Açılış beklenenden uzun sürdü. Tekrar dene.');
+  }, 15000);
+  // "Bağlanılıyor…" ekranında 30 sn kalırsa (zayıf bağlantı / tarayıcı veritabanı takıldı) yenileme öner
+  setTimeout(() => { if (typeof auth !== 'undefined' && auth.mode === 'loading' && !document.getElementById('auth').hidden) { try { localStorage.setItem('koekip-nocache', '1'); } catch { } showAuth('offline', 'Bağlantı kurulamadı ya da çok yavaş. Tekrar dene.'); } }, 30000);
   if (serverMode) {
     const ping = () => fetch('/api/ping').catch(() => { });
     ping(); setInterval(ping, 15000);
