@@ -999,3 +999,7 @@ button.ar-item:hover b{color:var(--gold2);text-decoration:underline;text-underli
   .top{padding-top:max(18px,env(safe-area-inset-top))}
   .content{padding-bottom:max(40px,calc(env(safe-area-inset-bottom) + 24px))}
 }
+.tu{display:flex;flex-direction:column;gap:4px;margin:4px 0 6px}
+.tu-bar{height:6px;border-radius:4px;background:var(--panel2);overflow:hidden}
+.tu-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--gold))}
+.tu-bar.hot i{background:linear-gradient(90deg,var(--gold),var(--red))}

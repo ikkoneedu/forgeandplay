@@ -16,7 +16,7 @@ const pushRef = u => FB.doc(CLOUD.db, 'kohesapPush', u);
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-const apiBase = () => (typeof serverMode !== 'undefined' && serverMode ? SITE : '');
+const apiBase = () => (typeof serverMode !== 'undefined' && serverMode ? siteBase() : '');
 const vapidKey = () => (CLOUD.cfg && CLOUD.cfg.push && CLOUD.cfg.push.vapid) || '';
 const ntIconUrl = () => (typeof serverMode !== 'undefined' && serverMode ? '/' : '/kohesap-app/') + 'icons/icon-192.png';
 
@@ -226,7 +226,27 @@ VIEWS.bildirim = () => {
       <div>${CLOUD.cfg && CLOUD.cfg.push && CLOUD.cfg.push.admin ? '✅' : '⚠️'} Firebase hizmet hesabı ${CLOUD.cfg && CLOUD.cfg.push && CLOUD.cfg.push.admin ? 'tanımlı' : 'tanımlı değil — FIREBASE_SERVICE_ACCOUNT ekle'}</div>
       <div data-ntcron>⏳ Zamanlayıcı kontrol ediliyor…</div>
       <div>${CLOUD.cfg && CLOUD.cfg.turn ? '✅' : '⚠️'} Ses aktarma sunucusu (TURN) ${CLOUD.cfg && CLOUD.cfg.turn ? 'tanımlı' : 'tanımlı değil — CF_TURN_KEY_ID ve CF_TURN_API_TOKEN ekle'}</div>
+      <div class="tu-admin" data-tuadmin>⏳ Ses aktarma kullanımı yükleniyor…</div>
     </div></section>` : ''}`;
+};
+/* admin: bu ayki ses aktarma kullanımı ve aylık sınır (ücretli kısma geçmesin) */
+async function paintTurnUsage() {
+  const el = document.querySelector('[data-tuadmin]'); if (!el) return;
+  let d = {};
+  try { const s = await FB.getDoc(FB.doc(CLOUD.db, 'kohesapAssets', 'turnUsage')); d = s.exists() ? s.data() : {}; } catch { }
+  const p = new Date(Date.now() + 3 * 3600e3), month = p.getUTCFullYear() + '-' + String(p.getUTCMonth() + 1).padStart(2, '0');
+  const gb = d.month === month ? (+d.bytes || 0) / 1e9 : 0, lim = +d.limitGB || 800, pct = Math.min(100, gb / lim * 100);
+  const el2 = document.querySelector('[data-tuadmin]'); if (!el2) return;
+  el2.innerHTML = `<div>${gb >= lim ? '⛔' : '🎧'} Ses aktarma bu ay: <b>${gb.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} GB</b> / ${lim} GB${gb >= lim ? ' — sınıra ulaşıldı, aktarma ay başına kadar kapalı' : ''}</div>
+    <div class="tu-bar ${pct >= 90 ? 'hot' : ''}" style="margin:6px 0"><i style="width:${pct.toFixed(1)}%"></i></div>
+    <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><label class="hint" for="tuLimit">Aylık sınır (GB)</label><input class="inp num" id="tuLimit" type="number" min="1" max="1000" step="10" value="${lim}" style="width:110px"><button class="btn sm" data-act="tu-save">Kaydet</button>
+    <span class="hint">Cloudflare'de ilk 1000 GB ücretsiz. Sınır en fazla 1000 olabilir; 800 önerilir (ölçüm payı). 8 kişi hepsi aktarmadayken saatte ~4–5 GB harcanır.</span></div>`;
+}
+ACTIONS['tu-save'] = async () => {
+  const v = Math.round(+(document.getElementById('tuLimit') || {}).value || 0);
+  if (!(v >= 1 && v <= 1000)) return toast('Sınır 1 ile 1000 GB arasında olmalı', 'err');
+  try { await FB.setDoc(FB.doc(CLOUD.db, 'kohesapAssets', 'turnUsage'), { limitGB: v }, { merge: true }); toast('Aylık ses aktarma sınırı: ' + v + ' GB', 'ok'); paintTurnUsage(); }
+  catch (e) { toast(e.message, 'err'); }
 };
 async function paintCron() {
   const el = document.querySelector('[data-ntcron]'); if (!el) return;
@@ -246,7 +266,7 @@ document.addEventListener('change', e => {
   if (d.ntlead != null) { const v = +e.target.value || 10; if (typeof BOSS !== 'undefined') { BOSS.lead = v; bossSave(); } pushPref('lead', v); }
 });
 const _renderN = render;
-render = function () { _renderN(); if (ui.page === 'bildirim') paintCron(); };
+render = function () { _renderN(); if (ui.page === 'bildirim') { paintCron(); paintTurnUsage(); } };
 const _logoutN = logout;
 logout = async function () { if (NOTIF.unsub) { NOTIF.unsub(); NOTIF.unsub = null; } NOTIF.uid = ''; NOTIF.doc = null; return _logoutN(); };
 

@@ -8,6 +8,8 @@
    ========================================================================== */
 
 const SITE = 'https://forgeandplay.com';
+/** API çağrıları için asıl alan adı (site yapılandırmasından; www yönlendirmesi CORS'u bozmasın) */
+const siteBase = () => (CLOUD.cfg && /^https:\/\/(www\.)?forgeandplay\.com$/.test(CLOUD.cfg.site || '') ? CLOUD.cfg.site : SITE);
 const CLOUD = { ready: false, user: null, db: null, auth: null, cfg: null, last: { shared: '', chars: {} }, unsub: [], saving: false, imported: 0 };
 let LOCAL_DB = null; // exe: bu bilgisayardaki eski (yerel hesaplı) veri
 

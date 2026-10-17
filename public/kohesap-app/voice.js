@@ -44,17 +44,51 @@ const rnd = () => Math.random().toString(36).slice(2, 10);
 /* Aktarma (TURN) sunucusu: mobil operatörler (CGNAT) ve bazı modemler doğrudan bağlantıya
    izin vermez; telefon–telefon / telefon–PC bağlantısı ancak bununla kurulur.
    Bilgiler sitenin sunucusundan (yalnızca davetli üyelere) alınır, 6 saatte bir yenilenir. */
-VOICE.ice = null; VOICE.iceAt = 0; VOICE.iceSrc = '';
+VOICE.ice = null; VOICE.iceAt = 0; VOICE.iceSrc = ''; VOICE.usage = null; VOICE.limitHit = false; VOICE.relayPend = 0; VOICE.usageAt = 0;
+/* AYLIK SINIR: aktarma üzerinden geçen veri (gönderilen + alınan) sunucuya bildirilir;
+   ücretsiz kota bitmeden (admin sınırı, varsayılan 800 GB) aktarma kapanır. */
+async function turnCall(used, keepalive) {
+  const tok = CLOUD.user ? await CLOUD.user.getIdToken() : '';
+  const r = await fetch((serverMode ? siteBase() : '') + '/api/kohesap/turn', { method: 'POST', keepalive: !!keepalive, headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify(used ? { used: Math.round(used) } : {}), cache: 'no-store' });
+  if (!r.ok) throw new Error('turn ' + r.status);
+  const j = await r.json();
+  if (j.usage) VOICE.usage = j.usage;
+  VOICE.usageAt = Date.now();
+  if (j.src === 'limit') turnLimitHit(); else VOICE.limitHit = false;
+  return j;
+}
 async function loadIce(force) {
   if (!force && VOICE.ice && Date.now() - VOICE.iceAt < 6 * 3600e3) return VOICE.ice;
   try {
-    const tok = CLOUD.user ? await CLOUD.user.getIdToken() : '';
-    const r = await fetch((serverMode ? SITE : '') + '/api/kohesap/turn', { method: 'POST', headers: { Authorization: 'Bearer ' + tok }, cache: 'no-store' });
-    if (!r.ok) throw new Error('turn ' + r.status);
-    const j = await r.json();
-    VOICE.ice = Array.isArray(j.iceServers) ? j.iceServers : []; VOICE.iceSrc = j.src || ''; VOICE.iceAt = Date.now();
+    const j = await turnCall(0);
+    if (j.src !== 'limit') { VOICE.ice = Array.isArray(j.iceServers) ? j.iceServers : []; VOICE.iceSrc = j.src || ''; }
+    VOICE.iceAt = Date.now();
   } catch (e) { console.warn('aktarma sunucusu alınamadı', e); if (!VOICE.ice) { VOICE.ice = []; VOICE.iceAt = Date.now() - 5.5 * 3600e3; } }
   return VOICE.ice;
+}
+/* kota doldu: aktarma bilgisini at, aktarma üzerinden giden bağlantıları kapat */
+function turnLimitHit() {
+  const first = !VOICE.limitHit;
+  VOICE.limitHit = true; VOICE.ice = []; VOICE.iceSrc = 'limit';
+  VOICE.peers.forEach(pe => {
+    try { pe.pc.setConfiguration({ ...pe.pc.getConfiguration(), iceServers: iceServers() }); } catch { }
+    if (pe.relay) { try { pe.pc.close(); } catch { } pe.state = 'kurulamadı · aylık ses kotası doldu'; pe.fails = (pe.fails || 0) + 1; }
+  });
+  if (first && VOICE.on) { toast('Bu ayın ücretsiz ses aktarma kotası doldu; aktarma gerektiren bağlantılar ay başına kadar kapalı', 'err'); voicePaint(); }
+}
+/* dakikada bir biriken aktarma verisini bildir (yoksa 10 dk'da bir yalnızca durumu sor) */
+async function turnReport(final) {
+  const n = VOICE.relayPend;
+  if (!final && !n && Date.now() - VOICE.usageAt < 10 * 60e3) return;
+  if (final && !n) return;
+  VOICE.relayPend = 0;
+  try { await turnCall(n, final); } catch { VOICE.relayPend += n; }
+}
+const fmtGB = gb => (gb < 10 ? (Math.round(gb * 100) / 100).toLocaleString('tr-TR') : Math.round(gb).toLocaleString('tr-TR')) + ' GB';
+function usageLine() {
+  const u = VOICE.usage; if (!u) return '';
+  const pct = Math.min(100, u.gb / u.limitGB * 100);
+  return `<div class="tu"><div class="tu-bar ${pct >= 90 ? 'hot' : ''}"><i style="width:${pct.toFixed(1)}%"></i></div><span class="hint">Bu ay aktarma kullanımı: <b>${fmtGB(u.gb)}</b> / ${u.limitGB} GB (ücretsiz kota 1000 GB; sınırda aktarma kendiliğinden kapanır)</span></div>`;
 }
 const hasRelay = () => iceServers().some(x => [].concat(x.urls || []).some(u => /^turns?:/.test(u)));
 function iceServers() {
@@ -172,12 +206,19 @@ async function tuneSender(pe) {
 async function peerStats(pe) {
   try {
     const st = await pe.pc.getStats();
-    let rtt = null, recv = 0, lost = 0, relay = false, jit = null, pairLocal = null;
+    let rtt = null, recv = 0, lost = 0, relay = false, jit = null, pairLocal = null, pairId = '', pairBytes = 0;
     st.forEach(r => {
-      if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') { if (r.currentRoundTripTime != null) rtt = r.currentRoundTripTime * 1000; pairLocal = r.localCandidateId; }
+      if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') { if (r.currentRoundTripTime != null) rtt = r.currentRoundTripTime * 1000; pairLocal = r.localCandidateId; pairId = r.id; pairBytes = (r.bytesSent || 0) + (r.bytesReceived || 0); }
       if (r.type === 'inbound-rtp' && r.kind === 'audio') { recv = r.packetsReceived || 0; lost = r.packetsLost || 0; if (r.jitter != null) jit = r.jitter * 1000; }
     });
     if (pairLocal) { const lc = st.get(pairLocal); relay = !!(lc && lc.candidateType === 'relay'); }
+    // aktarma üzerinden geçen veri (IP/UDP başlıkları için %10 pay)
+    if (pairId) {
+      pe.pairBytes = pe.pairBytes || {};
+      const prev = pe.pairBytes[pairId] || 0;
+      if (relay && pairBytes > prev) VOICE.relayPend += (pairBytes - prev) * 1.1;
+      pe.pairBytes[pairId] = pairBytes;
+    }
     const dR = recv - (pe.lastRecv || 0), dL = lost - (pe.lastLost || 0);
     pe.lastRecv = recv; pe.lastLost = lost;
     pe.loss = dR + dL > 0 ? Math.max(0, dL) / (dR + dL) * 100 : 0;
@@ -296,7 +337,7 @@ function voiceWatch() {
   const now = Date.now();
   if (now - VOICE.iceAt > 6 * 3600e3) loadIce(true).then(() => VOICE.peers.forEach(pe => { try { pe.pc.setConfiguration({ ...pe.pc.getConfiguration(), iceServers: iceServers() }); } catch { } }));
   VOICE.peers.forEach((pe, u) => {
-    if (!pe.offerer) return;
+    if (!pe.offerer || pe.pc.signalingState === 'closed') return;
     const s = pe.pc.connectionState;
     if (s === 'connected') return;
     const stuck = (s === 'new' || s === 'connecting' || s === 'failed') && now - (pe.offerAt || 0) > 7000;
@@ -325,6 +366,7 @@ async function voiceJoin() {
     VOICE.levelTimer = setInterval(voiceTick, 60);
     VOICE.watchTimer = setInterval(voiceWatch, 3000);
     VOICE.statsTimer = setInterval(voiceStatsTick, 2000);
+    VOICE.reportTimer = setInterval(() => turnReport(), 60e3);
     pttStart();
     listDevices();
     blip(true);
@@ -340,7 +382,9 @@ async function voiceLeave(silent) {
   const was = VOICE.on;
   VOICE.on = false;
   VOICE.unsubs.splice(0).forEach(f => { try { f(); } catch { } });
-  clearInterval(VOICE.hbTimer); clearInterval(VOICE.levelTimer); clearInterval(VOICE.watchTimer); clearInterval(VOICE.statsTimer);
+  clearInterval(VOICE.hbTimer); clearInterval(VOICE.levelTimer); clearInterval(VOICE.watchTimer); clearInterval(VOICE.statsTimer); clearInterval(VOICE.reportTimer);
+  // kapanmadan önce son ölçüm ve bildirim
+  if (was) { try { await Promise.all([...VOICE.peers.values()].map(peerStats)); } catch { } turnReport(true); }
   pttStop();
   [...VOICE.peers.keys()].forEach(closePeer);
   if (VOICE.stream) VOICE.stream.getTracks().forEach(t => t.stop());
@@ -351,7 +395,7 @@ async function voiceLeave(silent) {
   if (was && !silent) { blip(false); toast('Sesli sohbetten ayrıldın'); }
   voicePaint();
 }
-window.addEventListener('pagehide', () => { if (VOICE.on && VOICE.code && myUid()) FB.deleteDoc(voiceDoc(myUid())).catch(() => { }); });
+window.addEventListener('pagehide', () => { if (VOICE.on && VOICE.code && myUid()) { FB.deleteDoc(voiceDoc(myUid())).catch(() => { }); turnReport(true); } });
 
 /* ---------- kontroller ---------- */
 function voiceMute(v) { VOICE.muted = v ?? !VOICE.muted; setSending(VOICE.gateOpen); beat(); voicePaint(); }
@@ -477,7 +521,7 @@ function voiceSettings() {
       <label class="f">Mikrofon<select class="inp" data-vmic><option value="">Varsayılan</option>${VOICE.devices.in.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.mic ? 'selected' : ''}>${esc(d.label || 'Mikrofon')}</option>`).join('')}</select></label>
       ${VOICE.devices.out.length && 'setSinkId' in HTMLMediaElement.prototype ? `<label class="f">Hoparlör / kulaklık<select class="inp" data-vspk><option value="">Varsayılan</option>${VOICE.devices.out.map(d => `<option value="${esc(d.deviceId)}" ${d.deviceId === p.spk ? 'selected' : ''}>${esc(d.label || 'Çıkış')}</option>`).join('')}</select></label>` : '<span></span>'}
       <label class="f">Ses kalitesi<select class="inp" data-vq>${Object.entries(VQUAL).map(([k, v]) => `<option value="${k}" ${k === (p.q || 'hi') ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select><span class="hint">Herkes için 8 kişide bile rahat; internet zayıfsa Standart seç.</span></label>
-      <div class="f"><span class="vc-lbl">Bağlantı</span><span class="hint">${hasRelay() ? '✅ Aktarma sunucusu hazır: telefon ve kısıtlı ağlarda da bağlanır.' : '⚠️ Aktarma (TURN) sunucusu tanımlı değil: telefonlar ve bazı ev ağları birbirine bağlanamayabilir.' + (typeof isAdmin === 'function' && isAdmin() ? ' Admin: Vercel\'de CF_TURN_KEY_ID ve CF_TURN_API_TOKEN değişkenlerini ekle.' : ' Admin\'e haber ver.')}</span></div>
+      <div class="f"><span class="vc-lbl">Bağlantı</span>${usageLine()}<span class="hint">${VOICE.limitHit ? '⛔ Bu ayın ses aktarma kotası doldu: telefon / kısıtlı ağ bağlantıları ay başına kadar kapalı.' : hasRelay() ? '✅ Aktarma sunucusu hazır: telefon ve kısıtlı ağlarda da bağlanır.' : '⚠️ Aktarma (TURN) sunucusu tanımlı değil: telefonlar ve bazı ev ağları birbirine bağlanamayabilir.' + (typeof isAdmin === 'function' && isAdmin() ? ' Admin: Vercel\'de CF_TURN_KEY_ID ve CF_TURN_API_TOKEN değişkenlerini ekle.' : ' Admin\'e haber ver.')}</span></div>
       <div class="f vc-checks"><label class="check"><input type="checkbox" data-vns ${p.ns !== false ? 'checked' : ''}> Gürültü engelleme</label><label class="check"><input type="checkbox" data-vagc ${p.agc !== false ? 'checked' : ''}> Otomatik ses seviyesi</label><label class="check"><input type="checkbox" data-vsnd ${p.sounds ? 'checked' : ''}> Giriş / çıkış sesleri</label></div>
     </div>
   </div>`;
@@ -493,7 +537,8 @@ function voiceMain() {
       ${VOICE.on ? '' : `<button class="btn pri vs-join" data-act="v-join" ${VOICE.joining ? 'disabled' : ''}>${VOICE.joining ? 'Bağlanıyor…' : `${MIC_ON} Sese katıl`}</button>`}
     </div>
     ${VOICE.err ? `<div class="callout r" style="margin-top:12px">${esc(VOICE.err)}</div>` : ''}
-    ${VOICE.on && !hasRelay() && [...VOICE.peers.values()].some(pe => pe.fails) ? `<div class="callout y" style="margin-top:12px">Bazı üyelere bağlanılamadı. Telefon (mobil veri) ve bazı modemler doğrudan bağlantıya izin vermez; bunun için aktarma sunucusu gerekir.${isAdmin() ? ' Admin: Vercel\'e CF_TURN_KEY_ID ve CF_TURN_API_TOKEN ekle (kurulum notunda adımlar var).' : ' Admin\'e haber ver.'}</div>` : ''}
+    ${VOICE.on && VOICE.limitHit ? `<div class="callout y" style="margin-top:12px"><b>Bu ayın ücretsiz ses aktarma kotası doldu</b> (${VOICE.usage ? fmtGB(VOICE.usage.gb) + ' / ' + VOICE.usage.limitGB + ' GB' : ''}). Ücretli kısma geçmemek için aktarma kapatıldı. Aynı ağdaki ve doğrudan bağlanabilen üyeler konuşmaya devam eder; telefonlar ay başında tekrar bağlanır.${isAdmin() ? ' Admin: sınırı Bildirimler → Sunucu durumu kartından değiştirebilirsin.' : ''}</div>` : ''}
+    ${VOICE.on && !VOICE.limitHit && !hasRelay() && [...VOICE.peers.values()].some(pe => pe.fails) ? `<div class="callout y" style="margin-top:12px">Bazı üyelere bağlanılamadı. Telefon (mobil veri) ve bazı modemler doğrudan bağlantıya izin vermez; bunun için aktarma sunucusu gerekir.${isAdmin() ? ' Admin: Vercel\'e CF_TURN_KEY_ID ve CF_TURN_API_TOKEN ekle (kurulum notunda adımlar var).' : ' Admin\'e haber ver.'}</div>` : ''}
     <div class="vt-grid">${roster.map(voiceTile).join('')}</div>
     ${VOICE.on ? `<div class="vs-bar">
       <button class="vbtn lg ${VOICE.muted ? 'off' : ''}" data-act="v-mute" title="${VOICE.muted ? 'Mikrofonu aç' : 'Mikrofonu kapat'}">${VOICE.muted ? MIC_OFF : MIC_ON}</button>
