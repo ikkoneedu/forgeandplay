@@ -340,3 +340,5 @@ nav#nav{mask-image:linear-gradient(180deg,#000 calc(100% - 18px),transparent);-w
 .spec-tips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 @media (max-width:700px){.spec-tips{grid-template-columns:1fr}}
 .spec-vars{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}.spec-vars .mut{font-size:12.5px;margin-right:4px}
+.ico.spr b{position:absolute;inset:0;background-repeat:no-repeat;image-rendering:auto}
+.anv-ic.spr b{inset:6px;border-radius:6px}

@@ -157,7 +157,9 @@ function tipStats(html) {
   });
   return out;
 }
-function specKey() { const c = anv().cfg; return [c.item.trim().toLowerCase(), c.grade, ORS.lv].join('|'); }
+function specKey() {
+  const c0 = anv().cfg, bk = c0.item.trim().toLowerCase() + '|' + c0.grade;
+  if (SPEC.baseKey !== bk) { SPEC.baseKey = bk; SPEC.pickVb = null; SPEC.pazarTried = ''; } const c = anv().cfg; return [c.item.trim().toLowerCase(), c.grade, ORS.lv].join('|'); }
 function specSchedule() {
   const k = specKey(); if (k === SPEC.key) return;
   SPEC.key = k; SPEC.cur = SPEC.next = null; SPEC.err = ''; clearTimeout(SPEC.timer);
@@ -174,38 +176,37 @@ function varLabel(html) {
   return parts.length ? parts.join(' · ') : 'Düz';
 }
 async function specLoad() {
-  const c = anv().cfg, key = SPEC.key, base = acBase(c.item.trim()), lv = ORS.lv, rev = c.grade === 'r';
+  const c = anv().cfg, key = SPEC.key, base = acBase(anvCanon(c.item.trim())), lv = ORS.lv, rev = c.grade === 'r';
   SPEC.busy = true; specPaint();
   try {
-    if (!SPEC.rows || SPEC.rows.base !== base) {
-      const rows = await listApi({ query: base });
-      const want = trLow(base), by = new Map();
-      for (const r of rows) {
-        if (!r.id || trLow(acBase(r.name)) !== want) continue;
-        const id = +r.id, rv = isRevType(r.itype), vb = id - idxOf(id, rv);
-        const k = rv + '|' + vb;
-        if (!by.has(k)) by.set(k, { vb, rev: rv, icon: r.icon, n: 0, ids: new Set() });
-        const v = by.get(k); v.n++; v.ids.add(id);
-      }
-      SPEC.rows = { base, list: [...by.values()].sort((a, b) => b.n - a.n) };
+    // 1) kendi veritabanımız: bu itemin varyantları
+    const all = await idVariantsFor(base, rev);
+    if (key !== SPEC.key) return;
+    if (!all.length) { SPEC.vars = []; SPEC.err = `Veritabanında ${rev ? 'Reverse ' : ''}${base} bulunamadı.`; return; }
+    const vars = await idVariantOptions(all, lv);
+    if (key !== SPEC.key) return;
+    if (!vars.length) { SPEC.vars = []; SPEC.err = `+${lv} için bilgi yok.`; return; }
+    SPEC.vars = vars;
+    // 2) seçili varyant: kullanıcı seçimi > canlı pazardaki ilan (varsa) > en sade olan
+    let pick = vars.find(v => v.alt.includes(SPEC.pickVb));
+    if (!pick && !SPEC.pazarTried) {
+      SPEC.pazarTried = base + rev;
+      try {
+        const rows = await listApi({ query: base });
+        const ids = rows.filter(r => r.id && trLow(acBase(r.name)) === trLow(base)).map(r => +r.id);
+        for (const id of ids) { const v = vars.find(v => v.alt.some(vb => id > vb && id <= vb + v.size)); if (v) { pick = v; break; } }
+      } catch { /* pazar yoksa sorun değil */ }
+      if (key !== SPEC.key) return;
     }
-    if (key !== SPEC.key) return;
-    const vars = SPEC.rows.list.filter(x => x.rev === rev).slice(0, 6);
-    if (!vars.length) { SPEC.vars = []; SPEC.err = `Canlı pazarda ${rev ? 'Reverse ' : ''}${base} ilanı yok; oyun içi bilgi gösterilemiyor.`; return; }
-    if (lv > varSize(rev)) { SPEC.err = 'Bu seviye için bilgi yok.'; return; }
-    // her varyantın bu seviyedeki tooltip'i: varyant adı (Zehir 81, Düz…) için
-    const tips = await Promise.all(vars.map(v => tipOf(v.vb + lv)));
-    if (key !== SPEC.key) return;
-    SPEC.vars = vars.map((v, i) => ({ ...v, tip: tips[i], label: tips[i] ? varLabel(tips[i].html) : '?' })).filter(v => v.tip);
-    if (!SPEC.vars.length) { SPEC.err = 'Oyun içi bilgi alınamadı.'; return; }
-    const pick = SPEC.vars.find(v => v.vb === SPEC.pickVb) || SPEC.vars[0];
+    pick = pick || vars[0];
     SPEC.pickVb = pick.vb;
-    SPEC.cur = { id: pick.vb + lv, html: pick.tip.html, name: pick.tip.name || '', icon: pick.icon };
-    const b = lv < varSize(rev) ? await tipOf(pick.vb + lv + 1) : null;
+    if (lv > pick.maxLv) { SPEC.err = `Bu varyant en fazla +${pick.maxLv}.`; SPEC.cur = null; return; }
+    const [a, b] = await Promise.all([idRow(pick.vb + lv), lv < pick.maxLv ? idRow(pick.vb + lv + 1) : null]);
     if (key !== SPEC.key) return;
-    SPEC.next = b && varLabel(b.html).split(' ')[0] === pick.label.split(' ')[0] ? { id: pick.vb + lv + 1, html: b.html, name: b.name || '', icon: pick.icon } : null;
-    if (pick.icon) SPEC.icon = pick.icon;
-  } catch (e) { SPEC.err = 'Canlı pazar okunamadı: ' + e.message; }
+    if (!a) { SPEC.err = 'Bu seviyenin bilgisi veritabanında yok.'; return; }
+    SPEC.cur = { o: a, lv, name: pick.name };
+    SPEC.next = b ? { o: b, lv: lv + 1, name: pick.name } : null;
+  } catch (e) { SPEC.err = 'Item verisi okunamadı: ' + e.message; }
   finally { SPEC.busy = false; specPaint(); }
 }
 function specPaint() { if (ui.page === 'basma' && (anv().cfg.tab || 'ors') === 'ors') render(); }
@@ -213,18 +214,18 @@ function specView() {
   const c = anv().cfg;
   if (!c.item.trim()) return '';
   specSchedule();
-  const head = `<div class="card-h"><h3>Basınca ne değişir?</h3><span class="sub">oyun içi bilgi · canlı pazardan</span></div>`;
+  const head = `<div class="card-h"><h3>Basınca ne değişir?</h3><span class="sub">oyunun item tablosundan</span></div>`;
+  const vsel = (SPEC.vars || []).length > 1 ? `<div class="spec-vars"><span class="mut">Senin itemin hangisi?</span><select class="inp" data-specvar="1">${SPEC.vars.map(v => `<option value="${v.vb}" ${v.alt.includes(SPEC.pickVb) ? 'selected' : ''}>${esc(v.text)}</option>`).join('')}</select></div>` : '';
   if (SPEC.busy && !SPEC.cur) return `<div class="card">${head}<div class="skeleton" style="height:160px"></div></div>`;
-  if (!SPEC.cur) return `<div class="card">${head}<div class="mut">${esc(SPEC.err || 'Yükleniyor…')}</div></div>`;
-  const s1 = tipStats(SPEC.cur.html), s2 = SPEC.next ? tipStats(SPEC.next.html) : {};
-  const diffs = SPEC.next ? Object.keys(s2).filter(k => s1[k] != null && s2[k] !== s1[k]).map(k => ({ k, a: s1[k], b: s2[k], d: s2[k] - s1[k] })) : [];
+  if (!SPEC.cur) return `<div class="card">${head}${vsel}<div class="mut">${esc(SPEC.err || 'Yükleniyor…')}</div></div>`;
+  const icon = itemIconPath(c.item);
+  const diffs = SPEC.next ? idDiff(SPEC.cur.o, SPEC.next.o) : [];
   const fmtv = v => Number.isInteger(v) ? fmtN(v) : nf2.format(v);
-  const chips = (SPEC.vars || []).length > 1 ? `<div class="spec-vars"><span class="mut">Senin itemin hangisi?</span>${SPEC.vars.map(v => `<button class="chip ${v.vb === SPEC.pickVb ? 'on' : ''}" data-act="spec-var" data-v="${v.vb}">${esc(v.label)}</button>`).join('')}</div>` : '';
-  return `<div class="card">${head}${chips}
-    ${diffs.length ? `<div class="spec-diff">${diffs.map(x => `<div><span>${esc(x.k)}</span><b>${fmtv(x.a)} → ${fmtv(x.b)}</b><i class="${x.d > 0 ? 'pos' : 'neg'}">${x.d > 0 ? '+' : ''}${fmtv(x.d)}</i></div>`).join('')}</div>` : SPEC.next ? '<div class="mut" style="margin-bottom:10px">Sayısal fark bulunamadı.</div>' : '<div class="mut" style="margin-bottom:10px">Bir üst seviyenin bilgisi bulunamadı.</div>'}
+  return `<div class="card">${head}${vsel}
+    ${diffs.length ? `<div class="spec-diff">${diffs.map(x => `<div><span>${esc(x.k)}</span><b>${fmtv(x.a)} → ${fmtv(x.b)}</b><i class="${(x.d > 0) !== /^Required/.test(x.k) ? 'pos' : 'neg'}">${x.d > 0 ? '+' : ''}${fmtv(x.d)}</i></div>`).join('')}</div>` : SPEC.next ? '<div class="mut" style="margin-bottom:10px">Bu adımda özellik değişmiyor.</div>' : '<div class="mut" style="margin-bottom:10px">Bu, itemin en yüksek seviyesi.</div>'}
     <div class="spec-tips">
-      <div class="ko-tip">${cleanTooltip(SPEC.cur.html, SPEC.cur.icon || itemIconPath(c.item), SPEC.cur.name)}</div>
-      ${SPEC.next ? `<div class="ko-tip">${cleanTooltip(SPEC.next.html, SPEC.next.icon || itemIconPath(c.item), SPEC.next.name)}</div>` : ''}
+      <div class="ko-tip">${idTipHtml(SPEC.cur.o, SPEC.cur.name, SPEC.cur.lv, icon)}</div>
+      ${SPEC.next ? `<div class="ko-tip">${idTipHtml(SPEC.next.o, SPEC.next.name, SPEC.next.lv, icon)}</div>` : ''}
     </div>
   </div>`;
 }
@@ -423,7 +424,6 @@ function anvInfoView() {
 }
 
 Object.assign(ACTIONS, {
-  'spec-var': el => { SPEC.pickVb = +el.dataset.v; SPEC.key = ''; render(); },
   'anv-tab': el => { anv().cfg.tab = el.dataset.v; save(); render(); },
   'anv-grade': el => { const c = anv().cfg; c.grade = el.dataset.v; c.scroll = anvScrollsFor(c.grade)[0][0]; if (c.grade === 'n' && +c.to > ANV_MAX.n) c.to = ANV_MAX.n; orsReset(); save(); render(); },
   'anv-hit': () => orsAnimate(),
@@ -457,6 +457,7 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const d = e.target.dataset;
+  if (d.specvar) { SPEC.pickVb = +e.target.value; SPEC.key = ''; render(); return; }
   if (d.anv === 'item') { render(); return; }
   if (d.anv && e.target.tagName === 'SELECT') { anv().cfg[d.anv] = e.target.value; ORS.last = null; save(); render(); }
   else if (d.anr) render();

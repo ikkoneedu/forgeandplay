@@ -29,7 +29,7 @@ var webFS embed.FS
 
 const (
 	appName    = "KO Ekip"
-	appVersion = "0.9.3"
+	appVersion = "0.9.4"
 	port       = 47811
 )
 
