@@ -210,7 +210,7 @@ VIEWS.ilan = () => {
     ${rows.length ? `<div class="tbl-wrap il-wrap" style="border:0;border-radius:0"><table class="il-tbl">
       <thead><tr><th>İlan</th><th>Sunucu</th><th>Site</th><th class="num sortable" data-act="il-sort">Fiyat ${IL.sort === 'asc' ? '▲' : '▼'}</th><th></th></tr></thead>
       <tbody>${rows.slice(0, 300).map((r, i) => `<tr>
-        <td class="il-name"><b>${esc(r.name)}</b>${r.grade === 'Reverse' && !/rev/i.test(r.name) ? ' <span class="badge">Reverse</span>' : ''}${r.np ? ` <span class="badge">NP ${esc(r.np)}</span>` : ''}${r.sub ? `<div class="hint">${esc(r.sub)}</div>` : ''}</td>
+        <td class="il-name"><div class="il-nm">${r.kind === 'item' ? itemIcon(itemIconPath(r.name), r.name, 32) : ''}<div><b>${esc(r.name)}</b>${r.grade === 'Reverse' && !/rev/i.test(r.name) ? ' <span class="badge">Reverse</span>' : ''}${r.np ? ` <span class="badge">NP ${esc(r.np)}</span>` : ''}${r.sub ? `<div class="hint">${esc(r.sub)}</div>` : ''}</div></div></td>
         <td><span class="badge">${esc(r.server || '—')}</span></td>
         <td><span class="il-site"><i style="background:${IL_SITE_COLOR[r.site] || 'var(--tx3)'}"></i>${esc(r.site)}</span></td>
         <td class="num">${priceCell(r.price)}</td>

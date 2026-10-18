@@ -14,10 +14,19 @@ function acIndex() {
   const m = new Map();
   const add = (n, meta) => { const k = acKey(n); if (k.length >= 2 && !m.has(k)) m.set(k, { n, k, ...meta }); };
   try { (S.pus.catalog || []).forEach(x => add(x.name, { c: 'PUS', kc: x.kc })); } catch { }
-  if (typeof ITEMDB !== 'undefined') for (const [n, c, lv, mx] of ITEMDB) add(n, { c: ITEMDB_CATS[c], lv, mx });
+  if (typeof ITEMDB !== 'undefined') for (const [n, c, lv, mx, ic] of ITEMDB) add(n, { c: ITEMDB_CATS[c], lv, mx, ic });
   AC.learned.forEach(n => add(n, { c: 'İlan' }));
   _acIndex = [...m.values()];
   return _acIndex;
+}
+/** Item adından oyun ikonu yolu: "Rev. Raptor (+7)" → /ItemIcon/itemicon_1_5621_00_0.jpg */
+const acBase = n => String(n || '').replace(/\(?\+\s?\d+\)?/g, ' ').replace(/\(?\breverse\b\)?|\brev\b\.?/gi, ' ').replace(/\(\s*\)/g, ' ').replace(/\s+/g, ' ').trim();
+let _icMap = null;
+function itemIconPath(name) {
+  if (!_icMap) { _icMap = new Map(); if (typeof ITEMDB !== 'undefined') for (const r of ITEMDB) if (r[4] && acKey(r[0])) _icMap.set(acKey(r[0]), r[4]); }
+  const k = acKey(acBase(name)); if (!k) return '';
+  const ic = _icMap.get(k);
+  return ic ? `/ItemIcon/itemicon_${ic}.jpg` : '';
 }
 /** Site ilanlarından gelen yeni item adlarını öğren (oyunda yeni çıkmış itemler) */
 function acLearn(names) {
@@ -57,8 +66,8 @@ function acOpen(el) {
   if (!AC.pop) { AC.pop = document.createElement('div'); AC.pop.className = 'ac-pop'; AC.pop.setAttribute('role', 'listbox'); document.body.appendChild(AC.pop); }
   AC.idx = Math.min(AC.idx, AC.list.length - 1);
   AC.pop.innerHTML = AC.list.map((x, i) => `<div class="ac-it ${i === AC.idx ? 'on' : ''}" data-aci="${i}" role="option">
-    <b>${esc(pre)}${acMark(x.n, q)}${esc(post)}</b>
-    <span class="ac-meta">${esc(x.c || '')}${x.lv ? ' · Lv ' + x.lv : ''}${x.mx ? ' · +' + x.mx : ''}${x.price ? ' · ' + fmtShort(x.price) : ''}${x.kc ? ' · ' + x.kc + ' KC' : ''}</span></div>`).join('');
+    ${typeof itemIcon === 'function' ? itemIcon(x.ic ? `/ItemIcon/itemicon_${x.ic}.jpg` : itemIconPath(x.n), x.n, 30, 'ac-ic') : ''}<div class="ac-tx"><b>${esc(pre)}${acMark(x.n, q)}${esc(post)}</b>
+    <span class="ac-meta">${esc(x.c || '')}${x.lv ? ' · Lv ' + x.lv : ''}${x.mx ? ' · +' + x.mx : ''}${x.price ? ' · ' + fmtShort(x.price) : ''}${x.kc ? ' · ' + x.kc + ' KC' : ''}</span></div></div>`).join('');
   acPlace();
 }
 function acMark(n, q) {

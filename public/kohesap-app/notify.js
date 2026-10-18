@@ -276,7 +276,7 @@ logout = async function () { if (NOTIF.unsub) { NOTIF.unsub(); NOTIF.unsub = nul
     { sec: 'Ekip' }, 'ekip', 'ses', 'boss', 'event', 'bildirim',
     { sec: 'Defter' }, 'panel', 'kasa', 'ticaret', 'parti',
     { sec: 'Canlı Veri' }, 'gb', 'pazar', 'ilan',
-    { sec: 'Hesaplayıcılar' }, 'pus', 'exp',
+    { sec: 'Hesaplayıcılar' }, 'pus', 'exp', 'basma',
     { sec: 'Veri' }, 'fiyat', 'internet', 'ayar',
   ];
   const byId = Object.fromEntries(PAGES.filter(p => p.id).map(p => [p.id, p]));
