@@ -232,7 +232,7 @@ function migrateDB(d) {
     db.shared = Object.assign(db.shared, d.shared);
     db.shared.settings = Object.assign(defaultState().settings, d.shared.settings || {});
     if (!db.shared.pusCatalog || !db.shared.pusCatalog.length) db.shared.pusCatalog = defaultPusCatalog();
-    if (!db.shared.expTable || !Object.keys(db.shared.expTable).length) db.shared.expTable = defaultExpTable();
+    db.shared.expTable = fixExpTable(db.shared.expTable);
     db.accounts = (d.accounts || []).map(a => ({ ...a, chars: (a.chars || []).map(c => ({ ...c, data: Object.assign(newCharData(c.level), c.data || {}) })) }));
     db.legacy = d.legacy || null;
     db.lastLogin = d.lastLogin || null;
@@ -314,7 +314,7 @@ const PAGES = [
   { id: 'event', t: 'Event Takvimi', d: 'Haftalık event saatleri ve geri sayım' },
   { sec: 'Hesaplayıcılar' },
   { id: 'pus', t: 'PUS Hesabı', d: 'Sepete ekle: KC → TL → GB maliyeti', month: true },
-  { id: 'exp', t: 'EXP Hesabı', d: 'Seviye süresi, mob sayısı ve oturum takibi' },
+  { id: 'exp', t: 'EXP Hesabı', d: 'Seviye aralığı, süre, Genie / Hammer / slot / elektrik maliyeti' },
   { sec: 'Veri' },
   { id: 'fiyat', t: 'Fiyat Listesi', d: 'Item pazar fiyatları' },
   { id: 'internet', t: 'Yönetim', d: 'Veri kaynakları, web kaynakları ve teşhis (yalnızca admin)', admin: true },
@@ -711,7 +711,7 @@ function tradeForm(t, mode) {
     { k: 'sellDate', label: 'Satış tarihi', type: 'date' },
     { k: 'feePct', label: 'Pazar komisyonu %', type: 'number', hint: 'Satıştan kesilen oran (yoksa 0)' },
   ] : [
-    { k: 'item', label: 'Item', type: 'text', full: true, list: S.prices.map(p => p.name), placeholder: 'örn. Raptor +7' },
+    { k: 'item', label: 'Item', type: 'text', full: true, ac: 'item', placeholder: '2 harf yaz, listeden seç (örn. Raptor +7)' },
     { k: 'qty', label: 'Adet', type: 'number' },
     { k: 'buyDate', label: 'Alış tarihi', type: 'date' },
     { k: 'buyPrice', label: 'Birim alış fiyatı', type: 'money', full: true },
@@ -807,7 +807,7 @@ VIEWS.parti = () => {
         <thead><tr><th>Item</th><th class="num" style="width:80px">Adet</th><th class="num" style="width:150px">Birim değer</th><th style="width:150px">Kimde</th><th style="width:90px">Satıldı</th><th class="num" style="width:150px">Satış fiyatı</th><th class="num">Toplam</th><th></th></tr></thead>
         <tbody>
           <tr style="background:var(--bg2)">
-            <td><input class="inp" list="dl-prices" data-fk="nd-item" data-nd="item" value="${esc(nd.item)}" placeholder="Item adı (Enter ile ekle)"></td>
+            <td><input class="inp" data-ac="item" autocomplete="off" data-fk="nd-item" data-nd="item" value="${esc(nd.item)}" placeholder="Item adı (2 harf yaz)"></td>
             <td><input class="inp num" data-fk="nd-qty" data-nd="qty" value="${esc(nd.qty)}"></td>
             <td><input class="inp num" data-fk="nd-value" data-nd="value" value="${esc(nd.value)}" placeholder="örn. 30m"></td>
             <td><select class="inp" data-nd="looter">${memOpts(nd.looter, '— seç —')}</select></td>
@@ -1041,7 +1041,7 @@ function priceForm(p) {
     title: isNew ? 'Item ekle' : 'Düzenle: ' + p.name,
     data: { ...p, price: p.price ? fmtN(p.price) : '' },
     fields: [
-      { k: 'name', label: 'Item adı', type: 'text', full: true },
+      { k: 'name', label: 'Item adı', type: 'text', full: true, ac: 'item', placeholder: '2 harf yaz, listeden seç' },
       { k: 'cat', label: 'Kategori', type: 'text', list: [...new Set(S.prices.map(x => x.cat).filter(Boolean))], placeholder: 'örn. Silah, Zırh, Takı' },
       { k: 'price', label: 'Pazar fiyatı', type: 'money' },
     ],
@@ -1309,7 +1309,7 @@ function openForm({ title, fields, data, onSave, extra, wide }) {
   $('.modal').style.width = wide ? 'min(780px,100%)' : '';
   const field = f => {
     const v = data[f.k] ?? '';
-    const lst = f.list ? ` list="fl-${f.k}"` : '';
+    const lst = f.ac ? ` data-ac="${f.ac}"` : f.list ? ` list="fl-${f.k}"` : '';
     let inp;
     if (f.type === 'select') inp = `<select class="inp" name="${f.k}">${f.options.map(([k, l]) => `<option value="${esc(k)}" ${String(v) === String(k) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
     else if (f.type === 'textarea') inp = `<textarea class="inp" name="${f.k}" rows="3">${esc(v)}</textarea>`;

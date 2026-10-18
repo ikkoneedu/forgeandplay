@@ -275,7 +275,7 @@ logout = async function () { if (NOTIF.unsub) { NOTIF.unsub(); NOTIF.unsub = nul
   const order = [
     { sec: 'Ekip' }, 'ekip', 'ses', 'boss', 'event', 'bildirim',
     { sec: 'Defter' }, 'panel', 'kasa', 'ticaret', 'parti',
-    { sec: 'Canlı Veri' }, 'gb', 'pazar',
+    { sec: 'Canlı Veri' }, 'gb', 'pazar', 'ilan',
     { sec: 'Hesaplayıcılar' }, 'pus', 'exp',
     { sec: 'Veri' }, 'fiyat', 'internet', 'ayar',
   ];

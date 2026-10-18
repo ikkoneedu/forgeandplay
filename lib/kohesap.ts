@@ -1,7 +1,7 @@
 /** KO Hesap (Knight Online defteri) — sunucu tarafı ortak sabitler. */
 
 /** public/downloads/KOHesap.exe sürümü; exe açılışta bunu görüp "yeni sürüm" uyarısı gösterir. */
-export const KOHESAP_EXE_VERSION = "0.8.7";
+export const KOHESAP_EXE_VERSION = "0.8.8";
 export const KOHESAP_EXE_URL = "/downloads/KOEkip.exe";
 export const KOHESAP_APP_URL = "/";
 
@@ -9,7 +9,7 @@ export const KOHESAP_APP_URL = "/";
 export const KOHESAP_LOCAL_ORIGINS = ["http://localhost:47811", "http://127.0.0.1:47811"];
 
 /** Proxy yalnızca bu alan adlarına istek atar (açık proxy olmasın). */
-export const KOHESAP_PROXY_HOSTS = ["enucuzgb.com", "open.er-api.com", "nttgame.com", "bynogame.com", "oyuneks.com", "knightpin.com"];
+export const KOHESAP_PROXY_HOSTS = ["enucuzgb.com", "open.er-api.com", "nttgame.com", "bynogame.com", "oyuneks.com", "knightpin.com", "kopazar.com", "bynogame.net", "sonteklif.com"];
 
 export function hostAllowed(host: string): boolean {
   const h = host.toLowerCase();
