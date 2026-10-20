@@ -90,11 +90,11 @@ accessGate = async function (user) {
     } catch { /* eski kurallar: normal onay akışı */ }
   }
   const ok = await _accessGateP(user);
-  if (ok) { try { localStorage.setItem('koekip.in', '1'); } catch { } planWatch(); }
+  if (ok) { try { localStorage.setItem('koekip.in', '1'); localStorage.setItem('koekip.name', String((user && (user.displayName || user.email)) || '').slice(0, 40)); localStorage.setItem('koekip.photo', String((user && user.photoURL) || '').slice(0, 400)); } catch { } planWatch(); }
   return ok;
 };
 const _logoutP = logout;
-logout = async function () { try { localStorage.removeItem('koekip.in'); } catch { } planStop(); planSet(null); return _logoutP.apply(this, arguments); };
+logout = async function () { try { ['koekip.in', 'koekip.name', 'koekip.photo'].forEach(k => localStorage.removeItem(k)); } catch { } planStop(); planSet(null); return _logoutP.apply(this, arguments); };
 
 /* ---------- sayfa kilitleri ---------- */
 ICON.vip = I('<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/><path d="M5 19h14"/>');
@@ -139,7 +139,15 @@ const DISC = `<div class="pl-disc">ℹ️ Fiyat ve ilan bilgileri üçüncü tar
 })();
 
 /* ---------- menü süsleri: VIP rozeti, kapalı sayfaları gizle ---------- */
+ICON.home = I('<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/>');
+/* Ana sayfa (tanıtım / güncel bilgiler): giriş yapmış hâlde açılır, oradan "Uygulamaya dön" ile geri gelinir */
+function planHomeLink() {
+  const nav = document.getElementById('nav'); if (!nav || nav.querySelector('.nav-home')) return;
+  const href = (typeof IS_EXE !== 'undefined' && IS_EXE ? SITE : '') + '/?tanitim';
+  nav.insertAdjacentHTML('afterbegin', `<a class="nav-btn nav-home" href="${href}"${typeof IS_EXE !== 'undefined' && IS_EXE ? ' target="_blank" rel="noopener"' : ''}>${ICON.home}<span>Ana sayfa</span><span class="pl-tag">site</span></a>`);
+}
 function planDecorate() {
+  planHomeLink();
   const admin = isAdmin();
   document.querySelectorAll('#nav .nav-btn[data-id], #tabbar .tab[data-id]').forEach(b => {
     const id = b.dataset.id;

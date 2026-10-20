@@ -183,3 +183,33 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding:48px 0 36px;colo
   body.nav-open .menu{display:flex;position:fixed;top:62px;left:0;right:0;flex-direction:column;padding:12px 16px 18px;background:rgba(8,9,11,.97);border-bottom:1px solid var(--line)}
   body.nav-open .menu a{padding:12px 10px;font-size:16px}
 }
+.top-cta .me{display:inline-flex;align-items:center;gap:8px;color:var(--tx2);font-size:14px;margin-right:4px}
+.top-cta .me img{width:28px;height:28px;border-radius:50%;box-shadow:0 0 0 2px var(--gold-ring)}
+@media(max-width:600px){.top-cta .me span{display:none}}
+
+/* güncel: yeni sunucu geri sayımı + haberler */
+.now{padding:28px 0 20px}
+.now-grid{display:grid;grid-template-columns:1fr 1.5fr;gap:14px}
+.now-cd{display:flex;flex-direction:column;gap:6px;border-color:var(--gold-ring);background:radial-gradient(420px 200px at 0 0,rgba(229,180,80,.14),transparent 70%),var(--bg2);transition:transform .2s,border-color .2s}
+.now-cd:hover{transform:translateY(-2px)}
+.now-cd h3{font-size:22px;margin:4px 0 0}
+.now-t{font:750 clamp(30px,4vw,42px)/1.1 var(--font);letter-spacing:-.03em;color:var(--gold2);font-variant-numeric:tabular-nums;margin:6px 0}
+.now-cd p{font-size:13.5px}
+.now-more{margin-top:auto;padding-top:8px;color:var(--gold2);font-weight:600;font-size:14px}
+.now-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.now-h h3{margin:0}
+.now-h a{color:var(--gold2);font-size:14px;font-weight:600}
+.live{display:inline-flex;align-items:center;gap:5px;margin-left:8px;font:600 11px var(--font);letter-spacing:.06em;text-transform:uppercase;color:#ff9b9b;vertical-align:middle}
+.live:before{content:'';width:6px;height:6px;border-radius:50%;background:#f26b6b;animation:livep 1.6s infinite}
+@keyframes livep{0%{box-shadow:0 0 0 0 rgba(242,107,107,.6)}70%{box-shadow:0 0 0 7px rgba(242,107,107,0)}100%{box-shadow:0 0 0 0 rgba(242,107,107,0)}}
+.now-news ul{list-style:none;margin:0;padding:0}
+.now-news li{border-top:1px solid var(--line)}
+.now-news li:first-child{border-top:0}
+.now-news li a{display:block;padding:10px 2px;transition:color .15s}
+.now-news li a:hover b{color:var(--gold2)}
+.now-news b{display:block;font-size:14.5px;line-height:1.4;font-weight:600}
+.now-news small{color:var(--tx3);font-size:12px}
+.now-news .tg{display:inline-block;margin-right:6px;padding:0 6px;border-radius:5px;font:650 10.5px/1.7 var(--font);background:var(--gold-bg);color:var(--gold2)}
+.now-news .tg.off{background:rgba(63,207,142,.12);color:var(--green)}
+@media(max-width:860px){.now-grid{grid-template-columns:1fr}}
+.logo span{white-space:nowrap}

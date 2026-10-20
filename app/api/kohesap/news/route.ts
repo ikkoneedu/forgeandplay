@@ -14,7 +14,9 @@ export const maxDuration = 30;
 let busy: Promise<unknown> | null = null;
 export async function GET(req: NextRequest) {
   const cors = corsHeaders(req.headers.get("origin"));
-  const gate = await requireMember(req, cors);
+  // tanıtım sayfası: herkese açık son başlıklar (yalnızca başlık, kaynak, bağlantı)
+  const pub = req.nextUrl.searchParams.get("pub") === "1" && !req.headers.get("authorization");
+  const gate = pub ? null : await requireMember(req, cors);
   if (gate) return gate;
   const db = adminDb();
   if (!db) return NextResponse.json({ ok: false, error: "Sunucuda FIREBASE_SERVICE_ACCOUNT tanımlı değil" }, { status: 503, headers: cors });
@@ -24,6 +26,10 @@ export async function GET(req: NextRequest) {
     busy = busy || refreshNews(db).finally(() => { busy = null; });
     const r = (await busy.catch(() => null)) as { doc: NewsDoc } | null;
     if (r) doc = r.doc;
+  }
+  if (pub) {
+    const items = ((doc && doc.items) || []).slice(0, 8).map(({ t, u, src, at, pub: p, yeni, off }) => ({ t, u, src, at, pub: p, yeni, off }));
+    return NextResponse.json({ ok: true, at: doc ? doc.at : 0, items }, { headers: { ...cors, "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } });
   }
   return NextResponse.json({ ok: true, ...(doc || { items: [], at: 0 }) }, { headers: { ...cors, "Cache-Control": "no-store" } });
 }

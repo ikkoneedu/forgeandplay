@@ -15,7 +15,7 @@ const SITE: Record<string, string> = {
   "/kullanim-sartlari": "kullanim-sartlari", "/gizlilik": "gizlilik", "/iletisim": "iletisim",
 };
 // herkese açık dosyalar (tanıtım sitesinin kullandıkları)
-const PUBLIC_FILE = /^\/(site\/|robots\.txt$|sitemap\.xml$|favicon\.ico$|apple-touch-icon\.png$|manifest\.webmanifest$|llms\.txt$|kohesap-app\/fonts\/|kohesap-app\/icons\/|downloads\/|api\/kohesap\/plan$)/;
+const PUBLIC_FILE = /^\/(site\/|robots\.txt$|sitemap\.xml$|favicon\.ico$|apple-touch-icon\.png$|manifest\.webmanifest$|llms\.txt$|kohesap-app\/fonts\/|kohesap-app\/icons\/|downloads\/|api\/kohesap\/plan$|api\/kohesap\/news$)/;
 // açık sayfalarda bile istemediklerimiz: yapay zekâ eğitim tarayıcıları, veri kazıyıcılar, SEO botları
 const TRAIN = /GPTBot|CCBot|Google-Extended|GoogleOther|Google-CloudVertexBot|Bytespider|Bytedance|anthropic-ai|ClaudeBot|cohere|Diffbot|meta-externalagent|meta-webindexer|FacebookBot|Amazonbot|Applebot-Extended|omgili|Timpibot|ImagesiftBot|AI2Bot|Ai2Bot|PetalBot|Kangaroo Bot|Scrapy|Firecrawl|Jina-|Browserbase|SemrushBot|AhrefsBot|MJ12bot|DotBot|DataForSeoBot|Barkrowler|BLEXBot|serpstat|zoominfo|MistralAI|YouBot|shapbot|v0bot/i;
 const OLD_LEGAL = /^\/(?:tr|en|es|zh)\/(gizlilik|kullanim-sartlari|iletisim)\/?$/;

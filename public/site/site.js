@@ -9,6 +9,51 @@
     kasa: 'Gelir–gider defteri', ticaret: 'Item ticareti ve drop payı', exp: 'EXP ve PUS hesabı', basma: 'Item basma simülatörü',
     gb: 'Canlı GB fiyatları', pazar: 'Canlı pazar', ilan: 'Site ilanları'
   };
+  // giriş yapmış üye: üst menüde "Uygulamaya dön", düğmeler uygulamaya götürür
+  var member = false, name = '', photo = '';
+  try { member = localStorage.getItem('koekip.in') === '1'; name = localStorage.getItem('koekip.name') || ''; photo = localStorage.getItem('koekip.photo') || ''; } catch (e) { }
+  if (member) {
+    document.body.classList.add('is-member');
+    var cta = document.querySelector('.top-cta');
+    if (cta) {
+      cta.innerHTML = '';
+      var who = document.createElement('span'); who.className = 'me';
+      if (photo) { var im = document.createElement('img'); im.src = photo; im.alt = ''; im.referrerPolicy = 'no-referrer'; who.appendChild(im); }
+      var nm = document.createElement('span'); nm.textContent = name ? name.split(' ')[0] : 'Hesabım'; who.appendChild(nm);
+      var go = document.createElement('a'); go.className = 'btn pri'; go.href = '/app'; go.textContent = 'Uygulamaya dön →';
+      cta.appendChild(who); cta.appendChild(go);
+    }
+    document.querySelectorAll('a.btn[href="/app"]').forEach(function (a) {
+      if (a.closest('.top-cta')) return;
+      a.textContent = 'Uygulamayı aç →';
+    });
+    var shot = document.querySelector('.hero .shot'); if (shot) shot.hidden = true;
+    var eb = document.querySelector('.hero .eyebrow');
+    if (eb && name) eb.innerHTML = '<b>Hoş geldin</b> ' + name.split(' ')[0].replace(/[<>&"]/g, '') + ' · güncel haberler aşağıda';
+  }
+  // yeni sunucu geri sayımı
+  document.querySelectorAll('[data-cd]').forEach(function (el) {
+    var t = new Date(el.getAttribute('data-cd')).getTime();
+    var tick = function () { var m = t - Date.now(); if (m <= 0) { el.textContent = 'Sunucular açık'; return; } var d = Math.floor(m / 864e5), h = Math.floor(m % 864e5 / 36e5), n = Math.floor(m % 36e5 / 6e4), x = Math.floor(m % 6e4 / 1e3); el.textContent = d + 'g ' + String(h).padStart(2, '0') + ':' + String(n).padStart(2, '0') + ':' + String(x).padStart(2, '0'); };
+    tick(); setInterval(tick, 1000);
+  });
+  // güncel haberler (herkese açık başlıklar)
+  var nl = document.querySelector('[data-news]');
+  if (nl) fetch('/api/kohesap/news?pub=1').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    var it = (d && d.items) || [];
+    if (!it.length) { nl.innerHTML = '<li class="muted" style="padding:10px 2px">Henüz haber yok. Yeni duyurular burada görünecek.</li>'; return; }
+    var ago = function (t) { var m = Math.round((Date.now() - t) / 6e4); return m < 60 ? Math.max(1, m) + ' dk önce' : m < 1440 ? Math.round(m / 60) + ' sa önce' : Math.round(m / 1440) + ' gün önce'; };
+    nl.innerHTML = '';
+    it.slice(0, 5).forEach(function (x) {
+      var li = document.createElement('li'), a = document.createElement('a');
+      a.href = x.u; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      var b = document.createElement('b'); b.textContent = x.t;
+      var sm = document.createElement('small');
+      if (x.off || x.yeni) { var tg = document.createElement('span'); tg.className = 'tg' + (x.off ? ' off' : ''); tg.textContent = x.off ? 'resmî' : 'yeni sunucu'; sm.appendChild(tg); }
+      sm.appendChild(document.createTextNode((x.src || '') + ' · ' + ago(x.pub || x.at)));
+      a.appendChild(b); a.appendChild(sm); li.appendChild(a); nl.appendChild(li);
+    });
+  }).catch(function () { nl.innerHTML = '<li class="muted" style="padding:10px 2px">Haberler şu an alınamadı.</li>'; });
   if (!document.querySelector('[data-feat],[data-price]')) return;
   fetch('/api/kohesap/plan').then(function (r) { return r.ok ? r.json() : null; }).then(function (p) {
     if (!p || !p.ok) return;
