@@ -20,7 +20,7 @@
       var who = document.createElement('span'); who.className = 'me';
       if (photo) { var im = document.createElement('img'); im.src = photo; im.alt = ''; im.referrerPolicy = 'no-referrer'; who.appendChild(im); }
       var nm = document.createElement('span'); nm.textContent = name ? name.split(' ')[0] : 'Hesabım'; who.appendChild(nm);
-      var go = document.createElement('a'); go.className = 'btn pri'; go.href = '/app'; go.textContent = 'Uygulamaya dön →';
+      var go = document.createElement('a'); go.className = 'btn pri'; go.href = '/app'; go.innerHTML = '<span class="lg-only">Uygulamaya dön</span><span class="sm-only">Uygulama</span> →';
       cta.appendChild(who); cta.appendChild(go);
     }
     document.querySelectorAll('a.btn[href="/app"]').forEach(function (a) {
@@ -31,6 +31,14 @@
     var eb = document.querySelector('.hero .eyebrow');
     if (eb && name) eb.innerHTML = '<b>Hoş geldin</b> ' + name.split(' ')[0].replace(/[<>&"]/g, '') + ' · güncel haberler aşağıda';
   }
+  // telefona / bilgisayara uygulama olarak yükle (Android Chrome, Edge, masaüstü Chrome)
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    var row = document.querySelector('.hero .cta-row'); if (!row || row.querySelector('.inst')) return;
+    var b = document.createElement('button'); b.className = 'btn lg inst'; b.type = 'button'; b.textContent = '📲 Telefona yükle';
+    b.onclick = function () { e.prompt(); e.userChoice.finally(function () { b.remove(); }); };
+    row.appendChild(b);
+  });
   // yeni sunucu geri sayımı
   document.querySelectorAll('[data-cd]').forEach(function (el) {
     var t = new Date(el.getAttribute('data-cd')).getTime();

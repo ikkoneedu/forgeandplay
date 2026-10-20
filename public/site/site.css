@@ -213,3 +213,24 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding:48px 0 36px;colo
 .now-news .tg.off{background:rgba(63,207,142,.12);color:var(--green)}
 @media(max-width:860px){.now-grid{grid-template-columns:1fr}}
 .logo span{white-space:nowrap}
+
+/* çentik / durum çubuğu (iPhone, ana ekrana eklenmiş uygulama) */
+.top{padding-top:env(safe-area-inset-top)}
+.top .wrap{padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}
+body.nav-open .menu{top:calc(62px + env(safe-area-inset-top))!important}
+footer{padding-bottom:calc(36px + env(safe-area-inset-bottom))}
+/* telefonda üst menü: tek satır, sıkışmaz */
+@media(max-width:600px){
+  .top .wrap{gap:10px;height:56px}
+  .logo{font-size:16px;min-width:0}
+  .logo img{width:24px;height:26px}
+  .top-cta{gap:8px;min-width:0}
+  .top-cta .btn{height:36px;padding:0 12px;font-size:13.5px}
+  .top-cta .me{margin:0}
+  .top-cta .me img{width:30px;height:30px}
+  .burger{width:36px;height:36px;flex:none}
+  body.nav-open .menu{top:calc(56px + env(safe-area-inset-top))!important}
+}
+@media(max-width:380px){.logo span{display:none}}
+.sm-only{display:none}
+@media(max-width:600px){.lg-only{display:none}.sm-only{display:inline}}
