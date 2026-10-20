@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember } from "@/lib/koekip-server";
+import { requireFeature } from "@/lib/koekip-plan";
 import { corsHeaders } from "@/lib/kohesap";
 import { fetchPassing } from "@/lib/kohesap-fetch";
 import { bynogameFeedUrl, kopazarUrl, matcher, parseBynogameFeed, parseKopazar, SERVERS, type Kind, type Row } from "@/lib/ilan";
@@ -28,7 +28,7 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const cors = corsHeaders(req.headers.get("origin"));
-  const gate = await requireMember(req, cors);
+  const gate = await requireFeature(req, "ilan", cors);
   if (gate) return gate;
   const sp = req.nextUrl.searchParams;
   const kind: Kind = sp.get("kind") === "char" ? "char" : "item";

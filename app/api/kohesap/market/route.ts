@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember } from "@/lib/koekip-server";
+import { requireFeature } from "@/lib/koekip-plan";
 import { corsHeaders } from "@/lib/kohesap";
 import { fetchPassing } from "@/lib/kohesap-fetch";
 
@@ -46,7 +46,7 @@ async function loadAll(params: URLSearchParams) {
 
 export async function GET(req: NextRequest) {
   // yalnızca onaylı KO Ekip üyeleri (dış site kaynaklarını korur, kötüye kullanımı engeller)
-  const gate = await requireMember(req, corsHeaders(req.headers.get("origin")));
+  const gate = await requireFeature(req, "pazar", corsHeaders(req.headers.get("origin")));
   if (gate) return gate;
   const q = req.nextUrl.searchParams;
   // sitenin kendi sayfasının gönderdiği parametrelerin aynısı (doğrulanmış)

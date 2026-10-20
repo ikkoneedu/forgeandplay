@@ -152,14 +152,16 @@ function ekipBody() {
   if (teamCodeOf() && !TEAM.loaded) return `<div class="card">${empty('Ekip yükleniyor…', '')}</div>`;
   if (!TEAM.doc) return `
     <div class="grid g2 team-start">
-      ${isAdmin() ? `<div class="card">
-        <div class="card-h"><h3>Ekip kur <span class="badge y">admin</span></h3></div>
+      ${(isAdmin() || (typeof featOk === 'function' && featOk('ekipkur'))) ? `<div class="card">
+        <div class="card-h"><h3>Ekip kur ${isAdmin() ? '<span class="badge y">admin</span>' : ''}</h3></div>
         <p class="mut" style="margin:0 0 14px;font-size:13.5px">Bir ekip kur, 8 karakterlik kodu arkadaşlarına gönder. Ekibe katılan herkesin karakterleri (sınıf, seviye, sunucu, klan, EXP) burada görünür; parti açarken tek dokunuşla üye listesi dolar.</p>
         <div class="form"><label class="f full">Ekip adı<input class="inp" id="teamName" maxlength="40" placeholder="örn. Gece Farmcıları"></label></div>
         <button class="btn pri" style="margin-top:12px" data-act="team-create" ${TEAM.busy ? 'disabled' : ''}>${ICON.plus} Ekip kur</button>
       </div>` : `<div class="card">
         <div class="card-h"><h3>Ekip</h3></div>
-        <p class="mut" style="margin:0;font-size:13.5px">Ekipler ve ses odası yönetici tarafından kurulur. Yönetici seni ekibe eklediğinde bu sayfa kendiliğinden açılır; ya da ondan aldığın ekip kodunu yandaki kutuya gir.</p>
+        ${typeof featTier === 'function' && featTier('ekipkur') === 'vip'
+          ? `<p class="mut" style="margin:0;font-size:13.5px">Ekip kurmak VIP üyelere açık. Bir ekip liderinden kod aldıysan yandaki kutuya gir.</p><button class="btn pri" style="margin-top:12px" data-act="go" data-id="vip">VIP ayrıcalıklarını gör</button>`
+          : `<p class="mut" style="margin:0;font-size:13.5px">Ekipler ve ses odası yönetici tarafından kurulur. Yönetici seni ekibe eklediğinde bu sayfa kendiliğinden açılır; ya da ondan aldığın ekip kodunu yandaki kutuya gir.</p>`}
       </div>`}
       <div class="card">
         <div class="card-h"><h3>Ekibe katıl</h3></div>
@@ -235,7 +237,7 @@ function partyFromTeam() {
 
 Object.assign(ACTIONS, {
   'team-create': async () => {
-    if (!isAdmin()) return toast('Ekipleri yalnızca yönetici kurabilir', 'err');
+    if (!isAdmin() && !(typeof featOk === 'function' && featOk('ekipkur'))) return toast(typeof featTier === 'function' && featTier('ekipkur') === 'vip' ? 'Ekip kurmak VIP üyelere açık' : 'Ekipleri yalnızca yönetici kurabilir', 'err');
     const name = ($('#teamName') || {}).value || '';
     if (!name.trim()) return toast('Ekip adı girin', 'err');
     TEAM.busy = true; render();

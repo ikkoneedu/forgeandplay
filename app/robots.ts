@@ -1,14 +1,22 @@
 import type { MetadataRoute } from "next";
 
-/** KO Ekip özel (davetli) bir uygulama: arama motorları ve yapay zekâ tarayıcıları dizinlemesin. */
+/**
+ * Tanıtım sitesi herkese açık (arama motorları ve yapay zekâ ARAMA botları dizinler);
+ * uygulama (/app), API ve uygulama dosyaları kapalı. Yapay zekâ EĞİTİM tarayıcıları hiçbir yere giremez.
+ */
+const SITE_URL = "https://forgeandplay.com";
 export default function robots(): MetadataRoute.Robots {
-  const ai = ["GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "Claude-User", "Claude-SearchBot", "anthropic-ai",
-    "PerplexityBot", "Perplexity-User", "Google-Extended", "GoogleOther", "CCBot", "Bytespider", "Amazonbot",
-    "Applebot-Extended", "meta-externalagent", "FacebookBot", "cohere-ai", "Diffbot", "MistralAI-User", "DuckAssistBot"];
+  const train = ["GPTBot", "CCBot", "Google-Extended", "GoogleOther", "Bytespider", "anthropic-ai", "ClaudeBot",
+    "cohere-ai", "cohere-training-data-crawler", "Diffbot", "meta-externalagent", "FacebookBot", "Amazonbot",
+    "Applebot-Extended", "Omgilibot", "Timpibot", "ImagesiftBot", "AI2Bot", "PetalBot", "SemrushBot", "AhrefsBot",
+    "MJ12bot", "DotBot", "DataForSeoBot", "BLEXBot", "MistralAI-User"];
+  const closed = ["/app", "/api/", "/kohesap-app/", "/downloads/", "/site/*.html", "/*?p="];
   return {
     rules: [
-      ...ai.map((userAgent) => ({ userAgent, disallow: "/" })),
-      { userAgent: "*", disallow: "/" },
+      ...train.map((userAgent) => ({ userAgent, disallow: "/" })),
+      { userAgent: "*", allow: ["/", "/api/kohesap/plan", "/kohesap-app/icons/", "/kohesap-app/fonts/"], disallow: closed },
     ],
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }

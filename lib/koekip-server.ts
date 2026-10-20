@@ -58,7 +58,7 @@ export async function verifyUser(authHeader: string | null): Promise<DecodedIdTo
 }
 export const isAdminEmail = (email?: string | null) => !!email && ADMIN_EMAILS.includes(email.toLowerCase());
 /** Yalnızca Google ile giriş yapmış, e-postası doğrulanmış hesaplar (Firestore kurallarıyla aynı) */
-const isGoogle = (u: DecodedIdToken) => u.firebase?.sign_in_provider === "google.com" && u.email_verified === true;
+export const isGoogle = (u: DecodedIdToken) => u.firebase?.sign_in_provider === "google.com" && u.email_verified === true;
 export const isAdmin = (u: DecodedIdToken) => isGoogle(u) && isAdminEmail(u.email);
 
 /** KO Ekip onaylı üye mi? (admin ya da kohesapAccess kaydı var) */

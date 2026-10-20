@@ -25,6 +25,28 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/kohesapAdmin/invite).data;
     }
 
+    // ---- Üyelik planı (Üye / VIP) — uygulamadaki plan.js ve sunucudaki koekip-plan.ts ile aynı ----
+    // config/plan { on, signup, teamVip, features: { id: 'uye'|'vip'|'kapali' } }
+    // Plan yoksa ya da kapalıysa (on != true) her şey bugünkü gibi: tüm özellikler üyelere açık, ekip kurmak yalnızca admin.
+    function planPath() { return /databases/$(database)/documents/config/plan; }
+    function planDoc() { return get(planPath()).data; }
+    function planOn() { return exists(planPath()) && planDoc().get('on', false) == true; }
+    function featDef() { return {'sesli': 'vip', 'gb': 'vip', 'pazar': 'vip', 'ilan': 'vip'}; }
+    // plan açıkken özelliğin katmanı
+    function tierOn(f) { return planDoc().get('features', {}).get(f, featDef().get(f, 'uye')); }
+    function accPath(uid) { return /databases/$(database)/documents/kohesapAccess/$(uid); }
+    // VIP: süresi dolmamış vipUntil (ms) ya da admin kaydı
+    function accVip(uid) {
+      return exists(accPath(uid))
+        && (get(accPath(uid)).data.get('code', '') == 'admin' || get(accPath(uid)).data.get('vipUntil', 0) > request.time.toMillis());
+    }
+    function featOk(f) {
+      return isAdmin()
+        || (!planOn() && f != 'ekipkur')
+        || (planOn() && tierOn(f) == 'uye')
+        || (planOn() && tierOn(f) == 'vip' && accVip(request.auth.uid));
+    }
+
     // ---- Eski Forge&Play site verileri: kapatıldı (yalnızca admin) ----
     match /games/{d=**} { allow read, write: if isAdmin(); }
     match /rooms/{d=**} { allow read, write: if isAdmin(); }
@@ -34,13 +56,18 @@ service cloud.firestore {
 
     // Merkezi ayarlar (veri kaynakları, yayınlanan event / PUS listesi): üyeler okur, admin yazar
     match /config/{docId} {
-      allow read: if hasKoAccess();
+      // plan belgesi: giriş yapan herkes okur (kayıt modu ve fiyat)
+      allow read: if hasKoAccess() || (google() && docId == 'plan');
       allow write: if isAdmin();
     }
 
     // Canlı pazar: üyeler okur; üye uygulaması (exe) okuduğu pazarı paylaşır
     match /kohesapMarket/{docId} {
-      allow read: if hasKoAccess();
+      // canlı pazar ve site ilanları VIP olabilir (plan)
+      allow read: if hasKoAccess()
+        && ((docId == 'latest' && featOk('pazar'))
+            || (docId.matches('ilan-.*') && featOk('ilan'))
+            || (docId != 'latest' && !docId.matches('ilan-.*')));
       allow write: if hasKoAccess()
         && request.resource.data.keys().hasOnly(['json', 'count', 'at', 'time', 'by', 'app'])
         && request.resource.data.json is string
@@ -77,9 +104,18 @@ service cloud.firestore {
         && inviteDoc().enabled == true
         && request.time.toMillis() < inviteDoc().exp
         && request.resource.data.code == inviteDoc().code;
-      allow update: if google() && request.auth.uid == uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seen', 'name', 'photo', 'email', 'chars'])
+      //  - Açık kayıt: admin planda kaydı "açık" yaptıysa Google ile gelen herkes kendi kaydını oluşturur (VIP alanı olmadan).
+      allow create: if google() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['email', 'name', 'photo', 'at', 'code'])
         && request.resource.data.email == request.auth.token.email
+        && request.resource.data.code == 'acik'
+        && exists(planPath())
+        && planDoc().get('signup', 'onay') == 'acik';
+      // vipUntil / vipBy yalnızca admin yazar; kullanıcı yalnızca "VIP olmak istiyorum" (vipReq) bırakır
+      allow update: if google() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seen', 'name', 'photo', 'email', 'chars', 'vipReq'])
+        && request.resource.data.email == request.auth.token.email
+        && (!('vipReq' in request.resource.data) || request.resource.data.vipReq is int)
         && (!('chars' in request.resource.data) || request.resource.data.chars.size() <= 8);
       allow create, update, delete: if isAdmin();
     }
@@ -118,7 +154,8 @@ service cloud.firestore {
       }
       allow get: if hasKoAccess();
       allow list: if false;
-      allow create: if isAdmin()
+      // ekip kurmak: admin ya da plana göre izinli üye (VIP sistemi kapalıyken yalnızca admin)
+      allow create: if (isAdmin() || (hasKoAccess() && featOk('ekipkur')))
         && code.size() == 8
         && request.resource.data.owner == me()
         && request.resource.data.memberUids == [me()]
@@ -180,14 +217,21 @@ service cloud.firestore {
         allow delete: if isMember() && isOwner();
       }
 
+      // Sesli oda VIP olabilir: kullanıcı VIP ise ya da (ekip VIP'i açıksa) ekip lideri VIP / admin ise
+      function voiceOk() {
+        return featOk('sesli')
+          || (planOn() && tierOn('sesli') == 'vip' && planDoc().get('teamVip', true) == true
+              && accVip(get(/databases/$(database)/documents/kohesapTeams/$(code)).data.owner));
+      }
+
       // Sesli sohbet odası
       match /voice/{uid} {
         allow read: if isMember();
-        allow create, update: if isMember() && request.auth.uid == uid;
+        allow create, update: if isMember() && request.auth.uid == uid && voiceOk();
         allow delete: if isMember() && (request.auth.uid == uid || isOwner());
         // Bağlantı mesajları: üye başka bir üyenin kutusuna yazar, kutu sahibi okur ve siler.
         match /inbox/{msgId} {
-          allow create: if isMember()
+          allow create: if isMember() && voiceOk()
             && request.resource.data.from == request.auth.uid
             && request.resource.data.keys().hasOnly(['t', 'sdp', 'c', 'from', 'fs', 'ts', 'at'])
             && (!('sdp' in request.resource.data) || request.resource.data.sdp.size() < 20000);

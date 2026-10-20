@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "@/lib/kohesap";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb, env, hasAccess, trParts, verifyUser } from "@/lib/koekip-server";
+import { featureOk } from "@/lib/koekip-plan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,6 +74,8 @@ async function handle(req: NextRequest) {
   const u = await verifyUser(req.headers.get("authorization"));
   if (!u) return NextResponse.json({ error: "Giriş gerekli" }, { status: 401, headers: h });
   if (!(await hasAccess(u))) return NextResponse.json({ error: "Davet gerekli" }, { status: 403, headers: h });
+  // sesli oda VIP ise: VIP olmayana aktarma bilgisi verilmez
+  if (!(await featureOk(u, "sesli").catch(() => false))) return NextResponse.json({ iceServers: [], src: "vip", usage: null }, { headers: h });
   // kullanım bildirimi: { used: bayt } (bir seferde en fazla 2 GB kabul edilir)
   if (req.method === "POST") {
     const body = (await req.json().catch(() => null)) as { used?: number } | null;
