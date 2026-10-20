@@ -42,7 +42,7 @@ const nextConfig: NextConfig = {
       { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache" }, { key: "Service-Worker-Allowed", value: "/" }] },
       { source: "/kohesap-app/:file*.js", headers: [{ key: "Cache-Control", value: "no-cache" }] },
       { source: "/kohesap-app/:file*.css", headers: [{ key: "Cache-Control", value: "no-cache" }] },
-      { source: "/site/:file*.css", headers: [{ key: "Cache-Control", value: "public, max-age=3600, stale-while-revalidate=86400" }] },
+      { source: "/site/:file*.css", headers: [{ key: "Cache-Control", value: "public, max-age=300, stale-while-revalidate=3600" }] },
       { source: "/site/img/:file*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=2592000" }] },
     ];
   },
