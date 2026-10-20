@@ -12,7 +12,7 @@ export type Tier = "uye" | "vip" | "kapali";
 export type Plan = { on: boolean; signup: string; price: number; teamVip: boolean; features: Record<string, Tier>; note?: string };
 /** varsayılan katmanlar (plan.js FEATS ile aynı) */
 export const FEATURE_DEFAULTS: Record<string, Tier> = {
-  ekip: "uye", ekipkur: "uye", ses: "uye", sesli: "vip", boss: "uye", event: "uye", bildirim: "uye",
+  ekip: "uye", ekipkur: "uye", ses: "uye", sesli: "vip", boss: "uye", event: "uye", yeni: "uye", bildirim: "uye",
   panel: "uye", kasa: "uye", ticaret: "uye", parti: "uye", gb: "vip", pazar: "vip", ilan: "vip",
   pus: "uye", exp: "uye", basma: "uye", fiyat: "uye",
 };

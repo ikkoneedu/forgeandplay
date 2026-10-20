@@ -16,6 +16,7 @@ const FEATS = [
   { id: 'sesli', n: 'Sesli ekip odası', d: 'Bas-konuş, telefon ve PC arasında sesli oda', def: 'vip', sub: true },
   { id: 'boss', n: 'Boss alarmı', d: 'Sunucuya göre boss sayaçları, ekip içinde paylaşılır', def: 'uye' },
   { id: 'event', n: 'Event takvimi', d: 'Haftalık event saatleri ve geri sayım', def: 'uye' },
+  { id: 'yeni', n: 'Yeni sunucu haberleri', d: 'Geri sayım, resmî takvim ve canlı haberler', def: 'uye' },
   { id: 'bildirim', n: 'Telefon bildirimleri', d: 'Event / boss / ekip bildirimleri', def: 'uye' },
   { g: 'Defter' },
   { id: 'panel', n: 'Panel', d: 'Aylık özet', def: 'uye' },

@@ -109,7 +109,7 @@ VIEWS.exp = () => {
           <label class="f">Toplam bonus %${inp('bonus', '0')}<span class="hint">premium, flash, scroll…</span></label>
           <label class="f">Günde kaç saat açık${inp('hpd', '8')}<span class="hint">7/24 için 24</span></label>
         </div>
-        <div class="xp-sub-h"><b>Saatlik EXP</b><span class="mut">Seviyeye göre hız değişiyorsa aralık ekle (ör. 30'dan 150m, 70'ten 400m)</span></div>
+        <div class="xp-sub-h"><b>Saatlik EXP</b><span class="mut">Kendi hızını yaz ya da aşağıdaki <b>Mob verisiyle saatlik EXP</b> kartından gerçek mob değerleriyle doldur</span></div>
         ${segRows}
         <div class="row" style="gap:8px;margin-top:6px">
           <button class="btn sm" data-act="xp-seg-add">${ICON.plus} Aralık ekle</button>
@@ -123,6 +123,8 @@ VIEWS.exp = () => {
         </div>
         ${P.missingRate ? '<div class="callout" style="margin-top:10px">Bazı seviyeler için saatlik EXP yok; o seviyeler süreye eklenmedi.</div>' : ''}
       </div>
+
+      ${xpMobCard(c, P)}
 
       <div class="card">
         <div class="card-h"><h3>Maliyet</h3><span class="sub">${P.hours ? fmtX(P.hours) + ' saat için' : 'süre hesaplanınca dolar'}</span></div>
@@ -173,6 +175,70 @@ VIEWS.exp = () => {
     </div>
   </div>`;
 };
+/* ---------- gerçek mob verisi + sunucu formülü ile saatlik EXP ----------
+   Mob EXP'si: oyunun sunucu veritabanı (xpmobs.js). Formül: açık kaynak KO sunucusu
+   (CUser::RecvUserExp, CNpc::GetRewardModifier / GetPartyRewardModifier):
+   solo  → mobEXP × seviye farkı çarpanı (mob, senden 2–7 düşük 0,8 · 8–13 düşük 0,5 · 14+ düşük 0,2)
+   parti → mobEXP × parti çarpanı (mob ort. seviyeden 2+ yüksek 1,2 · 5+ 1,5 · 8+ 2,0)
+           × (1 + 0,3 × (kişi − 1)) × senin seviyen / toplam parti seviyesi
+   Sonra premium / scroll / etkinlik bonusları (Toplam bonus %). */
+function xpSoloMod(mobLv, lv) { const d = mobLv - lv; return d <= -14 ? 0.2 : d <= -8 ? 0.5 : d <= -2 ? 0.8 : 1; }
+function xpPartyMod(mobLv, avg) { const d = mobLv - avg; return d >= 8 ? 2 : d >= 5 ? 1.5 : d >= 2 ? 1.2 : 1; }
+function xpPerKill(mob, lv, n, avg) {
+  if (!mob) return null;
+  const [, mlv, exp] = mob;
+  if (n <= 1) { const m = xpSoloMod(mlv, lv); return { exp: exp * m, steps: [`Mob EXP ${fmtN(exp)}`, `seviye farkı ${mlv - lv >= 0 ? '+' : ''}${mlv - lv} → ×${nf2.format(m)}`] }; }
+  const pm = xpPartyMod(mlv, avg), share = (1 + 0.3 * (n - 1)) * lv / (n * avg);
+  return { exp: exp * pm * share, steps: [`Mob EXP ${fmtN(exp)}`, `parti çarpanı ×${nf2.format(pm)}`, `${n} kişi: ×${nf2.format(1 + 0.3 * (n - 1))} · payın ${fmtN(lv)}/${fmtN(Math.round(n * avg))} seviye`] };
+}
+/** kesim hızı: hasarın varsa mobun gerçek HP'sinden, yoksa "dakikada mob" girişinden */
+function xpKpm(c, mob, n) {
+  const dmg = parseNum(c.dmg), hps = parseNum(c.hps || '1') || 1, gap = Math.max(0, parseNum(c.gap ?? '') || (c.gap === '0' ? 0 : 3));
+  if (dmg > 0 && mob) { const sec = mob[3] / (dmg * hps * Math.max(1, n)) + gap; return { kpm: 60 / sec, sec, auto: true }; }
+  const k = Math.max(0, parseNum(c.kpm || '2')); return { kpm: k, sec: k ? 60 / k : 0, auto: false };
+}
+/** seviyene yakın moblar içinde dakikada en çok EXP veren (hasarın girildiyse HP'ye göre) */
+function xpBestMob(c, lv, n, avg) {
+  for (const w of [4, 8, 14]) {
+    const l = XPMOBS.filter(m => Math.abs(m[1] - lv) <= w && m[3] > 150);
+    if (l.length) return l.map(m => [m, (xpPerKill(m, lv, n, avg) || { exp: 0 }).exp * xpKpm(c, m, n).kpm]).sort((a, b) => b[1] - a[1])[0][0];
+  }
+  return XPMOBS[0];
+}
+function xpMobCard(c) {
+  if (typeof XPMOBS === 'undefined') return '';
+  const lv = clamp(Math.round(parseNum(c.mobLv)) || Math.round(parseNum(c.fromLv)) || 1, 1, XP_MAX_LV);
+  const n = clamp(Math.round(parseNum(c.party)) || 1, 1, 8), avg = n > 1 ? clamp(parseNum(c.pavg) || lv, 1, 90) : lv;
+  const near = XPMOBS.filter(m => m[1] >= lv - 14 && m[1] <= lv + 12);
+  const list = near.length ? near : XPMOBS;
+  const mob = list.find(m => m[0] === c.mob) || xpBestMob(c, lv, n, avg);
+  const K = xpKpm(c, mob, n), kpm = K.kpm;
+  const pk = xpPerKill(mob, lv, n, avg), perH = pk ? pk.exp * kpm * 60 : 0, mult = 1 + parseNum(c.bonus) / 100;
+  const need = xpNeed(lv);
+  const opt = m => `<option value="${esc(m[0])}" ${m === mob ? 'selected' : ''}>Lv ${m[1]} · ${esc(m[0])} · ${fmtShort(m[2])} EXP · ${fmtShort(m[3])} HP${m[4] ? ' · ' + esc(m[4]) : ''}</option>`;
+  return `<div class="card xp-mob">
+    <div class="card-h"><div><h3>Mob verisiyle saatlik EXP <span class="badge g">gerçek veri</span></h3><div class="sub">Oyunun mob tablosu ve sunucunun EXP formülüyle hesaplanır; tahmin yerine bunu kullan.</div></div></div>
+    <div class="form xp-range">
+      <label class="f">Senin seviyen<input class="inp num" data-fk="xp-mobLv" data-xp="mobLv" value="${esc(c.mobLv ?? '')}" placeholder="${lv}"></label>
+      <label class="f" style="grid-column:span 2">Kestiğin mob<select class="inp" data-xp="mob">${list.map(opt).join('')}</select><span class="hint">Seviyene yakın ${list.length} mob · ${c.mob ? 'seçimin' : 'dakikada en çok EXP veren varsayılan'}</span></label>
+      <label class="f">Vuruş başına hasarın<input class="inp num" data-fk="xp-dmg" data-xp="dmg" value="${esc(c.dmg ?? '')}" placeholder="örn. 1800"><span class="hint">oyunda mobun üstünde çıkan sayı</span></label>
+      <label class="f">Saniyede vuruş<input class="inp num" data-fk="xp-hps" data-xp="hps" value="${esc(c.hps ?? '')}" placeholder="1"><span class="hint">skill + normal vuruş ortalaması</span></label>
+      <label class="f">Mob arası (sn)<input class="inp num" data-fk="xp-gap" data-xp="gap" value="${esc(c.gap ?? '')}" placeholder="3"><span class="hint">yürüme, toplama, pot</span></label>
+      ${parseNum(c.dmg) > 0 ? '' : `<label class="f">ya da dakikada kaç mob<input class="inp num" data-fk="xp-kpm" data-xp="kpm" value="${esc(c.kpm ?? '')}" placeholder="2"><span class="hint">hasarını bilmiyorsan</span></label>`}
+      <label class="f">Parti kişi sayısı<input class="inp num" data-fk="xp-party" data-xp="party" value="${esc(c.party ?? '')}" placeholder="1 = solo"></label>
+      ${n > 1 ? `<label class="f">Parti ortalama seviye<input class="inp num" data-fk="xp-pavg" data-xp="pavg" value="${esc(c.pavg ?? '')}" placeholder="${lv}"></label>` : ''}
+    </div>
+    ${pk ? `<div class="grid g3 xp-res" style="margin-top:12px">
+      <div class="callout"><div class="hint">Öldürme başına</div><div class="big-result">${fmtShort(pk.exp * mult)}</div><div class="hint">${pk.steps.map(esc).join(' · ')}${mult !== 1 ? ` · bonus ×${nf2.format(mult)}` : ''}</div></div>
+      <div class="callout y"><div class="hint">Saatlik EXP</div><div class="big-result gold">${perH ? fmtShort(perH * mult) : '—'}</div><div class="hint">${K.auto ? `mob ${fmtN(mob[3])} HP → ~${fmtX(Math.round(K.sec * 10) / 10)} sn/mob · ` : ''}${fmtX(Math.round(kpm * 10) / 10)} mob/dk${mult !== 1 ? ' · bonus dahil' : ''}</div></div>
+      <div class="callout"><div class="hint">Lv ${lv} → ${lv + 1}</div><div class="big-result">${perH ? fmtDur(need / (perH * mult)) : '—'}</div><div class="hint">${pk.exp ? fmtN(Math.ceil(need / (pk.exp * mult))) + ' mob' : ''}</div></div>
+    </div>
+    <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn sm pri" data-act="xp-mob-use" data-lv="${lv}" data-r="${Math.round(perH)}" ${perH ? '' : 'disabled'}>${ICON.plus} Lv ${lv}'dan itibaren bu hızı kullan</button>
+      <span class="hint" style="align-self:center">Kaynak: oyunun 2019 sunucu tabloları ve açık kaynak sunucu kodu. Resmî sunucuda etkinlik ve güncellemelerle farklı olabilir; birkaç dakika kasıp <b>Oturum kaydı</b> ile doğrula.</span>
+    </div>` : ''}
+  </div>`;
+}
 /** Oturum kayıtlarından ölçülen saatlik EXP (en son seviyedeki ortalama) */
 function xpMeasured() {
   const ses = (S.exp.sessions || []).filter(s => s.minutes > 0 && s.endPct > s.startPct);
@@ -195,6 +261,12 @@ function xpSessionsCard() {
 }
 
 Object.assign(ACTIONS, {
+  'xp-mob-use': el => {
+    const c = xpCalc(), lv = +el.dataset.lv, r = fmtShort(+el.dataset.r);
+    const s = c.segs.find(x => Math.round(parseNum(x.lv)) === lv);
+    if (s) s.rate = r; else if (c.segs.length === 1 && !parseAmt(c.segs[0].rate)) { c.segs[0].lv = lv; c.segs[0].rate = r; } else { c.segs.push({ lv, rate: r }); c.segs.sort((a, b) => parseNum(a.lv) - parseNum(b.lv)); }
+    save(); render(); toast(`Lv ${lv}'dan itibaren ${r}/saat kullanılıyor`, 'ok');
+  },
   'xp-seg-add': () => { const c = xpCalc(); const last = c.segs[c.segs.length - 1]; c.segs.push({ lv: Math.min(XP_MAX_LV, (Math.round(parseNum(last.lv)) || c.fromLv) + 10), rate: '' }); save(); render(); },
   'xp-seg-del': el => { const c = xpCalc(); c.segs.splice(+el.dataset.i, 1); save(); render(); },
   'xp-use-meas': () => {

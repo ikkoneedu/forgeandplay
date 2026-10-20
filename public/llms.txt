@@ -3,6 +3,7 @@
 > KO Ekip (forgeandplay.com), Knight Online oyuncuları için Türkçe ekip uygulamasıdır: ekip kurma (8 kişi), sesli ekip odası, boss alarmı, event takvimi ve telefon bildirimleri, gelir–gider defteri, item ticareti ve drop payı, EXP / PUS / item basma hesapları, canlı GB fiyatları ve ilanlar. Tarayıcıda, telefonda (PWA) ve Windows'ta çalışır. Üyelik ücretsiz; VIP üyelik aylık 125 TL (sesli oda ve canlı fiyat / ilan özellikleri).
 
 - [Ana sayfa](https://forgeandplay.com/): özellikler, üyelik ve sık sorulanlar
+- [Knight Online yeni sunucu 2026](https://forgeandplay.com/yeni-sunucu): 12 Kasım açılışı, ön kayıt ve takvim
 - [Knight Online EXP tablosu (1–83)](https://forgeandplay.com/exp-tablosu): seviye başına gereken EXP
 - [Knight Online item basma oranları](https://forgeandplay.com/item-basma-oranlari): BUS, Trina, Reverse, Karivdis oranları ve olasılık
 - [Kullanım şartları](https://forgeandplay.com/kullanim-sartlari)

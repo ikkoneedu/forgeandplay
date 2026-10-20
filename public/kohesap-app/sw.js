@@ -18,18 +18,20 @@ self.addEventListener('push', e => {
     icon: ICON,
     badge: BADGE,
     vibrate: d.kind === 'boss' ? [120, 60, 120, 60, 240] : [100, 50, 100],
-    data: { url: d.url || '/' },
+    data: { url: d.url || '/app' },
     timestamp: Date.now(),
   }));
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || '/';
+  let url = (e.notification.data && e.notification.data.url) || '/app';
+  if (url.startsWith('/?')) url = '/app' + url.slice(1);
   const page = (/[?&]p=([a-z]+)/.exec(url) || [])[1] || '';
   e.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const c = all.find(w => new URL(w.url).origin === self.location.origin);
+    // uygulama penceresi (tanıtım sayfası değil)
+    const c = all.find(w => { const u = new URL(w.url); return u.origin === self.location.origin && (u.pathname.startsWith('/app') || u.pathname.startsWith('/kohesap-app')); });
     if (c) { await c.focus(); if (page) c.postMessage({ type: 'open', page }); return; }
     await self.clients.openWindow(url);
   })());

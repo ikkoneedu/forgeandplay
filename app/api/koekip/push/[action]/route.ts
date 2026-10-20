@@ -5,6 +5,7 @@ import {
   type BossMap, type Note, type PushDoc,
 } from "@/lib/koekip-server";
 import type { Firestore } from "firebase-admin/firestore";
+import { refreshNews } from "@/lib/ko-news";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -136,7 +137,28 @@ async function cron(req: NextRequest) {
     const out = dueNotes(p, boss, now, fromB, nowB);
     for (const n of out.slice(0, 5)) { notes++; sent += await sendToUser(db, id, p, n); }
   }
-  return json(req, { ok: true, users: usersCache.docs.length, notes, sent, minutes: nowB - fromB + 1 });
+  // yeni sunucu haberleri: 10 dakikada bir tara, yeni sunucuyla ilgili yeni haber varsa bildir
+  let news = 0;
+  const nst = await db.doc("kohesapPushState/news").get();
+  if (!nst.exists || now - (Number(nst.get("at")) || 0) > 10 * 60e3) {
+    await db.doc("kohesapPushState/news").set({ at: now }, { merge: true });
+    try {
+      const r = await refreshNews(db);
+      const day = new Date(now + 3 * 3600e3).toISOString().slice(0, 10);
+      const sentToday = nst.exists && nst.get("day") === day ? Number(nst.get("n")) || 0 : 0;
+      const hot = r.first ? [] : r.fresh.filter((x) => x.yeni && (!x.pub || now - x.pub < 2 * 864e5)).slice(0, Math.max(0, Math.min(2, 4 - sentToday)));
+      for (const it of hot) {
+        const note: Note = { title: it.off ? "📢 Resmî duyuru" : "📰 Yeni sunucu haberi", body: `${it.t} · ${it.src}`.slice(0, 180), tag: `news-${it.id}`, kind: "news", url: "/app?p=yeni" };
+        for (const { id, data: p } of usersCache.docs) {
+          if (!p.subs || !Object.keys(p.subs).length || p.ev === false) continue;
+          sent += await sendToUser(db, id, p, note);
+        }
+        news++;
+      }
+      if (hot.length) await db.doc("kohesapPushState/news").set({ at: now, day, n: sentToday + hot.length }, { merge: true });
+    } catch (e) { console.warn("haberler", e); }
+  }
+  return json(req, { ok: true, users: usersCache.docs.length, notes, sent, news, minutes: nowB - fromB + 1 });
 }
 
 export async function POST(req: NextRequest, ctx: Ctx) {
