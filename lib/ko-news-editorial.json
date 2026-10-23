@@ -18,5 +18,15 @@
     "pub": 1792694340000,
     "yeni": false,
     "off": true
+  },
+  {
+    "id": "editorial-otp-plus-status-20261024",
+    "t": "OTP+ durum kontrolü: Android sürümü yayında, iOS için resmî çıkış teyidi yok",
+    "u": "https://www.nttgame.com/knight/tr/news/views/1/4228/1",
+    "src": "KO Ekip editör özeti · NTT Game",
+    "d": "24 Ekim 2026 kontrolü: AnyOTP+ Google Play'de mevcut. NTT Game'in 15 Ekim tarihli geçiş rehberi, iOS sürümünün henüz yayımlanmadığını belirtiyor; daha yeni resmî çıkış teyidi bulunamadı. iPhone kullanıcıları mevcut OTP'lerini kaldırmadan beklemeli. Resmî ICS tablosunda OTP+ için Android 13 ve üzeri listeleniyor; Android 11/12 desteği teyit edilmedi. Tablodaki iOS 17 gereksinimi, uygulamanın yayımlandığı anlamına gelmiyor. Kaynaklar: https://otp.nttgame.com/about/ ve https://play.google.com/store/apps/details?id=com.nttgame.anyotp.plus . Bu kayıt yeni bir sürüm duyurusu değil, mevcut resmî bilgilerin durum özetidir.",
+    "pub": 1792043220000,
+    "yeni": true,
+    "off": true
   }
 ]
