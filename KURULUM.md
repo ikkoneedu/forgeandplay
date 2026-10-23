@@ -1,4 +1,4 @@
-# KO Ekip 0.8.0 kurulumu
+# KO Ekip kurulumu
 
 forgeandplay.com açılınca doğrudan **KO Ekip** gelir. Eski site sayfaları ana sayfaya yönlenir. Yalnızca gizlilik, kullanım şartları ve iletişim sayfaları kalır.
 
@@ -15,7 +15,10 @@ Bu sürümde iki yeni alan var: boss sayaçları ve bildirim ayarları.
 
 ## 2. Vercel ortam değişkenleri
 
-Değişkenleri **Vercel → Proje → Settings → Environment Variables** sayfasına ekle (Production). Ekledikten sonra **Redeploy** yap.
+Proje Vercel'de **ikkoneedu (Pro)** ekibinde, adı `forgeandplay`. GitHub'daki `main` her push'ta otomatik yayınlanır; diğer branch'ler önizleme alır.
+Domain: `forgeandplay.com` esas adres, `www.forgeandplay.com` ona 308 ile yönlenir.
+
+Değişkenleri **Vercel → Proje → Settings → Environment Variables** sayfasına ekle (Production). Ekledikten sonra **Redeploy** yap. Tam liste: `.env.example`.
 
 | Değişken | Ne işe yarar | Nereden |
 |---|---|---|
@@ -91,4 +94,4 @@ iPhone'da bildirim yalnızca ana ekrandan açılan uygulamada çalışır.
 
 ## Windows uygulaması
 
-`public/downloads/KOEkip.exe` (0.8.0) dosyası eski `KOHesap.exe`'nin yerini aldı. Eski exe "yeni sürüm" uyarısıyla bunu indirir. Kayıtlar aynı klasörde (`KOHesap-veri`) kalır.
+`public/downloads/KOEkip.exe` dosyası (sürümü `lib/kohesap.ts` → `KOHESAP_EXE_VERSION`) eski `KOHesap.exe`'nin yerini aldı. Eski exe "yeni sürüm" uyarısıyla bunu indirir. Kayıtlar aynı klasörde (`KOHesap-veri`) kalır.
