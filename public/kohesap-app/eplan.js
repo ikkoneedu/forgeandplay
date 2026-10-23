@@ -30,7 +30,7 @@ function epWatch() {
   EP.unsub = FB.onSnapshot(FB.query(epCol(code), FB.orderBy('at'), FB.limitToLast(40)), snap => {
     EP.loaded = true; EP.err = '';
     EP.list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (ui.page === 'planla') epPaint();
+    if (ui.page === 'planla' || ui.page === 'panel') epPaint();
   }, e => {
     EP.loaded = true;
     EP.err = isPermErr(e) ? 'Ekip planı için Firebase kurallarının güncel hali yayınlanmalı.' : e.message;

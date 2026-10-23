@@ -36,7 +36,7 @@ async function newsLoad(force) {
   NEWS.loading = true; NEWS.err = ''; NEWS.last = Date.now(); newsPaint();
   try {
     const base = typeof IS_EXE !== 'undefined' && IS_EXE ? siteBase() : '';
-    const r = await (await authFetch(base + '/api/kohesap/news')).json();
+    const r = await apiJSON(await authFetch(base + '/api/kohesap/news'));
     if (!r.ok) throw new Error(r.error || 'okunamadı');
     NEWS.doc = r;
   } catch (e) { NEWS.err = e.message; }

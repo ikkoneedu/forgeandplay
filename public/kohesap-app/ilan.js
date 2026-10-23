@@ -132,7 +132,7 @@ async function ilSearch() {
   jobs.push((async () => {
     try {
       const base = IS_EXE ? siteBase() : '';
-      const r = await (await authFetch(`${base}/api/kohesap/ilan?${new URLSearchParams({ kind, q, server: srv })}`)).json();
+      const r = await apiJSON(await authFetch(`${base}/api/kohesap/ilan?${new URLSearchParams({ kind, q, server: srv })}`));
       if (!r.ok) throw new Error(r.error || 'okunamadı');
       add(r.rows || [], { site: '_srv', ok: true, n: 0 });
       (r.sources || []).forEach(s => add([], s));
