@@ -11,6 +11,7 @@
 const FEATS = [
   { g: 'Ekip' },
   { id: 'ekip', n: 'Ekip sayfası', d: '8 kişilik ekip, karakterler, sınıf dağılımı', def: 'uye' },
+  { id: 'lfg', n: 'Ekip bul', d: 'Ekip arayan oyuncular ve üye arayan ekipler panosu', def: 'uye' },
   { id: 'ekipkur', n: 'Ekip kurma', d: 'Kendi ekibini kurup arkadaşlarını davet etme', def: 'uye', sub: true },
   { id: 'ses', n: 'Ekip yazışması', d: 'Ekip sohbeti ve bot (Ses & Sohbet sayfası)', def: 'uye' },
   { id: 'sesli', n: 'Sesli ekip odası', d: 'Bas-konuş, telefon ve PC arasında sesli oda', def: 'vip', sub: true },

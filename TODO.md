@@ -16,7 +16,8 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 4. [x] Katılım geçmişi + drop sırası — Ekip Planı: yoklama, zar / adil sıra, katılım tablosu, Parti & Drop'a aktarma
 5. [x] Grind oturumu takibi — "Grind Takibi" sayfası
    - [ ] Fiyat alarmı
-6. [ ] Ekip arıyorum panosu, paylaşım kartları
+6. [x] Ekip arıyorum panosu — "Ekip Bul" sayfası
+   - [ ] Paylaşım kartları
 
 ## Sonra
 - [ ] VIP çevrim içi ödeme (iyzico / Stripe)
