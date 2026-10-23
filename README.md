@@ -18,6 +18,18 @@ npm run build
 
 Ortam değişkenleri için `.env.example` → `.env.local`.
 
+## Test
+
+```bash
+npm run typecheck   # TypeScript
+npm run test:unit   # sunucu: bildirim zamanlaması, boss penceresi, kural eşitleme
+npm run test:ui     # arayüz duman testi (Chromium; CHROMIUM_PATH ya da `npx playwright-core install chromium`)
+npm run test:rules  # Firestore kuralları (emülatör; Java 11+)
+npm run guides      # /event-rehberi sayfasını guide-data.js'ten yeniden üret
+```
+
+Her PR'da `.github/workflows/ci.yml` bunların hepsini ve `next build`'i çalıştırır.
+
 ## Yapı
 
 ```
@@ -30,7 +42,8 @@ app/api/koekip/push/*    Web Push abonelik + cron (event / boss / ekip bildiriml
 app/robots.ts, sitemap.ts
 lib/                     sunucu yardımcıları (koekip-server, kohesap, ko-news, ilan, kc-price, …)
 kohesap-desktop/         Windows exe (Go): yerel sunucu, bas-konuş, canlı pazar tarayıcısı
-firestore.rules          Firestore güvenlik kuralları (Firebase Console'a yapıştırılır)
+firestore.rules          Firestore güvenlik kuralları (sunucu üretim yayınından sonra kendiliğinden yayınlar)
+tests/                   birim, arayüz ve kural testleri
 ```
 
 ## Sürüm çıkarma (exe)

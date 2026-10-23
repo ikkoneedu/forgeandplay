@@ -6,7 +6,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const { EVENT_GUIDES, EVENT_GUIDES_AT } = createRequire(import.meta.url)(join(root, 'public/kohesap-app/guide-data.js'));
+const { EVENT_GUIDES, EVENT_GUIDES_AT, EVENT_GUIDES_DATE } = createRequire(import.meta.url)(join(root, 'public/kohesap-app/guide-data.js'));
 const USKO = (() => { // takvim saatleri data.js'ten (USKO_EVENTS)
   const src = readFileSync(join(root, 'public/kohesap-app/data.js'), 'utf8');
   const m = /const ALL_DAYS = [^;]+;\s*const USKO_EVENTS = (\[[\s\S]*?\n\]);/.exec(src);
@@ -62,7 +62,7 @@ const ld = { '@context': 'https://schema.org', '@graph': [
   { '@type': 'Organization', '@id': 'https://forgeandplay.com/#org', name: 'Forge & Play', url: 'https://forgeandplay.com/', logo: 'https://forgeandplay.com/site/icon-512.png', email: 'info@forgeandplay.com', brand: { '@type': 'Brand', name: 'KO Ekip' } },
   { '@type': 'WebSite', '@id': 'https://forgeandplay.com/#site', url: 'https://forgeandplay.com/', name: 'KO Ekip', inLanguage: 'tr-TR', publisher: { '@id': 'https://forgeandplay.com/#org' } },
   { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'KO Ekip', item: 'https://forgeandplay.com/' }, { '@type': 'ListItem', position: 2, name: 'Event Rehberi', item: URL }] },
-  { '@type': 'Article', headline: title, description: desc, url: URL, inLanguage: 'tr-TR', author: { '@id': 'https://forgeandplay.com/#org' }, publisher: { '@id': 'https://forgeandplay.com/#org' }, dateModified: new Date().toISOString().slice(0, 10), image: 'https://forgeandplay.com/site/og.jpg' },
+  { '@type': 'Article', headline: title, description: desc, url: URL, inLanguage: 'tr-TR', author: { '@id': 'https://forgeandplay.com/#org' }, publisher: { '@id': 'https://forgeandplay.com/#org' }, dateModified: EVENT_GUIDES_DATE, image: 'https://forgeandplay.com/site/og.jpg' },
   { '@type': 'FAQPage', mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) },
 ] };
 

@@ -8,6 +8,7 @@
    Site sayfasını yeniden üretmek için: node scripts/build-guides.mjs
    ========================================================================== */
 const EVENT_GUIDES_AT = 'Ekim 2026';
+const EVENT_GUIDES_DATE = '2026-10-23'; // içerik her değiştiğinde güncelle (site sayfasının dateModified'ı)
 const EVENT_GUIDES = [
   {
     pid: 'bdw', n: 'Border Defense War', k: 'BDW', slug: 'border-defense-war', tur: 'PvP · 8v8',
@@ -116,4 +117,4 @@ function guideFor(e) {
   const n = String(e.name || e.t || '').toLocaleLowerCase('tr');
   return EVENT_GUIDES.find(g => n.includes(g.n.toLocaleLowerCase('tr')) || new RegExp('\\(' + g.k.toLocaleLowerCase('tr') + '\\)').test(n)) || null;
 }
-if (typeof module !== 'undefined') module.exports = { EVENT_GUIDES, EVENT_GUIDES_AT };
+if (typeof module !== 'undefined') module.exports = { EVENT_GUIDES, EVENT_GUIDES_AT, EVENT_GUIDES_DATE };

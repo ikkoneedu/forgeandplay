@@ -35,7 +35,8 @@ export const rulesSyncEnabled = () => process.env.VERCEL_ENV === "production" ||
  * Gerekirse yayınlar. force değilse önce kohesapPushState/rules belgesine bakar:
  * bu sürümün kuralı zaten eşitlendiyse Firebase'e hiç sormaz (zamanlayıcı her dakika çağırır).
  */
-export async function syncRules(db: Firestore, force = false): Promise<RulesState> {
+type RulesApi = Pick<ReturnType<typeof getSecurityRules>, "getFirestoreRuleset" | "releaseFirestoreRulesetFromSource">;
+export async function syncRules(db: Firestore, force = false, api?: RulesApi): Promise<RulesState> {
   if (!rulesSyncEnabled()) return { ok: true, skipped: "üretim dışı" };
   const l = localRules();
   if (!l) return { ok: false, error: "firestore.rules sunucuda bulunamadı" };
@@ -46,7 +47,7 @@ export async function syncRules(db: Firestore, force = false): Promise<RulesStat
     // hata sonrası her dakika denemesin: 10 dakikada bir
     if (st.exists && st.get("hash") === l.hash && Date.now() - (Number(st.get("at")) || 0) < 10 * 60e3) return { ok: false, hash: l.hash, error: String(st.get("error") || ""), skipped: "bekliyor" };
   }
-  const rules = getSecurityRules(adminApp());
+  const rules = api || getSecurityRules(adminApp());
   let out: RulesState;
   try {
     const cur = await rules.getFirestoreRuleset().catch(() => null);

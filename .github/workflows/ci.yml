@@ -1,0 +1,39 @@
+# KO Ekip — her PR'da ve main'e push'ta: tip kontrolü, build, sunucu birim testleri,
+# Firestore kural testleri (emülatör) ve arayüz duman testi (Chromium).
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - name: Tip kontrolü
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Sunucu birim testleri
+        run: npm run test:unit
+      - name: Event rehberi sayfası güncel mi
+        run: npm run guides && git diff --exit-code public/site/event-rehberi.html
+      - name: Firestore kural testleri
+        run: npm run test:rules
+      - name: Chromium
+        run: npx playwright-core install --with-deps chromium
+      - name: Arayüz duman testi
+        run: npm run test:ui
