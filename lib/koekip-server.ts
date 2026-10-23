@@ -179,6 +179,24 @@ export function dueNotes(p: PushDoc & { bossAll?: boolean }, boss: BossMap, now:
   return out;
 }
 
+/** Ekip planı: kohesapTeams/{kod}/plans/{id} */
+export type TeamPlan = { id: string; t?: string; at?: number; note?: string; rsvp?: Record<string, { s?: string }> };
+/** Planda "geliyorum" ya da "belki" diyen kullanıcıya, başlamadan lead dakika önce hatırlatma. */
+export function planNotes(uid: string, p: PushDoc, plans: TeamPlan[], now: number, fromB: number, nowB: number): Note[] {
+  if (p.ev === false) return [];
+  const lead = Math.min(60, Math.max(1, Number(p.lead) || 10)) * 60e3;
+  const out: Note[] = [];
+  for (const pl of plans) {
+    const at = Number(pl.at) || 0, s = pl.rsvp && pl.rsvp[uid] && pl.rsvp[uid].s;
+    if (at <= now || (s !== "y" && s !== "m")) continue;
+    const b = Math.floor((at - lead) / 60e3);
+    if (b < fromB || b > nowB) continue;
+    const mins = Math.max(1, Math.round((at - now) / 60e3));
+    out.push({ title: `📅 ${String(pl.t || "Ekip planı").slice(0, 60)}`, body: `${mins} dk sonra (${trClock(at)})${pl.note ? " · " + String(pl.note).slice(0, 80) : ""}`, tag: `p-${pl.id}`, kind: "plan", url: "/?p=planla" });
+  }
+  return out;
+}
+
 /** API kapısı: onaylı üye değilse 401/403 yanıtı döner, üyeyse null. */
 export async function requireMember(req: Request, headers: Record<string, string> = {}): Promise<Response | null> {
   const u = await verifyUser(req.headers.get("authorization"));

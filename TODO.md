@@ -9,7 +9,8 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 
 ## Geliştirme sırası
 `ROADMAP.md` → "Önerilen sıra":
-1. [ ] Ekip etkinlik planlayıcı (RSVP) + alt karakter bağı
+1. [x] Ekip etkinlik planlayıcı (RSVP) + alt karakter bağı — "Ekip Planı" sayfası. Alt karakterler zaten ekipte tek kişi altında; katılımda karakter seçilir.
+   - [ ] **Senin adımın:** güncel `firestore.rules` dosyasını Firebase'e yapıştırıp yayınla (yeni `plans` bölümü)
 2. [ ] Event rehber kartları (uygulama + tanıtım sitesi SEO sayfaları)
 3. [ ] Günlük / haftalık yapılacaklar
 4. [ ] Katılım geçmişi + drop sırası

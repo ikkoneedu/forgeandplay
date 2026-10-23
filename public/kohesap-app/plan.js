@@ -14,6 +14,7 @@ const FEATS = [
   { id: 'ekipkur', n: 'Ekip kurma', d: 'Kendi ekibini kurup arkadaşlarını davet etme', def: 'uye', sub: true },
   { id: 'ses', n: 'Ekip yazışması', d: 'Ekip sohbeti ve bot (Ses & Sohbet sayfası)', def: 'uye' },
   { id: 'sesli', n: 'Sesli ekip odası', d: 'Bas-konuş, telefon ve PC arasında sesli oda', def: 'vip', sub: true },
+  { id: 'planla', n: 'Ekip planı', d: 'Etkinlik planlama, katılım ve hatırlatma', def: 'uye' },
   { id: 'boss', n: 'Boss alarmı', d: 'Sunucuya göre boss sayaçları, ekip içinde paylaşılır', def: 'uye' },
   { id: 'event', n: 'Event takvimi', d: 'Haftalık event saatleri ve geri sayım', def: 'uye' },
   { id: 'yeni', n: 'Yeni sunucu haberleri', d: 'Geri sayım, resmî takvim ve canlı haberler', def: 'uye' },

@@ -22,11 +22,11 @@ Windows exe · KVKK: veri indir / hesabı sil.
 
 | # | Özellik | Neden / nereden | Not |
 |---|---|---|---|
-| A1 | **Ekip etkinlik planlayıcı (RSVP)** | WoW raid planlayıcıları (GuildForge): "Cumartesi 21:00 CSW — Geliyorum / Belki / Gelmiyorum" | Event takvimiyle bağlanır; katılım geçmişi tutulur, bildirim gider |
+| A1 | ✅ **Ekip etkinlik planlayıcı (RSVP)** | WoW raid planlayıcıları (GuildForge): "Cumartesi 21:00 CSW — Geliyorum / Belki / Gelmiyorum" | Event takvimiyle bağlanır; katılım geçmişi tutulur, bildirim gider |
 | A2 | **Katılım & puan geçmişi** | WoW DKP/EPGP: drop paylaşımında adalet | Parti & Drop'a bağlanır: kim kaç etkinliğe geldi, kim ne aldı |
 | A3 | **Drop sırası / zar** | Loot council, zar sistemi | Ekip içi "bu item'e kim zar atar" + sonucu deftere yazma |
 | A4 | **Kompozisyon önerisi** | Raid kompozisyon araçları | Ekipteki sınıflara göre eksik rol uyarısı (ör. "priest yok") |
-| A5 | **Alt karakter bağı** | Raid araçlarında main/alt eşleme | Bir oyuncunun 4 karakteri tek kişi sayılır (katılım/pay için) |
+| A5 | ✅ **Alt karakter bağı** | Raid araçlarında main/alt eşleme | Bir oyuncunun 4 karakteri tek kişi sayılır (katılım/pay için) |
 | A6 | **Ekip panosu / duyuru + sabitlenen not** | Discord'un dağınıklığına alternatif | Ekip kuralları, parti stratejisi, toplanma yeri |
 
 ## Faz B — KO'ya özgü sistemler (rakipte olmayan derinlik)

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "@/lib/kohesap";
 import {
-  adminDb, dueNotes, env, hasAccess, pushReady, sendToUser, verifyUser,
-  type BossMap, type Note, type PushDoc,
+  adminDb, dueNotes, env, hasAccess, planNotes, pushReady, sendToUser, trClock, verifyUser,
+  type BossMap, type Note, type PushDoc, type TeamPlan,
 } from "@/lib/koekip-server";
 import type { Firestore } from "firebase-admin/firestore";
 import { refreshNews } from "@/lib/ko-news";
@@ -14,8 +14,8 @@ export const maxDuration = 30;
 /**
  * KO Ekip bildirimleri
  *  POST /api/koekip/push/test   → kendi cihazlarına deneme bildirimi
- *  POST /api/koekip/push/team   → ekibe anlık bildirim: { type: "online" | "boss", team, name, boss?, server? }
- *  GET  /api/koekip/push/cron   → zamanlayıcı (dakikada bir): event ve boss hatırlatmaları
+ *  POST /api/koekip/push/team   → ekibe anlık bildirim: { type: "online" | "boss" | "plan", team, name, boss?, server?, title?, at? }
+ *  GET  /api/koekip/push/cron   → zamanlayıcı (dakikada bir): event, boss ve ekip planı hatırlatmaları
  *       Yetki: ?key=CRON_SECRET ya da "Authorization: Bearer CRON_SECRET"
  */
 type Ctx = { params: Promise<{ action: string }> };
@@ -60,7 +60,7 @@ async function team(req: NextRequest) {
   if (r.err) return r.err;
   const { u, db } = r;
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const type = body.type === "boss" ? "boss" : "online";
+  const type = body.type === "boss" ? "boss" : body.type === "plan" ? "plan" : "online";
   const code = clean(body.team, 12).toUpperCase();
   if (!/^[A-Z0-9]{8}$/.test(code)) return json(req, { error: "Ekip kodu geçersiz" }, 400);
   const ts = await db.doc(`kohesapTeams/${code}`).get();
@@ -70,11 +70,18 @@ async function team(req: NextRequest) {
   const mainName = me && me.chars ? (me.chars.find((c) => c.id === me.main) || me.chars[0] || { name: "" }).name : "";
   const who = clean(body.name, 30) || clean(mainName, 30) || clean(me && me.name, 30) || "Bir üye";
 
-  let note: Note, pref: "online" | "boss";
+  let note: Note, pref: "online" | "boss" | "ev";
   if (type === "online") {
     if (!(await throttle(db, `on_${u.uid}`, 30 * 60e3))) return json(req, { sent: 0, skipped: "throttle" });
     note = { title: `🟢 ${who} çevrimiçi`, body: `${td.name || "Ekip"} · KO Ekip'e girdi`, tag: `online-${u.uid}`, kind: "online", url: "/?p=ses" };
     pref = "online";
+  } else if (type === "plan") {
+    const title = clean(body.title, 60), at = Number(body.at) || 0;
+    if (!title || !at) return json(req, { error: "Plan bilgisi eksik" }, 400);
+    if (!(await throttle(db, `plan_${code}_${u.uid}`, 60e3))) return json(req, { sent: 0, skipped: "throttle" });
+    const day = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"][new Date(at + 3 * 3600e3).getUTCDay()];
+    note = { title: `📅 Yeni plan: ${title}`, body: `${day} ${trClock(at)} · ${who} açtı · geliyor musun?`, tag: `plan-${code}-${at}`, kind: "plan", url: "/?p=planla" };
+    pref = "ev";
   } else {
     const boss = clean(body.boss, 40), server = clean(body.server, 24);
     if (!boss) return json(req, { error: "Boss adı yok" }, 400);
@@ -96,6 +103,15 @@ async function team(req: NextRequest) {
 }
 
 /* ---------- zamanlayıcı ---------- */
+/** ekibin önümüzdeki bir saat içinde başlayacak planları (çalışma başına ekip başına bir okuma) */
+async function teamPlans(db: Firestore, cache: Map<string, TeamPlan[]>, team: string, now: number): Promise<TeamPlan[]> {
+  const hit = cache.get(team);
+  if (hit) return hit;
+  const qs = await db.collection(`kohesapTeams/${team}/plans`).where("at", ">", now).where("at", "<=", now + 61 * 60e3).get().catch(() => null);
+  const list = qs ? qs.docs.map((d) => ({ ...(d.data() as Omit<TeamPlan, "id">), id: d.id })) : [];
+  cache.set(team, list);
+  return list;
+}
 let usersCache: { at: number; docs: { id: string; data: PushDoc }[] } | null = null;
 
 async function cron(req: NextRequest) {
@@ -121,6 +137,7 @@ async function cron(req: NextRequest) {
     usersCache = { at: now, docs: qs.docs.map((d) => ({ id: d.id, data: d.data() as PushDoc })) };
   }
   const bossDocs = new Map<string, BossMap>();
+  const plansCache = new Map<string, TeamPlan[]>();
   let sent = 0, notes = 0;
 
   for (const { id, data: p } of usersCache.docs) {
@@ -135,6 +152,7 @@ async function cron(req: NextRequest) {
       boss = bossDocs.get(key) || {};
     }
     const out = dueNotes(p, boss, now, fromB, nowB);
+    if (p.team && /^[A-Z0-9]{8}$/.test(p.team)) out.push(...planNotes(id, p, await teamPlans(db, plansCache, p.team, now), now, fromB, nowB));
     for (const n of out.slice(0, 5)) { notes++; sent += await sendToUser(db, id, p, n); }
   }
   // yeni sunucu haberleri: 10 dakikada bir tara, yeni sunucuyla ilgili yeni haber varsa bildir

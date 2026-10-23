@@ -90,6 +90,7 @@ iPhone'da bildirim yalnızca ana ekrandan açılan uygulamada çalışır.
 - **Event öncesi:** Event Takvimi'nde açık olan eventler, seçilen süre kadar önce (varsayılan 10 dk).
 - **Boss alarmı:** Boss Alarmı sayfasında zili açık olan boss'lar için, çıkmadan 10 dk önce. Ekipten biri **☠ Öldü** işaretlediğinde sayaç kurulur. Sayaçlar ekip ve sunucu başına paylaşılır.
 - **📣 Çıktı:** Bir boss çıkınca ekibe anında bildirim gider ve sohbete bot mesajı düşer.
+- **📅 Ekip planı:** Biri plan açınca ekibe bildirim gider ve sohbete bot mesajı düşer. "Geliyorum" ya da "Belki" diyenlere başlamadan önce (boss sayfasındaki önceden haber süresi kadar) hatırlatılır. Event bildirimini kapatan bu hatırlatmaları da almaz.
 - **Ekip online:** Ekipten biri KO Ekip'i açınca diğerlerine bildirim gider. Aynı kişi için en fazla yarım saatte bir.
 
 ## Windows uygulaması
