@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import editorialNews from "@/lib/ko-news-editorial.json";
 import { corsHeaders } from "@/lib/kohesap";
 import { adminDb, requireMember } from "@/lib/koekip-server";
 import { refreshNews, type NewsDoc } from "@/lib/ko-news";
@@ -19,6 +20,14 @@ export async function GET(req: NextRequest) {
   const gate = pub ? null : await requireMember(req, cors);
   if (gate) return gate;
   const db = adminDb();
+  // Reviewed public news remains available when the database is not configured.
+  if (!db && pub) {
+    const items = [...editorialNews].sort((a, b) => b.pub - a.pub).slice(0, 8)
+      .map(({ t, u, src, pub: p, yeni, off }) => ({ t, u, src, at: p, pub: p, yeni, off }));
+    return NextResponse.json({ ok: true, at: 0, items }, {
+      headers: { ...cors, "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+    });
+  }
   if (!db) return NextResponse.json({ ok: false, error: "Sunucuda FIREBASE_SERVICE_ACCOUNT tanımlı değil" }, { status: 503, headers: cors });
   const s = await db.doc("kohesapAssets/news").get();
   let doc = (s.data() as NewsDoc) || null;
