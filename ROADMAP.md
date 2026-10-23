@@ -37,7 +37,7 @@ Windows exe · KVKK: veri indir / hesabı sil.
 | B2 | ✅ **Boss tahmin penceresi** | Kesin saat yerine "en erken – en geç" pencere (KO'da respawn sapabiliyor); ekip içi "gördüm/öldü" bildirimleri pencereyi daraltır |
 | B3 | ✅ **Günlük / haftalık yapılacaklar** | Lost Ark yardımcılarındaki karakter başı checklist: günlük görevler, event katılımı, sıfırlanma saatinde otomatik temizlenir |
 | B4 | ✅ **Grind oturumu takibi** | Garmoth Grind Tracker: başlat/bitir, kazanılan EXP/para/drop, saat başı verim; EXP hesabına ve deftere bağlanır |
-| B5 | **Item basma günlüğü istatistikleri** | Simülatörün yanında gerçek basma sonuçları; topluluk geneli anonim oran (kişisel "şans" karşılaştırması) |
+| B5 | ✅ **Item basma günlüğü istatistikleri** (topluluk oranı) | Simülatörün yanında gerçek basma sonuçları; topluluk geneli anonim oran (kişisel "şans" karşılaştırması) |
 | B6 | **Set / build planlayıcı** | Garmoth Gear Planner: karakter için hedef item listesi, toplam maliyet (canlı pazar fiyatıyla), eksikler |
 | B7 | ✅ **Fiyat geçmişi ve alarm** (GB) | Canlı GB/pazar verisini saklayıp grafik + "X item Y'nin altına düşünce haber ver" (VIP) |
 

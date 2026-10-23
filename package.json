@@ -12,7 +12,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:ui",
-    "test:unit": "tsx --test tests/server.test.ts",
+    "test:unit": "tsx --test tests/server.test.ts tests/globals.test.mjs",
     "test:ui": "node --test tests/ui.test.mjs",
     "test:rules": "npx --yes firebase-tools@13.35.1 emulators:exec --only firestore --project demo-koekip \"node tests/firestore.rules.mjs\"",
     "guides": "node scripts/build-guides.mjs"

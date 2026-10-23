@@ -146,6 +146,16 @@ service cloud.firestore {
         && (!('evs' in request.resource.data) || request.resource.data.evs.size() <= 60);
     }
 
+    // Item basma topluluk oranları: isteyen kullanıcı yalnızca sayıları paylaşır (scroll|adım → [deneme, geçti]).
+    match /kohesapAnvil/{uid} {
+      allow read: if hasKoAccess();
+      allow create, update: if hasKoAccess() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['s', 'at'])
+        && request.resource.data.s is map && request.resource.data.s.size() <= 40
+        && request.resource.data.at is int;
+      allow delete: if (hasKoAccess() && request.auth.uid == uid) || isAdmin();
+    }
+
     // Ekip bul ilan panosu: onaylı kullanıcılar okur; herkes yalnızca kendi ilanını (belge kimliği = uid) yazar.
     // İlanda ekip kodu varsa ilanı veren o ekibin lideri olmalı (başkasının kodu yayınlanamaz).
     match /kohesapLfg/{uid} {

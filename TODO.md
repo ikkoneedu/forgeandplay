@@ -22,6 +22,8 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 ## Ek
 - [x] Boss çıkış penceresi (ekip verisinden öğrenilir)
 - [x] Ekip duyurusu (sabit not) ve Discord köprüsü
+- [x] Item basma: topluluk oranları (anonim, isteğe bağlı)
+- [x] Testler + CI (`npm test`, `npm run test:rules`, `.github/workflows/ci.yml`)
 
 ## Sonra
 - [ ] VIP çevrim içi ödeme (iyzico / Stripe)

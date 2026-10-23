@@ -36,6 +36,9 @@ async function openApp(width = 1280, height = 900) {
   await pg.route(u => !u.href.startsWith(base), r => r.abort());
   await pg.goto(base + '/kohesap-app/index.html');
   await pg.waitForFunction(() => typeof VIEWS !== 'undefined' && typeof demoState === 'function');
+  // açılış (oturum kontrolü → giriş ekranı) bitsin; yoksa sonradan gelen giriş ekranı uygulamayı örter
+  await pg.waitForFunction(() => { const a = document.getElementById('auth'); return a && !a.hidden && a.textContent.trim().length > 0; }, null, { timeout: 15000 }).catch(() => {});
+  await pg.waitForTimeout(300);
   await pg.evaluate(() => {
     const nop = () => ({}), snap = { exists: () => false, data: () => null, docs: [] };
     window.__writes = [];
@@ -68,6 +71,7 @@ test('tüm sayfalar: hata, boş içerik ve yatay taşma yok', async () => {
     assert.ok(ids.length >= 25, 'sayfa listesi');
     for (const id of ids) {
       const r = await pg.evaluate(id => {
+        if (typeof hideAuth === 'function') hideAuth();
         ui.page = id; render();
         const c = document.getElementById('content');
         return { len: c.innerText.trim().length, over: document.documentElement.scrollWidth > innerWidth + 1 };
@@ -205,6 +209,29 @@ test('GB geçmişi ve alarmı, boss çıkış penceresi', async () => {
     return out;
   });
   assert.deepEqual(r, { hist: true, alarm: true, once: true, win: true, card: true });
+  assert.deepEqual(errors, []);
+  await pg.close();
+});
+
+test('item basma: kayıtlı günlük açılır, topluluk sütunu ve anonim paylaşım', async () => {
+  const { pg, errors } = await openApp();
+  const r = await pg.evaluate(async () => {
+    const wait = () => new Promise(r => setTimeout(r, 60)), out = {}, dels = [];
+    const docs = [{ data: () => ({ s: { 'bus|5': [100, 53] }, at: 1 }) }, { data: () => ({ s: { 'bus|5': [20, 11], 'bad|x': [-1, 5] }, at: 2 }) }];
+    Object.assign(window.FB, { getDocs: async () => ({ docs }), deleteDoc: async ref => { dels.push(ref.path); } });
+    const A = anv(); A.cfg.tab = 'gunluk'; A.share = false;
+    A.log = [{ id: 1, date: localDate(), item: 'Raptor', scroll: 'bus', lv: 5, ok: true }, { id: 2, date: localDate(), item: 'Raptor', scroll: 'bus', lv: 5, ok: false }];
+    ui.page = 'basma'; render(); await wait();
+    const html = document.getElementById('content').innerHTML;
+    out.col = /Topluluk<\/th>/.test(html) && /%53,3/.test(html) && /120 deneme/.test(html);
+    document.querySelector('[data-ac-share]').click(); await wait();
+    const w = __writes.find(x => x[0] === 'kohesapAnvil/u1');
+    out.share = !!w && JSON.stringify(w[1].s) === JSON.stringify({ 'bus|5': [2, 1] }) && Object.keys(w[1]).join() === 's,at';
+    document.querySelector('[data-ac-share]').click(); await wait();
+    out.unshare = dels.includes('kohesapAnvil/u1');
+    return out;
+  });
+  assert.deepEqual(r, { col: true, share: true, unshare: true });
   assert.deepEqual(errors, []);
   await pg.close();
 });

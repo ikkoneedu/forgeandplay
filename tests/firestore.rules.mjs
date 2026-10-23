@@ -65,5 +65,11 @@ await t('üye webhook okuyamaz', assertFails(getDoc(DC('u2'))));
 await t('üye webhook yazamaz', assertFails(setDoc(DC('u2'), { url: W, at: 1, by: 'u2' })));
 await t('discord dışı adres reddedilir', assertFails(setDoc(DC('u1'), { url: 'https://evil.com/api/webhooks/123456789012345678/abcdefghijklmnopqrstuvwxyz', at: 1, by: 'u1' })));
 await t('benzer alan adı reddedilir', assertFails(setDoc(DC('u1'), { url: 'https://discord.com.evil.io/api/webhooks/123456789012345678/abcdefghijklmnopqrstuvwxyz', at: 1, by: 'u1' })));
+// ---- basma topluluk oranları ----
+await t('kendi basma sayılarını paylaşır', assertSucceeds(setDoc(doc(db('u2'), 'kohesapAnvil/u2'), { s: { 'bus|5': [10, 6] }, at: 1 })));
+await t('başkası adına paylaşamaz', assertFails(setDoc(doc(db('u3'), 'kohesapAnvil/u2'), { s: {}, at: 1 })));
+await t('fazladan alan reddedilir', assertFails(setDoc(doc(db('u2'), 'kohesapAnvil/u2'), { s: {}, at: 1, item: 'x' })));
+await t('onaylı kullanıcı topluluğu okur', assertSucceeds(getDoc(doc(db('u3'), 'kohesapAnvil/u2'))));
+await t('kendi paylaşımını siler', assertSucceeds(deleteDoc(doc(db('u2'), 'kohesapAnvil/u2'))));
 await env.cleanup();
 console.log(fails ? fails + ' test başarısız' : 'Tüm kural testleri geçti'); process.exit(fails ? 1 : 0);
