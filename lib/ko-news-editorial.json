@@ -1,0 +1,22 @@
+[
+  {
+    "id": "editorial-new-server-2026",
+    "t": "Yeni sunucu takvimi: sunucu seçimi 29 Ekim, açılış 12 Kasım",
+    "u": "https://www.nttgame.com/knight/tr/newserveropen2026",
+    "src": "KO Ekip editör özeti · NTT Game",
+    "d": "Resmî takvime göre ikinci ön kayıt ve sunucu seçimi 29 Ekim–12 Kasım, karakter oluşturma 10–11 Kasım arasında. Açılış 12 Kasım 2026 saat 16.00 (Türkiye). Kayıt için telefon doğrulaması, giriş için OTP gerekiyor; Ardream ve Ronark Land Base bulunmayacak.",
+    "pub": 1792789200000,
+    "yeni": true,
+    "off": true
+  },
+  {
+    "id": "editorial-web-maintenance-20261022",
+    "t": "NTT Game, forum ve destek hizmetleri için bakım duyurdu",
+    "u": "https://www.nttgame.com/tr/news",
+    "src": "KO Ekip editör özeti · NTT Game",
+    "d": "22 Ekim tarihli duyuru, forum ve destek hizmetlerine bakım nedeniyle geçici olarak erişilemeyebileceğini bildiriyor. Duyuruda bitiş saati belirtilmiyor. Bu haber, oyun sunucularının kapalı olduğu veya bakımın hâlen sürdüğü anlamına gelmez.",
+    "pub": 1792694340000,
+    "yeni": false,
+    "off": true
+  }
+]
