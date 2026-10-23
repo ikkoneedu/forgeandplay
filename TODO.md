@@ -19,5 +19,8 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 6. [x] Ekip arıyorum panosu — "Ekip Bul" sayfası
    - [x] Paylaşım kartları (plan daveti, ekip kartı, grind sonucu)
 
+## Ek
+- [x] Boss çıkış penceresi (ekip verisinden öğrenilir)
+
 ## Sonra
 - [ ] VIP çevrim içi ödeme (iyzico / Stripe)

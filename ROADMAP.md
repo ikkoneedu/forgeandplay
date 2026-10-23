@@ -34,7 +34,7 @@ Windows exe · KVKK: veri indir / hesabı sil.
 | # | Özellik | Ayrıntı |
 |---|---|---|
 | B1 | ✅ **Event rehber kartları** | BDW, Chaos, Juraid, FT, Bifrost, CSW, Lunar/Dark Lunar: seviye aralığı, ödül, süre, ekip taktiği; takvimdeki her etkinliğe bağlanır |
-| B2 | **Boss tahmin penceresi** | Kesin saat yerine "en erken – en geç" pencere (KO'da respawn sapabiliyor); ekip içi "gördüm/öldü" bildirimleri pencereyi daraltır |
+| B2 | ✅ **Boss tahmin penceresi** | Kesin saat yerine "en erken – en geç" pencere (KO'da respawn sapabiliyor); ekip içi "gördüm/öldü" bildirimleri pencereyi daraltır |
 | B3 | ✅ **Günlük / haftalık yapılacaklar** | Lost Ark yardımcılarındaki karakter başı checklist: günlük görevler, event katılımı, sıfırlanma saatinde otomatik temizlenir |
 | B4 | ✅ **Grind oturumu takibi** | Garmoth Grind Tracker: başlat/bitir, kazanılan EXP/para/drop, saat başı verim; EXP hesabına ve deftere bağlanır |
 | B5 | **Item basma günlüğü istatistikleri** | Simülatörün yanında gerçek basma sonuçları; topluluk geneli anonim oran (kişisel "şans" karşılaştırması) |

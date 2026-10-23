@@ -134,7 +134,8 @@ export function trAt(y: number, m: number, day: number, hhmm: string): number {
 export const trClock = (ms: number) => new Date(ms + TR_OFFSET).toISOString().slice(11, 16);
 
 /* ---------------- zamanlayıcı hesabı (saf fonksiyon; test edilebilir) ---------------- */
-export type BossMap = Record<string, { k?: number; iv?: number; n?: string }>;
+/** dv: ekibin gördüğü gerçek çıkışın tahminden sapması (dk) — pencere ve erken alarm için */
+export type BossMap = Record<string, { k?: number; iv?: number; n?: string; dv?: number[] }>;
 /**
  * Bu dakikada (fromB..nowB dakika aralığı) gönderilmesi gereken bildirimler.
  * Bildirim anı = başlangıç − öne alma süresi (lead).
@@ -170,9 +171,12 @@ export function dueNotes(p: PushDoc & { bossAll?: boolean }, boss: BossMap, now:
     for (const [bid, r] of Object.entries(boss || {})) {
       if (!r || !r.k || !r.iv || (ids && !ids.has(bid))) continue;
       const at = r.k + r.iv * 1000;
-      if (at > now && due(at - lead)) {
-        const mins = Math.max(1, Math.round((at - now) / 60e3));
-        out.push({ title: "🐉 Boss alarmı", body: `${r.n || bid} ${mins} dk sonra çıkıyor (~${trClock(at)} · ${p.server || ""})`, tag: `b-${bid}-${at}`, kind: "boss", url: "/?p=boss" });
+      const dv = Array.isArray(r.dv) ? r.dv.filter((x) => typeof x === "number" && Math.abs(x) <= 90) : [];
+      const lo = at + Math.min(0, ...dv) * 60e3, hi = at + Math.max(0, ...dv) * 60e3; // ekip verisinden pencere
+      if (lo > now && due(lo - lead)) {
+        const mins = Math.max(1, Math.round((lo - now) / 60e3));
+        const when = hi - lo >= 60e3 ? `${trClock(lo)}–${trClock(hi)}` : `~${trClock(at)}`;
+        out.push({ title: "🐉 Boss alarmı", body: `${r.n || bid} ${mins} dk sonra çıkabilir (${when} · ${p.server || ""})`, tag: `b-${bid}-${at}`, kind: "boss", url: "/?p=boss" });
       }
     }
   }

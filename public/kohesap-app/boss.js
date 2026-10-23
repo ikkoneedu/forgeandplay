@@ -5,7 +5,9 @@
      yeniden başladıktan) belli süre sonra çıkar. Ekipten biri "öldü" işaretler,
      sonraki çıkış hesaplanır; herkes 10 dk önce bildirim alır.
    - Sayaçlar ekip içinde, seçilen sunucuya göre paylaşılır:
-       kohesapTeams/{kod}/boss/{sunucu} → { b: { bossId: { k, iv, n, by, r } }, restart, at, by }
+       kohesapTeams/{kod}/boss/{sunucu} → { b: { bossId: { k, iv, n, by, r, dv, up } }, restart, at, by }
+   - Çıkış penceresi: biri "📣 Çıktı" deyince gerçek çıkışın tahminden sapması (dk) dv listesine
+     yazılır (son 8). Pencere = tahmin + [en küçük, en büyük] sapma; alarm en erken uca göre çalar.
    - Süreler oyunun canavar tablosundan: ucuzagb.com boss saatleri rehberi (13.09.2026),
      etkinlik boss'ları: ucuzagb.com etkinlik saatleri (12.10.2026).
    ========================================================================== */
@@ -84,6 +86,15 @@ function bossNext(b, now = Date.now()) {
   if (!r || !r.k || !b.iv) return null;
   return r.k + b.iv * 1000;
 }
+/** ekip verisinden çıkış penceresi: { lo, hi, n } (ms) ya da null */
+function bossWin(b) {
+  const r = bossRec(b.id), next = bossNext(b);
+  if (!next || b.fixed || !r || !Array.isArray(r.dv) || !r.dv.length) return null;
+  const lo = Math.min(0, ...r.dv), hi = Math.max(0, ...r.dv);
+  return { lo: next + lo * 60000, hi: next + hi * 60000, n: r.dv.length };
+}
+/** alarm için en erken olası çıkış */
+const bossAlarmAt = b => { const w = bossWin(b); return w ? w.lo : bossNext(b); };
 function bossState(b, now = Date.now()) {
   const r = bossRec(b.id), next = bossNext(b, now);
   if (b.fixed) return { kind: 'fixed', next, r };
@@ -117,6 +128,12 @@ function bossRestart(at) {
 async function bossAnnounce(id) {
   const b = bossById(id); if (!b || !TEAM.doc) return;
   const srv = bossSrv();
+  // gerçek çıkışın tahminden sapması (sayaç kuruluysa, makul aralıkta)
+  const r = bossRec(id), now = Date.now();
+  if (r && r.k && b.iv && !b.fixed) {
+    const dev = Math.round((now - (r.k + b.iv * 1000)) / 60000);
+    if (Math.abs(dev) <= 90) bossWrite({ b: { [id]: { dv: [...(Array.isArray(r.dv) ? r.dv : []), dev].slice(-8), up: now } } });
+  }
   const txt = `🐉 **${b.n}** çıktı! (${srv}${b.z !== 'event' ? ' · ' + (BOSS_ZONES.find(z => z.id === b.z) || {}).t : ''}) — ${whoShort()}`;
   if (typeof botSay === 'function') botSay(txt, 'boss').catch(() => { });
   if (typeof notifyTeam === 'function') notifyTeam('boss', { boss: b.n, server: srv });
@@ -138,13 +155,15 @@ function bossTick() {
   BOSSES.forEach(b => {
     if (!bellOn(b.id) || (!b.iv && !b.fixed)) return;
     const next = bossNext(b, now); if (!next) return;
-    const dt = next - now, k1 = b.id + '@' + next;
+    const early = bossAlarmAt(b) || next;
+    const dt = early - now, k1 = b.id + '@' + next;
     if (dt > 0 && dt <= lead && !BOSS.notified[k1]) {
       BOSS.notified[k1] = 1;
-      const msg = `${b.n} ${Math.max(1, Math.round(dt / 60000))} dk sonra çıkıyor (~${clock(next)} · ${bossSrv()})`;
+      const w = bossWin(b);
+      const msg = `${b.n} ${Math.max(1, Math.round(dt / 60000))} dk sonra çıkabilir (${w ? clock(w.lo) + '–' + clock(w.hi) : '~' + clock(next)} · ${bossSrv()})`;
       if (typeof localNotify === 'function') localNotify('🐉 Boss alarmı', msg, 'boss-' + b.id); else toast('🐉 ' + msg);
     }
-    if (dt <= 0 && dt > -60000 && !BOSS.notified[k1 + 'u'] && !b.fixed) { BOSS.notified[k1 + 'u'] = 1; toast(`🐉 ${b.n} şimdi çıkmış olmalı (${bossSrv()})`); }
+    if (dt <= 0 && dt > -60000 && !BOSS.notified[k1 + 'u'] && !b.fixed) { BOSS.notified[k1 + 'u'] = 1; toast(bossWin(b) ? `🐉 ${b.n} çıkış penceresi başladı (${bossSrv()})` : `🐉 ${b.n} şimdi çıkmış olmalı (${bossSrv()})`); }
   });
   if (ui.page === 'boss') bossPaintTimes();
 }
@@ -159,7 +178,8 @@ PAGES.splice(PAGES.findIndex(p => p.id === 'event') + 1, 0, { id: 'boss', t: 'Bo
 function bossCard(b, now) {
   const st = bossState(b, now), r = st.r, on = bellOn(b.id);
   let main = '', sub = '', cls = '';
-  if (st.kind === 'wait') { main = `<span class="bs-cd" data-bnext="${st.next}">${fmtCD(st.next - now)}</span>`; sub = `~${dayClock(st.next)}'de çıkar`; cls = st.next - now <= (BOSS.lead || 10) * 60000 ? 'soon' : ''; }
+  const win = bossWin(b);
+  if (st.kind === 'wait') { main = `<span class="bs-cd" data-bnext="${st.next}">${fmtCD(st.next - now)}</span>`; sub = win && win.hi - win.lo >= 60000 ? `${clock(win.lo)}–${clock(win.hi)} arası · ekip verisi (${win.n})` : `~${dayClock(st.next)}'de çıkar`; cls = (win ? win.lo : st.next) - now <= (BOSS.lead || 10) * 60000 ? 'soon' : ''; }
   else if (st.kind === 'up') { main = '<span class="bs-up">Çıkmış olmalı</span>'; sub = `~${dayClock(st.next)}'den beri · öldürünce işaretle`; cls = 'up'; }
   else if (st.kind === 'fixed') { main = st.next ? `<span class="bs-cd" data-bnext="${st.next}">${fmtCD(Math.max(0, st.next - now))}</span>` : '—'; sub = 'Her gün ' + b.fixed.t.join(' ve '); cls = st.next && st.next - now <= (BOSS.lead || 10) * 60000 ? 'soon' : ''; }
   else if (st.kind === 'manual') { main = '<span class="bs-unk">Duyuruyla</span>'; sub = 'Sayaç yok'; }
@@ -213,7 +233,7 @@ VIEWS.boss = () => {
     <div class="bs-zh"><h3>${esc(z.t)}</h3><span class="mut">${esc(z.d)}</span></div>
     <div class="bs-grid">${BOSSES.filter(b => b.z === z.id).map(b => bossCard(b, now)).join('')}</div>
   </section>`).join('')}
-  <p class="hint" style="margin-top:14px">${esc(BOSS_SRC)}. Sayaçlar her döngüde ~53 dk kayar; birkaç dakikalık sapma olabilir. Sayaçlar ${esc(srv)} sunucusu ve bu ekip için geçerli.</p>`;
+  <p class="hint" style="margin-top:14px">${esc(BOSS_SRC)}. Sayaçlar her döngüde ~53 dk kayar; birkaç dakikalık sapma olabilir. Boss çıktığında <b>📣 Çıktı</b>'ya basın: gerçek çıkışlar kaydedildikçe kartta ekip verisinden çıkış penceresi görünür ve alarm pencerenin başına göre çalar. Sayaçlar ${esc(srv)} sunucusu ve bu ekip için geçerli.</p>`;
 };
 function bossPaintTimes() {
   const now = Date.now();
