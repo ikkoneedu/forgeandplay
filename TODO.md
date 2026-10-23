@@ -15,7 +15,7 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 3. [x] Günlük / haftalık yapılacaklar — "Günlük Görevler" sayfası
 4. [x] Katılım geçmişi + drop sırası — Ekip Planı: yoklama, zar / adil sıra, katılım tablosu, Parti & Drop'a aktarma
 5. [x] Grind oturumu takibi — "Grind Takibi" sayfası
-   - [ ] Fiyat alarmı
+   - [x] Fiyat alarmı (GB: geçmiş grafiği + eşik alarmı)
 6. [x] Ekip arıyorum panosu — "Ekip Bul" sayfası
    - [x] Paylaşım kartları (plan daveti, ekip kartı, grind sonucu)
 

@@ -39,7 +39,7 @@ Windows exe · KVKK: veri indir / hesabı sil.
 | B4 | ✅ **Grind oturumu takibi** | Garmoth Grind Tracker: başlat/bitir, kazanılan EXP/para/drop, saat başı verim; EXP hesabına ve deftere bağlanır |
 | B5 | **Item basma günlüğü istatistikleri** | Simülatörün yanında gerçek basma sonuçları; topluluk geneli anonim oran (kişisel "şans" karşılaştırması) |
 | B6 | **Set / build planlayıcı** | Garmoth Gear Planner: karakter için hedef item listesi, toplam maliyet (canlı pazar fiyatıyla), eksikler |
-| B7 | **Fiyat geçmişi ve alarm** | Canlı GB/pazar verisini saklayıp grafik + "X item Y'nin altına düşünce haber ver" (VIP) |
+| B7 | ✅ **Fiyat geçmişi ve alarm** (GB) | Canlı GB/pazar verisini saklayıp grafik + "X item Y'nin altına düşünce haber ver" (VIP) |
 
 ## Faz C — Topluluk ve büyüme
 

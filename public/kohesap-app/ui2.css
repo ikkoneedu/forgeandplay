@@ -554,3 +554,12 @@ button.el-chip{cursor:pointer}
 .lf-acts .btn{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:440px){.lf-grid{grid-template-columns:1fr}.lf-filters .inp{flex:1 1 140px}}
 .gr-rb{white-space:nowrap}
+
+/* gb geçmişi ve alarm */
+.gba{margin-top:16px}
+.gba-sp{width:100%;height:120px;display:block}
+.gba-ax{display:flex;justify-content:space-between;font-size:11.5px;color:var(--tx3);margin-top:4px}
+.gba-lg{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:13px;color:var(--tx2)}
+.gba-lg i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.gba-lg i.s{background:var(--green)}
+.gba-lg i.b{background:var(--gold)}
