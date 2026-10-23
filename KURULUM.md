@@ -4,14 +4,13 @@ forgeandplay.com açılınca doğrudan **KO Ekip** gelir. Eski site sayfaları a
 
 Aşağıdaki adımlar bir kez yapılır. 1 ve 2 olmadan uygulama yine çalışır, ama boss sayaçları, bildirimler ve telefonda ses eksik kalır.
 
-## 1. Firebase kuralları (zorunlu)
+## 1. Firebase kuralları (otomatik)
 
-Bu sürümde iki yeni alan var: boss sayaçları ve bildirim ayarları.
+Repodaki `firestore.rules`, Vercel'e her üretim yayınından sonra **sunucu tarafından otomatik yayınlanır**: zamanlayıcı (aşağıdaki 3. adım) her dakika repodaki kuralla Firebase'dekini karşılaştırır, farklıysa yayınlar. Admin olarak uygulamadaki **Şimdi yayınla** düğmesiyle beklemeden de yayınlayabilirsin.
 
-1. Firebase Console'da **Firestore Database → Rules** sekmesini aç.
-2. Oradaki metnin tamamını sil.
-3. Repodaki `firestore.rules` dosyasının tamamını yapıştır.
-4. **Publish**'e bas.
+Gerekenler: `FIREBASE_SERVICE_ACCOUNT` (2a) ve zamanlayıcı (3). Hizmet hesabının kural yayınlama izni yoksa uygulama bunu söyler; o zaman Google Cloud Console → **IAM** → `firebase-adminsdk-…` hesabına **Firebase Rules Admin** rolünü ekle.
+
+Elle yayınlamak gerekirse: Firebase Console → **Firestore Database → Rules** → repodaki `firestore.rules`'un tamamını yapıştır → **Publish**.
 
 ## 2. Vercel ortam değişkenleri
 

@@ -40,9 +40,10 @@ function rulesBox() {
   if (!isAdmin()) return `<div class="callout r" style="margin-bottom:16px"><b>Ekip özelliği henüz açılmadı.</b> Sunucu tarafındaki izin ayarı (Firebase kuralları) güncellenmemiş. Site yöneticisine haber ver.</div>`;
   return `<div class="card rules-box">
     <div class="card-h"><div><h3>Güncel Firebase kurallarını yayınla <span class="badge y">admin</span></h3>
-      <div class="sub">Bu sürümün kuralları Firebase'de henüz yayınlanmamış; ekip, sesli sohbet veya karakter görselleri "izin yok" hatası verebilir. Kurallar Vercel ile otomatik gitmez; her güncellemede bir kez elle yapıştırman gerekiyor.</div></div></div>
+      <div class="sub">Bu sürümün kuralları Firebase'de henüz yayınlanmamış; ekip, sesli sohbet veya karakter görselleri "izin yok" hatası verebilir. Sunucu yeni yayından sonra kuralları kendiliğinden yayınlar (zamanlayıcı her dakika kontrol eder). Beklemek istemezsen aşağıdaki düğmeye bas.</div></div></div>
+    <div class="row" style="margin:4px 0 10px;gap:8px"><button class="btn pri sm" data-act="rules-sync">Şimdi yayınla</button><span class="hint">Olmazsa elle: aşağıdaki adımlar</span></div>
     <ol class="rules-steps">
-      <li><button class="btn pri sm" data-act="rules-copy">Kuralları kopyala</button> (repodaki <code>firestore.rules</code> dosyasının tamamı)</li>
+      <li><button class="btn sm" data-act="rules-copy">Kuralları kopyala</button> (repodaki <code>firestore.rules</code> dosyasının tamamı)</li>
       <li>${pid ? `<a class="btn sm" href="https://console.firebase.google.com/project/${esc(pid)}/firestore/rules" target="_blank" rel="noopener">Firebase kural sayfasını aç ↗</a>` : 'Firebase Console → Firestore Database → Rules sekmesini aç'}</li>
       <li>Oradaki metnin tamamını sil, kopyaladığını yapıştır ve <b>Publish</b> de.</li>
       <li><button class="btn sm ghost" data-act="rules-recheck">Tekrar kontrol et</button></li>
@@ -272,6 +273,13 @@ Object.assign(ACTIONS, {
       await navigator.clipboard.writeText(txt);
       toast('Kurallar kopyalandı (' + txt.split('\n').length + ' satır). Firebase\'e yapıştır.', 'ok');
     } catch (e) { toast('Kopyalanamadı: ' + e.message, 'err'); }
+  },
+  'rules-sync': async () => {
+    try {
+      const j = await apiPost('/api/kohesap/rules');
+      toast(j.released ? 'Kurallar yayınlandı' : j.skipped || 'Kurallar zaten güncel', 'ok');
+      ACTIONS['rules-recheck']();
+    } catch (e) { toast('Yayınlanamadı: ' + e.message, 'err'); }
   },
   'rules-recheck': () => { TEAM.rulesChecked = false; TEAM.rulesMissing = false; teamRulesProbe().then(() => { toast(TEAM.rulesMissing ? 'Kurallar hâlâ eski görünüyor' : 'Kurallar yayınlanmış, her şey hazır', TEAM.rulesMissing ? 'err' : 'ok'); if (!TEAM.rulesMissing) artLoad(); render(); }); },
 });

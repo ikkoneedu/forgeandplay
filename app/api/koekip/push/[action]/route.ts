@@ -6,6 +6,7 @@ import {
 } from "@/lib/koekip-server";
 import type { Firestore } from "firebase-admin/firestore";
 import { refreshNews } from "@/lib/ko-news";
+import { syncRules } from "@/lib/rules-sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -131,6 +132,9 @@ async function cron(req: NextRequest) {
   const fromB = Math.max(lastB + 1, nowB - 10);
   await stRef.set({ b: nowB, at: now });
   await db.doc("kohesapAssets/pushCron").set({ at: now });
+  // yeni yayında firestore.rules değiştiyse Firebase'e yayınla (eşitse tek belge okuması)
+  const rules = await syncRules(db).catch((e) => ({ ok: false, error: (e as Error).message }));
+  if (!rules.ok) console.warn("kurallar", rules.error);
 
   if (!usersCache || now - usersCache.at > 2 * 60e3) {
     const qs = await db.collection("kohesapPush").get();
@@ -176,7 +180,7 @@ async function cron(req: NextRequest) {
       if (hot.length) await db.doc("kohesapPushState/news").set({ at: now, day, n: sentToday + hot.length }, { merge: true });
     } catch (e) { console.warn("haberler", e); }
   }
-  return json(req, { ok: true, users: usersCache.docs.length, notes, sent, news, minutes: nowB - fromB + 1 });
+  return json(req, { ok: true, users: usersCache.docs.length, notes, sent, news, minutes: nowB - fromB + 1, rules: rules.ok ? "ok" : "hata" });
 }
 
 export async function POST(req: NextRequest, ctx: Ctx) {

@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Firestore kuralları sunucudan otomatik yayınlanır (lib/rules-sync.ts); dosya bu rotalarla birlikte taşınır
+  outputFileTracingIncludes: {
+    "/api/koekip/push/[action]": ["./firestore.rules"],
+    "/api/kohesap/rules": ["./firestore.rules"],
+  },
   async rewrites() {
     return {
       beforeFiles: [
