@@ -273,7 +273,7 @@ logout = async function () { if (NOTIF.unsub) { NOTIF.unsub(); NOTIF.unsub = nul
 /* KO Ekip: ekip özellikleri menünün başında */
 (function reorderNav() {
   const order = [
-    { sec: 'Ekip' }, 'ekip', 'ses', 'planla', 'boss', 'event', 'rehber', 'bildirim',
+    { sec: 'Ekip' }, 'ekip', 'ses', 'planla', 'gunluk', 'boss', 'event', 'rehber', 'bildirim',
     { sec: 'Defter' }, 'panel', 'kasa', 'ticaret', 'parti',
     { sec: 'Canlı Veri' }, 'gb', 'pazar', 'ilan',
     { sec: 'Hesaplayıcılar' }, 'pus', 'exp', 'basma',
