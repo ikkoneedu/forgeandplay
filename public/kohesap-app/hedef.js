@@ -103,12 +103,12 @@ VIEWS.hedef = () => {
   <p class="hint" style="margin-top:12px">Liste karakter başınadır ve hesabınla buluta kaydedilir. TL karşılığı Ayarlar'daki GB fiyatıyla hesaplanır.</p>`;
 };
 
-function hdForm(it) {
+function hdForm(it, name) {
   const isNew = !it;
   const pr = it ? hdPrice({ ...it, unit: 0 }) : { v: 0 };
   openForm({
     title: isNew ? 'Hedefe item ekle' : 'Hedef itemi düzenle',
-    data: it ? { name: it.name, qty: it.qty || 1, unit: it.unit ? fmtN(it.unit) : '', grp: it.grp || 'Diğer', note: it.note || '' } : { name: '', qty: 1, unit: '', grp: 'Diğer', note: '' },
+    data: it ? { name: it.name, qty: it.qty || 1, unit: it.unit ? fmtN(it.unit) : '', grp: it.grp || 'Diğer', note: it.note || '' } : { name: String(name || '').slice(0, 80), qty: 1, unit: '', grp: 'Diğer', note: '' },
     fields: [
       { k: 'name', label: 'Item', type: 'text', full: true, ac: 'item', placeholder: 'örn. Raptor +7' },
       { k: 'qty', label: 'Adet', type: 'number' },

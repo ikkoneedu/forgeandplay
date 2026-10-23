@@ -288,3 +288,27 @@ test('kompozisyon: eksik rol için alt karakter önerisi, seviye şartı, sını
   assert.deepEqual(errors, []);
   await pg.close();
 });
+
+test('hızlı arama: Ctrl+K, Türkçe harfsiz arama, oklar, Enter, hedefe ekle', async () => {
+  const { pg, errors } = await openApp();
+  await pg.keyboard.press('Control+k');
+  const out = {};
+  out.open = await pg.evaluate(() => !document.getElementById('pal').hidden && document.activeElement.id === 'palQ');
+  await pg.keyboard.type('gunluk gorev');
+  out.first = await pg.evaluate(() => document.querySelector('.pal-it.on b').textContent);
+  await pg.keyboard.press('Enter');
+  out.page = await pg.evaluate(() => ui.page + '|' + document.getElementById('pal').hidden);
+  await pg.keyboard.press('Control+k'); await pg.keyboard.type('juraid');
+  await pg.keyboard.press('Enter');
+  out.guide = await pg.evaluate(() => ui.page + '|' + GD.open);
+  await pg.keyboard.press('Control+k'); await pg.keyboard.type('Raptor +7');
+  out.last = await pg.evaluate(() => [...document.querySelectorAll('.pal-it b')].pop().textContent);
+  await pg.evaluate(() => [...document.querySelectorAll('.pal-it')].pop().click());
+  out.hedef = await pg.evaluate(() => ui.page + '|' + document.querySelector('#mform [name=name]').value);
+  await pg.evaluate(() => closeModal());
+  await pg.keyboard.press('Control+k'); await pg.keyboard.press('Escape');
+  out.esc = await pg.evaluate(() => document.getElementById('pal').hidden);
+  assert.deepEqual(out, { open: true, first: 'Günlük Görevler', page: 'gunluk|true', guide: 'rehber|jr', last: '"Raptor +7" hedef listesine ekle', hedef: 'hedef|Raptor +7', esc: true });
+  assert.deepEqual(errors, []);
+  await pg.close();
+});

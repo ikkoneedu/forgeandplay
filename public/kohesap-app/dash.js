@@ -1,8 +1,8 @@
 'use strict';
 /* ==========================================================================
    PANEL · "BUGÜN" ŞERİDİ
-   Panelin üstünde dört kısa kart: günlük görevler, sıradaki ekip planı,
-   sıradaki event ve grind. Her kart ilgili sayfayı açar.
+   Panelin üstünde kısa kartlar: günlük görevler, sıradaki ekip planı,
+   sıradaki event, grind ve (doluysa) hedef listesi. Her kart ilgili sayfayı açar.
    ========================================================================== */
 function dashToday() {
   const now = Date.now(), cards = [];
@@ -46,6 +46,15 @@ function dashToday() {
       <span class="ds-t"><small>Grind</small>${g.live ? `<b data-gr-clock>${grClock(grElapsed(g.live, now))}</b><span class="mut">${esc(g.live.place || 'kasılıyor')}${g.live.pauseAt ? ' · duraklatıldı' : ''}</span>`
         : last ? `<b>${last.exp && last.min ? fmtShort(last.exp / (last.min / 60)) + ' EXP/sa' : grFmtH(last.min * 60000)}</b><span class="mut">son: ${esc(last.place || '—')} · ${fmtDate(localDate(new Date(last.en)))}</span>`
         : '<b>Başlat</b><span class="mut">Kasılma süreni ve verimini ölç</span>'}</span>
+    </button>`);
+  }
+  // hedef listesi (yalnızca listede bir şey varsa)
+  const h = typeof hedefOf === 'function' ? hedefOf() : null;
+  if (h && h.list.length) {
+    const t = hdTotals(h), pct = t.all ? Math.round(Math.min(t.all, t.done + h.saved) / t.all * 100) : 0;
+    cards.push(`<button class="card ds-card" data-act="go" data-id="hedef">
+      <span class="ds-ring" style="--p:${pct}"><b>${pct}%</b></span>
+      <span class="ds-t"><small>Hedef listesi</small><b>${t.need ? fmtShort(t.need) + ' eksik' : t.left ? 'Paran yetiyor ✓' : 'Hepsi alındı ✓'}</b><span class="mut">${t.nDone}/${t.n} item alındı${t.left ? ' · kalan ' + fmtShort(t.left) : ''}</span></span>
     </button>`);
   }
   return cards.length ? `<div class="ds-row">${cards.join('')}</div>` : '';
