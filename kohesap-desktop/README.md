@@ -1,6 +1,6 @@
 # KO Hesap — Knight Online defteri
 
-Web: `https://forgeandplay.com/tr/kohesap` · Uygulama: `/kohesap-app/index.html` · Windows: `/downloads/KOHesap.exe`
+Web: `https://forgeandplay.com/app` · Uygulama dosyaları: `public/kohesap-app/` · Windows: `/downloads/KOEkip.exe`
 
 ## Yapı
 
@@ -8,7 +8,7 @@ Web: `https://forgeandplay.com/tr/kohesap` · Uygulama: `/kohesap-app/index.html
 |---|---|
 | `public/kohesap-app/` | Arayüzün **tek kaynağı** (web ve exe aynı dosyaları kullanır) |
 | `kohesap-desktop/` | Windows exe (Go): yerel sunucu, gizli tarayıcı (canlı pazar), yerel yedek |
-| `app/[locale]/kohesap/` | Tanıtım / indirme sayfası (4 dil) |
+| `public/site/` | Tanıtım / indirme sitesi (forgeandplay.com) |
 | `app/api/kohesap/` | `config` (Firebase + exe sürümü), `proxy` (izinli sitelerden 5 dk önbellekli okuma), `rates` |
 | `lib/kohesap.ts` | Exe sürümü, izinli alan adları, CORS |
 
@@ -27,7 +27,7 @@ Giriş yalnızca **Google** (Firebase Auth). Kayıtlar Firestore'da:
 cd kohesap-desktop && ./build.sh   # Go 1.24+ ve Node gerekir
 ```
 
-Çıktı `public/downloads/KOHesap.exe`'ye yazılır. Yeni sürüm çıkarırken `main.go` içindeki `appVersion` ile
+Çıktı `public/downloads/KOEkip.exe`'ye yazılır. Yeni sürüm çıkarırken `main.go` içindeki `appVersion` ile
 `lib/kohesap.ts` içindeki `KOHESAP_EXE_VERSION`'ı birlikte artır; eski exe'ler açılışta "yeni sürüm" uyarısı gösterir.
 
 `public/kohesap-app/firebase.js`, `firebase@11.3.0` paketinden esbuild ile tek dosya olarak üretilmiştir

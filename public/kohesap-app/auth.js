@@ -169,7 +169,7 @@ const AUTH_VIEWS = {
             ['📈', 'Canlı pazar', 'GB fiyatları, pazar ilanları, PUS ve EXP hesabı'],
           ].map(([i, t, d]) => `<div class="lf"><span class="lf-i">${i}</span><b>${t}</b><small>${d}</small></div>`).join('')}
         </div>
-        <div class="land-alt">Giriş yaparak <a href="${serverMode ? SITE : ''}/tr/kullanim-sartlari" target="_blank" rel="noopener">kullanım şartlarını</a> kabul etmiş olursun · <a href="${serverMode ? SITE : ''}/tr/gizlilik" target="_blank" rel="noopener">gizlilik</a></div>
+        <div class="land-alt">Giriş yaparak <a href="${serverMode ? SITE : ''}/kullanim-sartlari" target="_blank" rel="noopener">kullanım şartlarını</a> kabul etmiş olursun · <a href="${serverMode ? SITE : ''}/tr/gizlilik" target="_blank" rel="noopener">gizlilik</a></div>
       </div>
     </div>`,
   chars: () => {
