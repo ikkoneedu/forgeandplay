@@ -178,8 +178,10 @@ function ekipBody() {
   const clsCount = Object.keys(CLASSES).map(k => [k, mains.filter(c => c.cls === k).length]);
   const avgLv = mains.length ? sum(mains, c => c.level) / mains.length : 0;
   const tips = [];
-  if (mains.length && !mains.some(c => c.cls === 'priest')) tips.push('Ana karakterler arasında Priest yok; farm ve savaşta en az bir Priest önerilir.');
-  if (mains.length >= 4 && !mains.some(c => c.cls === 'warrior' || c.cls === 'kurian')) tips.push('Ön safta Warrior veya Kurian/Portu yok.');
+  const altsOf = test => members.flatMap(m => (m.chars || []).filter(c => test(c.cls) && (!m.mainChar || c.id !== m.mainChar.id)).map(c => `${m.name}: ${c.name} (Lv ${c.level})`)).slice(0, 3);
+  const altTip = test => { const a = altsOf(test); return a.length ? ' Alt karakter olarak var: ' + a.join(', ') + '.' : ''; };
+  if (mains.length && !mains.some(c => c.cls === 'priest')) tips.push('Ana karakterler arasında Priest yok; farm ve savaşta en az bir Priest önerilir.' + altTip(c => c === 'priest'));
+  if (mains.length >= 4 && !mains.some(c => c.cls === 'warrior' || c.cls === 'kurian')) tips.push('Ön safta Warrior veya Kurian/Portu yok.' + altTip(c => c === 'warrior' || c === 'kurian'));
   const servers = [...new Set(mains.map(c => c.server).filter(Boolean))];
   if (servers.length > 1) tips.push('Ana karakterler farklı sunucularda: ' + servers.join(', ') + '.');
   const myEntry = members.find(m => m.uid === me);

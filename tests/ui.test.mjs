@@ -265,3 +265,26 @@ test('hedef listesi: fiyat listesinden fiyat, alındı, biriktirilen, eksik, kop
   assert.deepEqual(errors, []);
   await pg.close();
 });
+
+test('kompozisyon: eksik rol için alt karakter önerisi, seviye şartı, sınıf dağılımı', async () => {
+  const { pg, errors } = await openApp();
+  const r = await pg.evaluate(async () => {
+    const out = {}, now = Date.now();
+    TEAM.doc.members.u3.chars.push({ id: 'v2', name: 'Şifa', cls: 'priest', nation: 'karus', level: 74 });
+    const p = { id: 'j', t: 'Juraid', ev: 'jr', at: now + 3600e3, by: 'u1', rsvp: {
+      u1: { s: 'y', c: 'c1', cn: 'KaraKurt', cls: 'warrior', lv: 83 },
+      u2: { s: 'y', c: 'a', cn: 'Gölge', cls: 'rogue', lv: 65 },
+      u3: { s: 'y', c: 'v', cn: 'Ateş', cls: 'mage', lv: 79 } } };
+    const tips = epTips(epRows(p), p).join(' ');
+    out.priest = /Priest yok/.test(tips) && /Veli → Şifa \(Lv 74\)/.test(tips);
+    out.level = /Gölge \(Lv 65\) giremeyebilir/.test(tips) && !/KaraKurt \(Lv/.test(tips);
+    EP.list = [p]; EP.showPast = false; ui.page = 'planla'; render();
+    out.comp = /1 Warrior/.test(document.querySelector('.ep-comp').textContent);
+    ui.page = 'ekip'; render();
+    out.team = /Alt karakter olarak var: Veli: Şifa/.test(document.getElementById('content').textContent);
+    return out;
+  });
+  assert.deepEqual(r, { priest: true, level: true, comp: true, team: true });
+  assert.deepEqual(errors, []);
+  await pg.close();
+});

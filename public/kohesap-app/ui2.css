@@ -608,3 +608,6 @@ button.el-chip{cursor:pointer}
 .hd-act{display:flex;gap:2px}
 .hd-warn{color:var(--gold2)}
 @media(max-width:520px){.hd-act .icon-btn{width:30px;height:30px}.hd-tot{font-size:13px}}
+.ep-comp{display:inline-flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.ep-cc{font-size:11.5px;padding:2px 8px;border-radius:99px;border:1px solid color-mix(in srgb,var(--cc) 45%,transparent);color:color-mix(in srgb,var(--cc) 80%,#fff);background:color-mix(in srgb,var(--cc) 10%,transparent)}
+@media(max-width:520px){.ep-comp{margin-left:0}}

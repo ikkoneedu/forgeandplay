@@ -56,12 +56,37 @@ function epRows(p) {
   const rs = p.rsvp || {};
   return teamMembers().map(m => ({ m, r: rs[m.uid] || null }));
 }
-function epTips(rows) {
+const epClsName = k => k === 'kurian' ? 'Kurian/Portu' : (CLASSES[k] || {}).label || k;
+/** eksik rolü kapatabilecek karakterler: gelmiyor diyenler hariç, şu an seçili olmayan karakterler */
+function epAltFor(rows, test) {
+  const out = [];
+  rows.forEach(x => {
+    if (x.r && x.r.s === 'n') return;
+    (x.m.chars || []).forEach(c => { if (test(c.cls) && !(x.r && x.r.c === c.id)) out.push(`${x.m.name} → ${c.name} (Lv ${c.level})`); });
+  });
+  return out.slice(0, 3);
+}
+/** kompozisyon ve seviye uyarıları (öneriyle) */
+function epTips(rows, p) {
   const going = rows.filter(x => x.r && x.r.s === 'y' && x.r.cls);
   const tips = [];
-  if (going.length >= 3 && !going.some(x => x.r.cls === 'priest')) tips.push('Gelenler arasında Priest yok.');
-  if (going.length >= 4 && !going.some(x => x.r.cls === 'warrior' || x.r.cls === 'kurian')) tips.push('Ön safta Warrior veya Kurian/Portu yok.');
+  const lack = (msg, test) => { const alts = epAltFor(rows, test); tips.push(msg + (alts.length ? ' Gelebilecek: ' + alts.join(', ') + '.' : '')); };
+  if (going.length >= 3 && !going.some(x => x.r.cls === 'priest')) lack('Gelenler arasında Priest yok.', c => c === 'priest');
+  if (going.length >= 4 && !going.some(x => x.r.cls === 'warrior' || x.r.cls === 'kurian')) lack('Ön safta Warrior veya Kurian/Portu yok.', c => c === 'warrior' || c === 'kurian');
+  const g = p && p.ev && typeof guideByPid === 'function' ? guideByPid(p.ev) : null;
+  const m = g && /^(\d+)(?:\s*[–-]\s*(\d+))?/.exec(g.lv || '');
+  if (m) {
+    const lo = +m[1], hi = m[2] ? +m[2] : 999;
+    const bad = going.filter(x => x.r.lv && (x.r.lv < lo || x.r.lv > hi));
+    if (bad.length) tips.push(`${g.n} seviye şartı ${g.lv}: ${bad.map(x => `${x.r.cn} (Lv ${x.r.lv})`).join(', ')} giremeyebilir.`);
+  }
   return tips;
+}
+/** gelenlerin sınıf dağılımı: "2 Warrior · 1 Priest" */
+function epComp(rows) {
+  const n = {};
+  rows.forEach(x => { if (x.r && x.r.s === 'y' && x.r.cls) n[x.r.cls] = (n[x.r.cls] || 0) + 1; });
+  return Object.keys(CLASSES).filter(k => n[k]).map(k => `<span class="ep-cc" style="--cc:${CLASSES[k].color}">${n[k]} ${esc(epClsName(k))}</span>`).join('');
 }
 
 /* ---------- yazma ---------- */
@@ -138,7 +163,7 @@ function epCard(p, now) {
   const none = rows.filter(x => !x.r).length;
   const past = p.at < now - 3600e3, live = p.at <= now && !past;
   const chars = (CUR.acc && CUR.acc.chars) || [];
-  const tips = past ? [] : epTips(rows);
+  const tips = past ? [] : epTips(rows, p), comp = epComp(rows);
   const order = { y: 0, m: 1, n: 2 };
   const sorted = rows.slice().sort((a, b) => (a.r ? order[a.r.s] : 3) - (b.r ? order[b.r.s] : 3));
   const who = x => {
@@ -146,7 +171,7 @@ function epCard(p, now) {
     const st = r ? EP_RSVP[r.s] : null;
     return `<div class="ep-who ${r ? 'is-' + r.s : 'is-none'}">
       ${c && c.cls ? charAvatar(Object.assign({ nation: (x.m.mainChar || {}).nation }, c), 24) : ''}
-      <span class="ep-wn"><b>${esc(c ? c.name : x.m.name)}</b>${c && c.level ? `<small>Lv ${c.level}${c.cls && CLASSES[c.cls] ? ' · ' + esc(c.cls === 'kurian' ? 'Kurian/Portu' : CLASSES[c.cls].label) : ''}</small>` : ''}</span>
+      <span class="ep-wn"><b>${esc(c ? c.name : x.m.name)}</b>${c && c.level ? `<small>Lv ${c.level}${c.cls && CLASSES[c.cls] ? ' · ' + esc(epClsName(c.cls)) : ''}</small>` : ''}</span>
       <span class="badge ${st ? st.cls : ''}">${st ? st.s : 'Cevap yok'}</span>
     </div>`;
   };
@@ -160,7 +185,7 @@ function epCard(p, now) {
       </div>
       <div class="ep-cd">${past ? '<span class="mut">bitti</span>' : live ? '<span class="badge g">başladı</span>' : `<span class="mono" data-cd="${p.at}">${fmtCD(p.at - now)}</span>`}</div>
     </div>
-    <div class="ep-sum"><span class="badge g">${cnt('y')} geliyor</span><span class="badge y">${cnt('m')} belki</span><span class="badge r">${cnt('n')} gelmiyor</span>${none ? `<span class="badge">${none} cevap yok</span>` : ''}</div>
+    <div class="ep-sum"><span class="badge g">${cnt('y')} geliyor</span><span class="badge y">${cnt('m')} belki</span><span class="badge r">${cnt('n')} gelmiyor</span>${none ? `<span class="badge">${none} cevap yok</span>` : ''}${comp ? `<span class="ep-comp">${comp}</span>` : ''}</div>
     ${tips.length ? `<div class="callout y ep-tip">${tips.map(esc).join(' ')}</div>` : ''}
     <div class="ep-list">${sorted.map(who).join('')}</div>
     ${(past || live) && typeof epAfter === 'function' ? epAfter(p, rows) : ''}

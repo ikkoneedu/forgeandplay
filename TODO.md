@@ -24,6 +24,7 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 - [x] Ekip duyurusu (sabit not) ve Discord köprüsü
 - [x] Item basma: topluluk oranları (anonim, isteğe bağlı)
 - [x] Hedef listesi (set / build planlayıcı, ROADMAP B6)
+- [x] Kompozisyon önerisi: eksik rol için alt karakter önerisi, event seviye şartı uyarısı (ROADMAP A4)
 - [x] Testler + CI (`npm test`, `npm run test:rules`, `.github/workflows/ci.yml`)
 
 ## Sonra
