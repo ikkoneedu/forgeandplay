@@ -46,7 +46,7 @@ Windows exe · KVKK: veri indir / hesabı sil.
 | # | Özellik | Ayrıntı |
 |---|---|---|
 | C1 | ✅ **Ekip arıyorum / üye arıyorum panosu** | Sunucu + sınıf + seviye + saat; KO Ekip'in giriş kapısı (ilk vizyondaki LFG'nin KO'ya uyarlanmışı) |
-| C2 | **Paylaşılabilir kartlar** | "Ekibimiz CSW'yi aldı", "+10 bastım" görselleri (next/og) → WhatsApp/Discord önizlemesi = organik büyüme |
+| C2 | ✅ **Paylaşılabilir kartlar** | "Ekibimiz CSW'yi aldı", "+10 bastım" görselleri (next/og) → WhatsApp/Discord önizlemesi = organik büyüme |
 | C3 | **Discord köprüsü** | Ekip bildirimleri bir Discord kanalına da düşsün (webhook) |
 | C4 | ✅ **Tanıtım sitesine SEO rehberleri** (/event-rehberi) | Event rehberleri (B1) herkese açık sayfa olarak: "Juraid Mountain nedir", "Chaos saatleri" |
 

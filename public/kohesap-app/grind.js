@@ -144,7 +144,7 @@ VIEWS.grind = () => {
           <td class="num">${x.exp ? fmtShort(x.exp) : '—'}</td>
           <td class="num gold">${x.exp && h ? fmtShort(x.exp / h) : '—'}</td>
           <td class="num">${net ? moneyHTML(net, { sign: true, short: true }) : '<span class="mut">—</span>'}</td>
-          <td><button class="icon-btn" data-act="gr-del" data-id="${esc(x.id)}" title="Sil" aria-label="Sil">${ICON.del}</button></td></tr>`; }).join('')}</tbody>
+          <td class="gr-rb">${ICON.share ? `<button class="icon-btn" data-act="sh-grind" data-id="${esc(x.id)}" title="Paylaş" aria-label="Paylaş">${ICON.share}</button>` : ''}<button class="icon-btn" data-act="gr-del" data-id="${esc(x.id)}" title="Sil" aria-label="Sil">${ICON.del}</button></td></tr>`; }).join('')}</tbody>
       </table></div>
     </div>
     <div class="card">

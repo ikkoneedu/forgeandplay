@@ -169,6 +169,7 @@ function epCard(p, now) {
       ${mine && mine.s !== 'n' && chars.length > 1 ? `<select class="inp ep-char" data-ep-char="${esc(p.id)}" aria-label="Hangi karakterle">${chars.map(c => `<option value="${esc(c.id)}" ${mine.c === c.id ? 'selected' : ''}>${esc(c.name)} · Lv ${c.level}</option>`).join('')}</select>` : ''}
       <span class="spacer"></span>
       ${p.ev && typeof guideByPid === 'function' && guideByPid(p.ev) ? `<button class="btn sm ghost" data-act="gd-open" data-id="${esc(p.ev)}">Rehber</button>` : ''}
+      ${typeof sharePlan === 'function' ? `<button class="icon-btn" data-act="sh-plan" data-id="${esc(p.id)}" title="Davet kartı paylaş" aria-label="Paylaş">${ICON.share}</button>` : ''}
       ${epCanEdit(p) ? `<button class="btn sm ghost" data-act="ep-edit" data-id="${esc(p.id)}">Düzenle</button><button class="icon-btn danger" data-act="ep-del" data-id="${esc(p.id)}" title="Planı sil" aria-label="Planı sil">${ICON.del}</button>` : ''}
     </div>`}
   </article>`;

@@ -553,3 +553,4 @@ button.el-chip{cursor:pointer}
 .lf-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .lf-acts .btn{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:440px){.lf-grid{grid-template-columns:1fr}.lf-filters .inp{flex:1 1 140px}}
+.gr-rb{white-space:nowrap}

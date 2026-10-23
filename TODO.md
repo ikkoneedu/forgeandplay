@@ -17,7 +17,7 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 5. [x] Grind oturumu takibi — "Grind Takibi" sayfası
    - [ ] Fiyat alarmı
 6. [x] Ekip arıyorum panosu — "Ekip Bul" sayfası
-   - [ ] Paylaşım kartları
+   - [x] Paylaşım kartları (plan daveti, ekip kartı, grind sonucu)
 
 ## Sonra
 - [ ] VIP çevrim içi ödeme (iyzico / Stripe)
