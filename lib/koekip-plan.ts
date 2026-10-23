@@ -13,7 +13,7 @@ export type Plan = { on: boolean; signup: string; price: number; teamVip: boolea
 /** varsayılan katmanlar (plan.js FEATS ile aynı) */
 export const FEATURE_DEFAULTS: Record<string, Tier> = {
   ekip: "uye", ekipkur: "uye", ses: "uye", sesli: "vip", planla: "uye", gunluk: "uye", boss: "uye", event: "uye", yeni: "uye", bildirim: "uye",
-  panel: "uye", kasa: "uye", ticaret: "uye", parti: "uye", gb: "vip", pazar: "vip", ilan: "vip",
+  panel: "uye", kasa: "uye", ticaret: "uye", parti: "uye", grind: "uye", gb: "vip", pazar: "vip", ilan: "vip",
   pus: "uye", exp: "uye", basma: "uye", fiyat: "uye",
 };
 export const PLAN_DEFAULT: Plan = { on: false, signup: "onay", price: 125, teamVip: true, features: {} };

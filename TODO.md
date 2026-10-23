@@ -14,7 +14,8 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 2. [x] Event rehber kartları — uygulamada "Event Rehberi", sitede /event-rehberi (`node scripts/build-guides.mjs` ile üretilir)
 3. [x] Günlük / haftalık yapılacaklar — "Günlük Görevler" sayfası
 4. [x] Katılım geçmişi + drop sırası — Ekip Planı: yoklama, zar / adil sıra, katılım tablosu, Parti & Drop'a aktarma
-5. [ ] Grind oturumu takibi, fiyat alarmı
+5. [x] Grind oturumu takibi — "Grind Takibi" sayfası
+   - [ ] Fiyat alarmı
 6. [ ] Ekip arıyorum panosu, paylaşım kartları
 
 ## Sonra

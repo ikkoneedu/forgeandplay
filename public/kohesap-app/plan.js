@@ -24,6 +24,7 @@ const FEATS = [
   { id: 'panel', n: 'Panel', d: 'Aylık özet', def: 'uye' },
   { id: 'kasa', n: 'Gelir / Gider', d: 'Para hareketleri', def: 'uye' },
   { id: 'ticaret', n: 'Item ticareti', d: 'Alış – satış ve kâr takibi', def: 'uye' },
+  { id: 'grind', n: 'Grind takibi', d: 'Kasılma süresi, saatlik EXP ve noah, bölge karşılaştırması', def: 'uye' },
   { id: 'parti', n: 'Parti & Drop', d: 'Drop ve pay dağılımı', def: 'uye' },
   { g: 'Canlı veri' },
   { id: 'gb', n: 'Canlı GB fiyatları', d: 'Sitelerin sunucu bazında GB alış / satış fiyatları', def: 'vip' },
