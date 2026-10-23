@@ -6,6 +6,7 @@
  * Kaynaklardan biri kapanır / yapısını değiştirirse yalnızca o kaynak boş kalır.
  */
 import { createHash } from "node:crypto";
+import editorialNews from "./ko-news-editorial.json";
 import type { Firestore } from "firebase-admin/firestore";
 import { BROWSER_UA } from "@/lib/kohesap-fetch";
 
@@ -101,7 +102,12 @@ export async function refreshNews(db: Firestore): Promise<{ doc: NewsDoc; fresh:
   const now = Date.now();
   const status: NewsDoc["src"] = { ...(old.src || {}) };
   let ntt = old.ntt;
-  const found: Omit<NewsItem, "at">[] = [];
+  const found: Omit<NewsItem, "at">[] = [...editorialNews];
+  // Stable IDs let reviewed summaries be corrected without duplicate notifications.
+  for (const article of editorialNews) {
+    const existing = known.get(article.id);
+    if (existing) known.set(article.id, { ...existing, ...article });
+  }
 
   await Promise.all(NEWS_SOURCES.map(async (s) => {
     try {
