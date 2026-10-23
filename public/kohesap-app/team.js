@@ -209,7 +209,7 @@ function ekipBody() {
     </div>
     <div class="team-stats">
       <div><span>Üye</span><b>${members.length}/${TEAM_MAX}</b></div>
-      <div><span>Ortalama seviye</span><b>${avgLv ? nf2.format(avgLv) : '—'}</b></div>
+      <div><span>Ortalama seviye</span><b>${avgLv ? fmtX(Math.round(avgLv * 10) / 10) : '—'}</b></div>
       ${clsCount.map(([k, v]) => `<div class="tc" style="--cc:${CLASSES[k].color}"><span>${esc(k === 'kurian' ? 'Kurian/Portu' : CLASSES[k].label)}</span><b>${v}</b></div>`).join('')}
     </div>
     ${tips.length ? `<div class="callout y" style="margin-top:12px">${tips.map(esc).join('<br>')}</div>` : ''}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { corsHeaders } from "@/lib/kohesap";
 import {
-  adminDb, dueNotes, env, hasAccess, planNotes, pushReady, sendToUser, trClock, verifyUser,
+  adminDb, discordPost, dueNotes, env, hasAccess, planNotes, pushReady, sendToUser, trClock, verifyUser,
   type BossMap, type Note, type PushDoc, type TeamPlan,
 } from "@/lib/koekip-server";
 import type { Firestore } from "firebase-admin/firestore";
@@ -15,7 +15,8 @@ export const maxDuration = 30;
 /**
  * KO Ekip bildirimleri
  *  POST /api/koekip/push/test   → kendi cihazlarına deneme bildirimi
- *  POST /api/koekip/push/team   → ekibe anlık bildirim: { type: "online" | "boss" | "plan", team, name, boss?, server?, title?, at? }
+ *  POST /api/koekip/push/team   → ekibe anlık bildirim: { type: "online" | "boss" | "plan" | "discord", team, name, boss?, server?, title?, at? }
+ *       plan / boss ekibin Discord kanalına da gider (lider bağladıysa); "discord" = bağlantı denemesi (yalnızca lider)
  *  GET  /api/koekip/push/cron   → zamanlayıcı (dakikada bir): event, boss ve ekip planı hatırlatmaları
  *       Yetki: ?key=CRON_SECRET ya da "Authorization: Bearer CRON_SECRET"
  */
@@ -61,7 +62,7 @@ async function team(req: NextRequest) {
   if (r.err) return r.err;
   const { u, db } = r;
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const type = body.type === "boss" ? "boss" : body.type === "plan" ? "plan" : "online";
+  const type = body.type === "boss" ? "boss" : body.type === "plan" ? "plan" : body.type === "discord" ? "discord" : "online";
   const code = clean(body.team, 12).toUpperCase();
   if (!/^[A-Z0-9]{8}$/.test(code)) return json(req, { error: "Ekip kodu geçersiz" }, 400);
   const ts = await db.doc(`kohesapTeams/${code}`).get();
@@ -71,7 +72,12 @@ async function team(req: NextRequest) {
   const mainName = me && me.chars ? (me.chars.find((c) => c.id === me.main) || me.chars[0] || { name: "" }).name : "";
   const who = clean(body.name, 30) || clean(mainName, 30) || clean(me && me.name, 30) || "Bir üye";
 
-  let note: Note, pref: "online" | "boss" | "ev";
+  if (type === "discord") {
+    if ((td as { owner?: string }).owner !== u.uid) return json(req, { error: "Yalnızca ekip lideri" }, 403);
+    const ok = await discordPost(db, code, `✅ **${td.name || "Ekip"}** KO Ekip'e bağlandı. Ekip planları ve "boss çıktı" duyuruları bu kanala düşecek.`);
+    return json(req, { ok }, ok ? 200 : 502);
+  }
+  let note: Note, pref: "online" | "boss" | "ev", discord = "";
   if (type === "online") {
     if (!(await throttle(db, `on_${u.uid}`, 30 * 60e3))) return json(req, { sent: 0, skipped: "throttle" });
     note = { title: `🟢 ${who} çevrimiçi`, body: `${td.name || "Ekip"} · KO Ekip'e girdi`, tag: `online-${u.uid}`, kind: "online", url: "/?p=ses" };
@@ -83,15 +89,19 @@ async function team(req: NextRequest) {
     const day = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"][new Date(at + 3 * 3600e3).getUTCDay()];
     note = { title: `📅 Yeni plan: ${title}`, body: `${day} ${trClock(at)} · ${who} açtı · geliyor musun?`, tag: `plan-${code}-${at}`, kind: "plan", url: "/?p=planla" };
     pref = "ev";
+    discord = `📅 **${title}** · ${day} ${trClock(at)} — ${who} planladı. Katılım: <https://forgeandplay.com/app?p=planla>`;
   } else {
     const boss = clean(body.boss, 40), server = clean(body.server, 24);
     if (!boss) return json(req, { error: "Boss adı yok" }, 400);
     if (!(await throttle(db, `boss_${code}_${boss.replace(/[^A-Za-z0-9]/g, "")}`, 2 * 60e3))) return json(req, { sent: 0, skipped: "throttle" });
     note = { title: `🐉 ${boss} çıktı!`, body: `${server ? server + " · " : ""}${who} duyurdu`, tag: `bossup-${boss}`, kind: "boss", url: "/?p=boss" };
     pref = "boss";
+    discord = `🐉 **${boss}** çıktı!${server ? ` (${server})` : ""} — ${who}`;
   }
+  // ekibin Discord kanalı (bağlıysa); push'u beklemez
+  const dc = discord ? discordPost(db, code, discord, pref === "boss" ? "boss" : "plan").catch(() => false) : Promise.resolve(false);
   const others = (td.memberUids || []).filter((x) => x !== u.uid);
-  if (!others.length) return json(req, { sent: 0 });
+  if (!others.length) return json(req, { sent: 0, discord: await dc });
   const docs = await db.getAll(...others.map((x) => db.doc(`kohesapPush/${x}`)));
   let sent = 0;
   await Promise.all(docs.map(async (d) => {
@@ -100,7 +110,7 @@ async function team(req: NextRequest) {
     if (p[pref] === false) return;
     sent += await sendToUser(db, d.id, p, note);
   }));
-  return json(req, { sent });
+  return json(req, { sent, discord: await dc });
 }
 
 /* ---------- zamanlayıcı ---------- */

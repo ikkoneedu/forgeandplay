@@ -563,3 +563,18 @@ button.el-chip{cursor:pointer}
 .gba-lg i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
 .gba-lg i.s{background:var(--green)}
 .gba-lg i.b{background:var(--gold)}
+
+/* ekip duyurusu ve discord */
+.tb-pin{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;background:linear-gradient(90deg,rgba(227,181,84,.1),transparent 70%),var(--panel)!important;border-color:rgba(227,181,84,.3)}
+.tb-pin.empty{background:var(--panel)!important;border-style:dashed;border-color:var(--line2)}
+.tb-ic{flex:none;font-size:20px;line-height:1.2}
+.tb-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.tb-t{font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+.tb-body .mut{font-size:12px}
+.tb-dc{margin-top:12px}
+.tb-dc summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none}
+.tb-dc summary::-webkit-details-marker{display:none}
+.tb-dcl{display:inline-flex;align-items:center;gap:8px;color:#8c9eff}
+.tb-dcl b{color:var(--tx)}
+.tb-dc p{margin:10px 0;font-size:13px;line-height:1.5}
+.tb-dc .form{gap:8px 16px}

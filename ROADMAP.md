@@ -27,7 +27,7 @@ Windows exe · KVKK: veri indir / hesabı sil.
 | A3 | ✅ **Drop sırası / zar** | Loot council, zar sistemi | Ekip içi "bu item'e kim zar atar" + sonucu deftere yazma |
 | A4 | **Kompozisyon önerisi** | Raid kompozisyon araçları | Ekipteki sınıflara göre eksik rol uyarısı (ör. "priest yok") |
 | A5 | ✅ **Alt karakter bağı** | Raid araçlarında main/alt eşleme | Bir oyuncunun 4 karakteri tek kişi sayılır (katılım/pay için) |
-| A6 | **Ekip panosu / duyuru + sabitlenen not** | Discord'un dağınıklığına alternatif | Ekip kuralları, parti stratejisi, toplanma yeri |
+| A6 | ✅ **Ekip panosu / duyuru + sabitlenen not** | Discord'un dağınıklığına alternatif | Ekip kuralları, parti stratejisi, toplanma yeri |
 
 ## Faz B — KO'ya özgü sistemler (rakipte olmayan derinlik)
 
@@ -47,7 +47,7 @@ Windows exe · KVKK: veri indir / hesabı sil.
 |---|---|---|
 | C1 | ✅ **Ekip arıyorum / üye arıyorum panosu** | Sunucu + sınıf + seviye + saat; KO Ekip'in giriş kapısı (ilk vizyondaki LFG'nin KO'ya uyarlanmışı) |
 | C2 | ✅ **Paylaşılabilir kartlar** | "Ekibimiz CSW'yi aldı", "+10 bastım" görselleri (next/og) → WhatsApp/Discord önizlemesi = organik büyüme |
-| C3 | **Discord köprüsü** | Ekip bildirimleri bir Discord kanalına da düşsün (webhook) |
+| C3 | ✅ **Discord köprüsü** | Ekip bildirimleri bir Discord kanalına da düşsün (webhook) |
 | C4 | ✅ **Tanıtım sitesine SEO rehberleri** (/event-rehberi) | Event rehberleri (B1) herkese açık sayfa olarak: "Juraid Mountain nedir", "Chaos saatleri" |
 
 ## Faz D — Teknik sağlık

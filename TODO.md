@@ -21,6 +21,7 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 
 ## Ek
 - [x] Boss çıkış penceresi (ekip verisinden öğrenilir)
+- [x] Ekip duyurusu (sabit not) ve Discord köprüsü
 
 ## Sonra
 - [ ] VIP çevrim içi ödeme (iyzico / Stripe)

@@ -209,3 +209,22 @@ export async function requireMember(req: Request, headers: Record<string, string
   if (!(await hasAccess(u))) return new Response(JSON.stringify({ ok: false, error: "Onay gerekli" }), { status: 403, headers: h });
   return null;
 }
+
+/* ---------------- Discord köprüsü ---------------- */
+/** Yalnızca Discord webhook adresleri (SSRF'e karşı katı desen) */
+export const DISCORD_WEBHOOK_RE = /^https:\/\/(?:ptb\.|canary\.)?discord(?:app)?\.com\/api\/webhooks\/\d{5,25}\/[A-Za-z0-9_-]{20,100}$/;
+export type DiscordCfg = { url?: string; plan?: boolean; boss?: boolean };
+/** Ekibin Discord kanalına mesaj (kohesapTeams/{kod}/private/discord). kind verilirse o tür kapalıysa gönderilmez. */
+export async function discordPost(db: Firestore, team: string, content: string, kind?: "plan" | "boss"): Promise<boolean> {
+  const s = await db.doc(`kohesapTeams/${team}/private/discord`).get().catch(() => null);
+  const c = (s && s.exists ? s.data() : null) as DiscordCfg | null;
+  if (!c || !c.url || !DISCORD_WEBHOOK_RE.test(c.url) || (kind && c[kind] === false)) return false;
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 5000);
+  try {
+    const r = await fetch(c.url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: content.slice(0, 1900), username: "KO Ekip", allowed_mentions: { parse: [] } }), signal: ctl.signal, redirect: "error" });
+    return r.ok;
+  } catch {
+    return false;
+  } finally { clearTimeout(t); }
+}
+

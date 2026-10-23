@@ -282,6 +282,16 @@ service cloud.firestore {
         allow delete: if isMember() && (resource.data.by == request.auth.uid || isOwner());
       }
 
+      // Ekibin gizli ayarları (Discord webhook): yalnızca lider okur ve yazar; sunucu yönetici yetkisiyle okur.
+      match /private/{docId} {
+        allow read, delete: if isMember() && isOwner();
+        allow create, update: if isMember() && isOwner() && docId == 'discord'
+          && request.resource.data.keys().hasOnly(['url', 'plan', 'boss', 'at', 'by'])
+          && request.resource.data.url is string
+          && request.resource.data.url.matches('^https://(ptb[.]|canary[.])?discord(app)?[.]com/api/webhooks/[0-9]{5,25}/[A-Za-z0-9_-]{20,100}$')
+          && request.resource.data.by == request.auth.uid;
+      }
+
       // Sesli oda VIP olabilir: kullanıcı VIP ise ya da (ekip VIP'i açıksa) ekip lideri VIP / admin ise
       function voiceOk() {
         return featOk('sesli')
