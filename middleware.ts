@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
  */
 // tanıtım sitesi sayfaları → public/site/*.html
 const SITE: Record<string, string> = {
-  "/": "index", "/exp-tablosu": "exp-tablosu", "/item-basma-oranlari": "item-basma-oranlari", "/yeni-sunucu": "yeni-sunucu",
+  "/": "index", "/exp-tablosu": "exp-tablosu", "/item-basma-oranlari": "item-basma-oranlari", "/yeni-sunucu": "yeni-sunucu", "/event-rehberi": "event-rehberi",
   "/kullanim-sartlari": "kullanim-sartlari", "/gizlilik": "gizlilik", "/iletisim": "iletisim",
 };
 // herkese açık dosyalar (tanıtım sitesinin kullandıkları)

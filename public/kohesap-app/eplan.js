@@ -89,13 +89,16 @@ function epEventOptions() {
   return occurrences(now, now.getTime() + 7 * 864e5).filter(o => o.st > now && !/bakım/i.test(o.e.name)).slice(0, 60)
     .map(o => [String(o.st.getTime()) + '|' + (o.e.pid || o.e.id), `${EP_DAY[o.st.getDay()]} ${o.t} · ${o.e.name}`, o]);
 }
-function epForm(p) {
+/** pid verilirse o eventin en yakın seansı seçili gelir (Event Rehberi → "Ekiple planla") */
+function epForm(p, pid) {
   const isNew = !p;
   const evOpts = isNew ? epEventOptions() : [];
+  const pre = pid && evOpts.find(x => x[2].e.pid === pid);
+  if (pid && !pre) toast('Bu event önümüzdeki 7 günde takvimde yok; özel saat seç', 'err');
   const d = p ? new Date(p.at) : new Date(Date.now() + 3600e3);
   openForm({
     title: isNew ? 'Yeni plan' : 'Planı düzenle',
-    data: { occ: evOpts.length ? evOpts[0][0] : 'ozel', t: p ? p.t : '', date: localDate(d), time: pad(d.getHours()) + ':' + pad(isNew ? 0 : d.getMinutes()), note: p ? p.note || '' : '' },
+    data: { occ: pre ? pre[0] : evOpts.length && !pid ? evOpts[0][0] : 'ozel', t: p ? p.t : pid && !pre && typeof guideByPid === 'function' && guideByPid(pid) ? guideByPid(pid).n : '', date: localDate(d), time: pad(d.getHours()) + ':' + pad(isNew ? 0 : d.getMinutes()), note: p ? p.note || '' : '' },
     fields: [
       ...(isNew ? [{ k: 'occ', label: 'Ne zaman?', type: 'select', full: true, options: [...evOpts.map(([k, l]) => [k, l]), ['ozel', 'Özel plan (aşağıdaki gün ve saat)']] }] : []),
       { k: 't', label: 'Başlık', type: 'text', full: true, placeholder: isNew ? 'Event seçtiysen boş bırakabilirsin · örn. Ardream farmı' : '' },
@@ -163,6 +166,7 @@ function epCard(p, now) {
       ${['y', 'm', 'n'].map(s => `<button class="btn sm ${mine && mine.s === s ? 'pri' : ''}" data-act="ep-rsvp" data-id="${esc(p.id)}" data-s="${s}">${EP_RSVP[s].t}</button>`).join('')}
       ${mine && mine.s !== 'n' && chars.length > 1 ? `<select class="inp ep-char" data-ep-char="${esc(p.id)}" aria-label="Hangi karakterle">${chars.map(c => `<option value="${esc(c.id)}" ${mine.c === c.id ? 'selected' : ''}>${esc(c.name)} · Lv ${c.level}</option>`).join('')}</select>` : ''}
       <span class="spacer"></span>
+      ${p.ev && typeof guideByPid === 'function' && guideByPid(p.ev) ? `<button class="btn sm ghost" data-act="gd-open" data-id="${esc(p.ev)}">Rehber</button>` : ''}
       ${epCanEdit(p) ? `<button class="btn sm ghost" data-act="ep-edit" data-id="${esc(p.id)}">Düzenle</button><button class="icon-btn danger" data-act="ep-del" data-id="${esc(p.id)}" title="Planı sil" aria-label="Planı sil">${ICON.del}</button>` : ''}
     </div>`}
   </article>`;
