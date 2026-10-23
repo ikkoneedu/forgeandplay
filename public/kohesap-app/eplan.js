@@ -5,7 +5,8 @@
    Geliyorum / Belki / Gelmiyorum der ve hangi karakteriyle geleceğini seçer.
    Plan açılınca ekibe bildirim + sohbete bot mesajı gider; katılanlara sunucu
    zamanlayıcısı başlangıçtan önce hatırlatır.
-     kohesapTeams/{kod}/plans/{id} → { t, ev, at, note, by, bn, rsvp: { uid: { s, c, cn, cls, lv, at } }, cAt }
+     kohesapTeams/{kod}/plans/{id} → { t, ev, at, note, by, bn, rsvp: { uid: { s, c, cn, cls, lv, at } }, cAt, att?, loot? }
+   Yoklama (att) ve drop dağıtımı (loot) eloot.js'te.
    ========================================================================== */
 const EP = { unsub: null, code: '', list: [], loaded: false, err: '', showPast: false };
 const EP_RSVP = { y: { t: 'Geliyorum', s: 'Geliyor', cls: 'g' }, m: { t: 'Belki', s: 'Belki', cls: 'y' }, n: { t: 'Gelmiyorum', s: 'Gelmiyor', cls: 'r' } };
@@ -162,6 +163,7 @@ function epCard(p, now) {
     <div class="ep-sum"><span class="badge g">${cnt('y')} geliyor</span><span class="badge y">${cnt('m')} belki</span><span class="badge r">${cnt('n')} gelmiyor</span>${none ? `<span class="badge">${none} cevap yok</span>` : ''}</div>
     ${tips.length ? `<div class="callout y ep-tip">${tips.map(esc).join(' ')}</div>` : ''}
     <div class="ep-list">${sorted.map(who).join('')}</div>
+    ${(past || live) && typeof epAfter === 'function' ? epAfter(p, rows) : ''}
     ${past ? '' : `<div class="ep-acts">
       ${['y', 'm', 'n'].map(s => `<button class="btn sm ${mine && mine.s === s ? 'pri' : ''}" data-act="ep-rsvp" data-id="${esc(p.id)}" data-s="${s}">${EP_RSVP[s].t}</button>`).join('')}
       ${mine && mine.s !== 'n' && chars.length > 1 ? `<select class="inp ep-char" data-ep-char="${esc(p.id)}" aria-label="Hangi karakterle">${chars.map(c => `<option value="${esc(c.id)}" ${mine.c === c.id ? 'selected' : ''}>${esc(c.name)} · Lv ${c.level}</option>`).join('')}</select>` : ''}
@@ -191,7 +193,7 @@ VIEWS.planla = () => {
     <button class="btn ghost sm" data-act="ep-past">${EP.showPast ? 'Geçmişi gizle' : `Geçmiş planlar (${past.length})`}</button>
     ${EP.showPast ? `<div class="ep-grid">${past.map(p => epCard(p, now)).join('')}</div>` : ''}
   </section>` : '';
-  return head + body + pastHtml + `<p class="hint" style="margin-top:14px">Hatırlatma, Bildirimler sayfasındaki "event öncesi" ayarına ve boss sayfasındaki önceden haber süresine göre gider. Yalnızca "Geliyorum" ya da "Belki" diyenlere gönderilir.</p>`;
+  return head + body + (typeof epStatsCard === 'function' ? epStatsCard(now) : '') + pastHtml + `<p class="hint" style="margin-top:14px">Hatırlatma, Bildirimler sayfasındaki "event öncesi" ayarına ve boss sayfasındaki önceden haber süresine göre gider. Yalnızca "Geliyorum" ya da "Belki" diyenlere gönderilir.</p>`;
 };
 
 Object.assign(ACTIONS, {

@@ -219,11 +219,14 @@ service cloud.firestore {
 
       // Ekip planı (etkinlik + katılım): üyeler okur ve plan açar; ayrıntıyı açan ya da lider değiştirir / siler,
       // her üye yalnızca kendi katılım cevabını (rsvp.{uid}) yazar.
-      //   plans/{id} → { t, ev, at, note, by, bn, rsvp: { uid: { s: 'y'|'m'|'n', c, cn, cls, lv, at } }, cAt }
+      //   plans/{id} → { t, ev, at, note, by, bn, rsvp: { uid: { s: 'y'|'m'|'n', c, cn, cls, lv, at } }, cAt,
+      //                  att: { uid: 1 } (yoklama), loot: [{ i, w, wn, m, r, at }] (drop dağıtımı) }
       match /plans/{pid} {
         function planShapeOk() {
           let d = request.resource.data;
-          return d.keys().hasOnly(['t', 'ev', 'at', 'note', 'by', 'bn', 'rsvp', 'cAt'])
+          return d.keys().hasOnly(['t', 'ev', 'at', 'note', 'by', 'bn', 'rsvp', 'cAt', 'att', 'loot'])
+            && (!('att' in d) || (d.att is map && d.att.size() <= 9))
+            && (!('loot' in d) || (d.loot is list && d.loot.size() <= 40))
             && d.t is string && d.t.size() >= 1 && d.t.size() <= 60
             && d.at is int
             && (!('ev' in d) || (d.ev is string && d.ev.size() <= 24))

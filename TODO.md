@@ -13,7 +13,7 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 1. [x] Ekip etkinlik planlayıcı (RSVP) + alt karakter bağı — "Ekip Planı" sayfası. Alt karakterler zaten ekipte tek kişi altında; katılımda karakter seçilir.
 2. [x] Event rehber kartları — uygulamada "Event Rehberi", sitede /event-rehberi (`node scripts/build-guides.mjs` ile üretilir)
 3. [x] Günlük / haftalık yapılacaklar — "Günlük Görevler" sayfası
-4. [ ] Katılım geçmişi + drop sırası
+4. [x] Katılım geçmişi + drop sırası — Ekip Planı: yoklama, zar / adil sıra, katılım tablosu, Parti & Drop'a aktarma
 5. [ ] Grind oturumu takibi, fiyat alarmı
 6. [ ] Ekip arıyorum panosu, paylaşım kartları
 
