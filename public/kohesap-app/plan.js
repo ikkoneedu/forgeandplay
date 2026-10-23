@@ -35,6 +35,7 @@ const FEATS = [
   { id: 'pus', n: 'PUS hesabı', d: 'KC → TL → GB maliyeti', def: 'uye' },
   { id: 'exp', n: 'EXP hesabı', d: 'Seviye aralığı, süre ve maliyet', def: 'uye' },
   { id: 'basma', n: 'Item basma', d: 'Örs simülasyonu, maliyet, günlük', def: 'uye' },
+  { id: 'hedef', n: 'Hedef listesi', d: 'Alınacak set / itemler, toplam maliyet ve eksik para', def: 'uye' },
   { id: 'fiyat', n: 'Fiyat listesi', d: 'Kendi item fiyat listen', def: 'uye' },
 ];
 const FEAT = Object.fromEntries(FEATS.filter(f => f.id).map(f => [f.id, f]));

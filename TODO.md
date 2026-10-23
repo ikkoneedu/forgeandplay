@@ -23,6 +23,7 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 - [x] Boss çıkış penceresi (ekip verisinden öğrenilir)
 - [x] Ekip duyurusu (sabit not) ve Discord köprüsü
 - [x] Item basma: topluluk oranları (anonim, isteğe bağlı)
+- [x] Hedef listesi (set / build planlayıcı, ROADMAP B6)
 - [x] Testler + CI (`npm test`, `npm run test:rules`, `.github/workflows/ci.yml`)
 
 ## Sonra

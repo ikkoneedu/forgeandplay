@@ -235,3 +235,33 @@ test('item basma: kayıtlı günlük açılır, topluluk sütunu ve anonim payla
   assert.deepEqual(errors, []);
   await pg.close();
 });
+
+test('hedef listesi: fiyat listesinden fiyat, alındı, biriktirilen, eksik, kopyala', async () => {
+  const { pg, errors } = await openApp();
+  const r = await pg.evaluate(async () => {
+    const wait = () => new Promise(r => setTimeout(r, 30)), out = {}, [a, b] = CUR.acc.chars;
+    ui.page = 'hedef'; render();
+    out.empty = /Hedef listen boş/.test(document.getElementById('content').innerText);
+    const f = n => document.querySelector(`#mform [name=${n}]`);
+    ACTIONS['hd-add'](); f('name').value = 'Krowaz Ring'; f('qty').value = '2'; f('grp').value = 'Takı'; ACTIONS['modal-save']();
+    ACTIONS['hd-add'](); f('name').value = 'Raptor +7'; f('unit').value = '300m'; f('grp').value = 'Silah'; ACTIONS['modal-save']();
+    ACTIONS['hd-add'](); f('name').value = 'Bilinmeyen Item'; ACTIONS['modal-save']();
+    const h = hedefOf(a);
+    let t = hdTotals(h);
+    out.total = t.all === 95e6 * 2 + 300e6 && t.missing === 1;
+    document.querySelector(`[data-hd-done="${h.list[1].id}"]`).click(); await wait();
+    const sv = document.querySelector('[data-hd-saved]'); sv.value = '100m'; sv.dispatchEvent(new Event('change', { bubbles: true })); await wait();
+    t = hdTotals(h);
+    out.need = t.done === 300e6 && t.left === 190e6 && t.need === 90e6;
+    out.view = /Eksik para/.test(document.getElementById('content').textContent) && /fiyat yok/.test(document.getElementById('content').textContent);
+    S.prices.find(x => x.name === 'Krowaz Ring').price = 80e6;
+    out.live = hdTotals(h).left === 160e6;
+    ACTIONS['hd-copy'](); ACTIONS['modal-save']();
+    out.copy = hedefOf(b).list.length === 3 && hedefOf(b).list.every(x => !x.done);
+    document.querySelector(`[data-act="hd-del"][data-id="${h.list[2].id}"]`).click(); out.del = h.list.length === 2;
+    return out;
+  });
+  assert.deepEqual(r, { empty: true, total: true, need: true, view: true, live: true, copy: true, del: true });
+  assert.deepEqual(errors, []);
+  await pg.close();
+});
