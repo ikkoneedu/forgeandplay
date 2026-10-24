@@ -27,6 +27,7 @@ Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 - [x] Kompozisyon önerisi: eksik rol için alt karakter önerisi, event seviye şartı uyarısı (ROADMAP A4)
 - [x] Hızlı arama (Ctrl+K ya da "/"): sayfa, işlem, rehber, karakter, fiyat
 - [x] Panel "Bugün" şeridinde hedef listesi kartı
+- [x] Panelde "Başlarken" listesi (GB fiyatı, ekip, bildirim, ana ekran, ilk görev, ilk kayıt)
 - [x] Testler + CI (`npm test`, `npm run test:rules`, `.github/workflows/ci.yml`)
 
 ## Sonra

@@ -312,3 +312,20 @@ test('hızlı arama: Ctrl+K, Türkçe harfsiz arama, oklar, Enter, hedefe ekle',
   assert.deepEqual(errors, []);
   await pg.close();
 });
+
+test('başlarken: adımlar veriden işaretlenir, gizlenince kaybolur', async () => {
+  const { pg, errors } = await openApp();
+  const r = await pg.evaluate(async () => {
+    const out = {}, txt = () => document.getElementById('content').textContent;
+    DB.shared.onbOff = false; S.settings.gbTL = 0; ui.page = 'panel'; render();
+    out.shown = /Başlarken/.test(txt()) && !!document.querySelector('.onb-it.nx [data-act="go"][data-id="ayar"]');
+    S.settings.gbTL = 335; render();
+    out.next = !document.querySelector('.onb-it.nx [data-id="ayar"]') && document.querySelectorAll('.onb-it.ok').length >= 2;
+    document.querySelector('[data-act="onb-off"]').click();
+    out.off = DB.shared.onbOff === true && !/Başlarken/.test(txt());
+    return out;
+  });
+  assert.deepEqual(r, { shown: true, next: true, off: true });
+  assert.deepEqual(errors, []);
+  await pg.close();
+});
