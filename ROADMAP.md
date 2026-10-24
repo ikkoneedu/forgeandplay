@@ -52,8 +52,8 @@ Windows exe · KVKK: veri indir / hesabı sil.
 
 ## Faz D — Teknik sağlık
 - Uygulama JS'inde (yaklaşık 8.400 satır, monkey-patch zinciri `const _renderX = render`) modül sınırları netleştirilmeli.
-- Basit uçtan uca test (Playwright): giriş ekranı, hesaplayıcılar, bot kapısı.
-- Lighthouse / Core Web Vitals kontrolü tanıtım sitesinde.
+- ✅ Uçtan uca arayüz testleri (Playwright, `npm run test:ui`) ve CI.
+- ✅ Lighthouse / Core Web Vitals kontrolü tanıtım sitesinde (Ekim 2026: mobil performans 99, erişilebilirlik 100, SEO 100; uygulama girişi LCP 1,8 sn).
 
 ---
 
