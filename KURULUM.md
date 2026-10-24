@@ -21,7 +21,7 @@ Eski alan adındaki `/api`, `/sw.js` ve `/downloads` yönlenmez: eski Windows uy
 ### Alan adı geçişi (forgeandplay.com → koekip.app)
 1. **Vercel → Domains → koekip.app → Connect** → proje `forgeandplay`. `www.koekip.app`'i de ekle.
 2. `forgeandplay.com` ve `www.forgeandplay.com` projede **bağlı kalsın** ve Vercel'de "Redirect to" ayarı **olmasın**. Yönlendirmeyi uygulama yapar; Vercel'de yapılırsa eski exe'nin API çağrıları da yönlenir.
-3. **Firebase Console → Authentication → Settings → Authorized domains** → `koekip.app` ekle. Eklenmezse Google ile giriş açılmaz.
+3. **Firebase Console → Authentication → Settings → Authorized domains** → `koekip.app` ve `www.koekip.app`. Eklenmezse Google ile giriş açılmaz. Üretimde zamanlayıcı bunları kendiliğinden ekler (`lib/auth-domains.ts`); hizmet hesabının yetkisi yetmezse hata `GET /api/kohesap/rules` → `authDomains` alanında görünür, o zaman elle ekle.
 4. **Google Search Console** → `koekip.app` mülkünü ekle, `https://koekip.app/sitemap.xml` gönder. Eski mülkte **Adres değişikliği** aracını kullan.
 5. cron-job.org adresini `https://koekip.app/api/koekip/push/cron?key=…` yap (eskisi de çalışır).
 6. Telefonda ana ekrana eklenmiş eski uygulama yeni adrese yönlenir. Kullanıcı bir kez yeniden giriş yapmalı ve bildirimleri yeniden açmalı (tarayıcı verileri alan adına bağlıdır).

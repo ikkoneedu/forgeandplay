@@ -143,3 +143,29 @@ test("middleware: eski alan adı ve www sayfaları koekip.app'e yönlenir; API, 
     assert.notEqual(run(u).status, 308, u);
   }
 });
+
+/* ---------- Firebase Auth yetkili alan adları ---------- */
+test("syncAuthDomains: eksikleri ekler, var olanlara dokunmaz, tamamsa tekrar sormaz, hata saatte bir", async () => {
+  const { syncAuthDomains, AUTH_DOMAINS } = await import("../lib/auth-domains");
+  delete process.env.VERCEL_ENV; delete process.env.KOEKIP_RULES_SYNC;
+  assert.equal((await syncAuthDomains(fakeDb() as never)).skipped, "üretim dışı");
+  process.env.VERCEL_ENV = "production";
+  let list = ["localhost", "proj.firebaseapp.com", "forgeandplay.com"], gets = 0;
+  const api = { get: async () => { gets++; return list.slice(); }, set: async (l: string[]) => { list = l; } };
+  const db = fakeDb();
+  let out = await syncAuthDomains(db as never, false, api);
+  assert.ok(out.ok);
+  assert.deepEqual(out.added, AUTH_DOMAINS);
+  assert.deepEqual(list, ["localhost", "proj.firebaseapp.com", "forgeandplay.com", ...AUTH_DOMAINS]);
+  out = await syncAuthDomains(db as never, false, api);
+  assert.equal(out.skipped, "zaten tamam");
+  assert.equal(gets, 1);
+  out = await syncAuthDomains(db as never, true, api);
+  assert.deepEqual(out.added, []);
+  const db2 = fakeDb();
+  const bad = { get: async () => { throw new Error("403 PERMISSION_DENIED"); }, set: async () => {} };
+  out = await syncAuthDomains(db2 as never, false, bad);
+  assert.ok(!out.ok && /Authorized domains/.test(out.error || ""));
+  assert.equal((await syncAuthDomains(db2 as never, false, api)).skipped, "bekliyor");
+  delete process.env.VERCEL_ENV;
+});

@@ -7,6 +7,7 @@ import {
 import type { Firestore } from "firebase-admin/firestore";
 import { refreshNews } from "@/lib/ko-news";
 import { syncRules } from "@/lib/rules-sync";
+import { syncAuthDomains } from "@/lib/auth-domains";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -145,6 +146,9 @@ async function cron(req: NextRequest) {
   // yeni yayında firestore.rules değiştiyse Firebase'e yayınla (eşitse tek belge okuması)
   const rules = await syncRules(db).catch((e) => ({ ok: false, error: (e as Error).message }));
   if (!rules.ok) console.warn("kurallar", rules.error);
+  // Google ile giriş için koekip.app Firebase'de yetkili alan adı olsun (tamamsa tek belge okuması)
+  const domains = await syncAuthDomains(db).catch((e) => ({ ok: false, error: (e as Error).message }));
+  if (!domains.ok && !("skipped" in domains && domains.skipped)) console.warn("yetkili alan adları", domains.error);
 
   if (!usersCache || now - usersCache.at > 2 * 60e3) {
     const qs = await db.collection("kohesapPush").get();
