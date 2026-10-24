@@ -13,7 +13,7 @@ const USKO = (() => { // takvim saatleri data.js'ten (USKO_EVENTS)
   return Function('ALL_DAYS', 'return ' + m[1])([0, 1, 2, 3, 4, 5, 6]);
 })();
 const tpl = readFileSync(join(root, 'public/site/exp-tablosu.html'), 'utf8');
-const URL = 'https://forgeandplay.com/event-rehberi';
+const URL = 'https://koekip.app/event-rehberi';
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const when = pid => {
@@ -59,10 +59,10 @@ const main = `<main id="ana">
 </div></main>`;
 
 const ld = { '@context': 'https://schema.org', '@graph': [
-  { '@type': 'Organization', '@id': 'https://forgeandplay.com/#org', name: 'Forge & Play', url: 'https://forgeandplay.com/', logo: 'https://forgeandplay.com/site/icon-512.png', email: 'info@forgeandplay.com', brand: { '@type': 'Brand', name: 'KO Ekip' } },
-  { '@type': 'WebSite', '@id': 'https://forgeandplay.com/#site', url: 'https://forgeandplay.com/', name: 'KO Ekip', inLanguage: 'tr-TR', publisher: { '@id': 'https://forgeandplay.com/#org' } },
-  { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'KO Ekip', item: 'https://forgeandplay.com/' }, { '@type': 'ListItem', position: 2, name: 'Event Rehberi', item: URL }] },
-  { '@type': 'Article', headline: title, description: desc, url: URL, inLanguage: 'tr-TR', author: { '@id': 'https://forgeandplay.com/#org' }, publisher: { '@id': 'https://forgeandplay.com/#org' }, dateModified: EVENT_GUIDES_DATE, image: 'https://forgeandplay.com/site/og.jpg' },
+  { '@type': 'Organization', '@id': 'https://koekip.app/#org', name: 'Forge & Play', url: 'https://koekip.app/', logo: 'https://koekip.app/site/icon-512.png', email: 'info@forgeandplay.com', brand: { '@type': 'Brand', name: 'KO Ekip' } },
+  { '@type': 'WebSite', '@id': 'https://koekip.app/#site', url: 'https://koekip.app/', name: 'KO Ekip', inLanguage: 'tr-TR', publisher: { '@id': 'https://koekip.app/#org' } },
+  { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'KO Ekip', item: 'https://koekip.app/' }, { '@type': 'ListItem', position: 2, name: 'Event Rehberi', item: URL }] },
+  { '@type': 'Article', headline: title, description: desc, url: URL, inLanguage: 'tr-TR', author: { '@id': 'https://koekip.app/#org' }, publisher: { '@id': 'https://koekip.app/#org' }, dateModified: EVENT_GUIDES_DATE, image: 'https://koekip.app/site/og.jpg' },
   { '@type': 'FAQPage', mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) },
 ] };
 
@@ -70,7 +70,7 @@ let html = tpl
   .replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`)
   .replace(/(<meta (?:name|property)="(?:description|og:description|twitter:description)" content=")[^"]*"/g, `$1${esc(desc)}"`)
   .replace(/(<meta (?:property|name)="(?:og:title|twitter:title)" content=")[^"]*"/g, `$1${esc(title)}"`)
-  .replace(/https:\/\/forgeandplay\.com\/exp-tablosu/g, URL)
+  .replace(/https:\/\/koekip\.app\/exp-tablosu/g, URL)
   .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${JSON.stringify(ld)}</script>`)
   .replace(/<main id="ana">[\s\S]*?<\/main>/, main);
 if (/exp-tablosu"|EXP tablosu \(1–83\)<\/h1>/.test(html.replace(/href="\/exp-tablosu"/g, ''))) throw new Error('şablon değişimi eksik');

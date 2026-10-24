@@ -1,6 +1,6 @@
 # KO Hesap — Knight Online defteri
 
-Web: `https://forgeandplay.com/app` · Uygulama dosyaları: `public/kohesap-app/` · Windows: `/downloads/KOEkip.exe`
+Web: `https://koekip.app/app` · Uygulama dosyaları: `public/kohesap-app/` · Windows: `/downloads/KOEkip.exe`
 
 ## Yapı
 
@@ -8,7 +8,7 @@ Web: `https://forgeandplay.com/app` · Uygulama dosyaları: `public/kohesap-app/
 |---|---|
 | `public/kohesap-app/` | Arayüzün **tek kaynağı** (web ve exe aynı dosyaları kullanır) |
 | `kohesap-desktop/` | Windows exe (Go): yerel sunucu, gizli tarayıcı (canlı pazar), yerel yedek |
-| `public/site/` | Tanıtım / indirme sitesi (forgeandplay.com) |
+| `public/site/` | Tanıtım / indirme sitesi (koekip.app) |
 | `app/api/kohesap/` | `config` (Firebase + exe sürümü), `proxy` (izinli sitelerden 5 dk önbellekli okuma), `rates` |
 | `lib/kohesap.ts` | Exe sürümü, izinli alan adları, CORS |
 
@@ -19,7 +19,7 @@ Giriş yalnızca **Google** (Firebase Auth). Kayıtlar Firestore'da:
 
 1. **Firestore kuralları:** `firestore.rules` dosyasını Firebase Console → Firestore → Rules'a yapıştırıp yayınla (yeni `kohesap` bölümü).
 2. **Yetkili alan adları:** Firebase Console → Authentication → Settings → Authorized domains listesinde
-   `forgeandplay.com` ve `localhost` olmalı (`localhost` exe'nin Google girişi için gerekli; varsayılan olarak vardır).
+   `koekip.app` ve `localhost` olmalı (`localhost` exe'nin Google girişi için gerekli; varsayılan olarak vardır).
 
 ## Exe derleme
 

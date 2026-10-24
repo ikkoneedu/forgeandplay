@@ -7,7 +7,7 @@
    Canlı veriler (GB tablosu, pazar) buluta yazılmaz; her cihaz kendisi çeker.
    ========================================================================== */
 
-const SITE = 'https://forgeandplay.com';
+const SITE = 'https://koekip.app';
 /** Sitenin korumalı API'leri için kimlik başlığı (yalnızca onaylı üyeler kullanabilir) */
 async function authHdr() { try { return CLOUD.user && CLOUD.user.getIdToken ? { Authorization: 'Bearer ' + await CLOUD.user.getIdToken() } : {}; } catch { return {}; } }
 const authFetch = async (url, opt = {}) => fetch(url, { ...opt, headers: { ...(opt.headers || {}), ...(await authHdr()) } });
@@ -17,8 +17,9 @@ async function apiJSON(res) {
   try { return JSON.parse(txt); }
   catch { throw new Error(res.ok ? 'Sunucudan beklenmeyen yanıt geldi; biraz sonra tekrar dene.' : `Sunucuya ulaşılamadı (HTTP ${res.status}); biraz sonra tekrar dene.`); }
 }
-/** API çağrıları için asıl alan adı (site yapılandırmasından; www yönlendirmesi CORS'u bozmasın) */
-const siteBase = () => (CLOUD.cfg && /^https:\/\/(www\.)?forgeandplay\.com$/.test(CLOUD.cfg.site || '') ? CLOUD.cfg.site : SITE);
+/** API çağrıları için asıl alan adı (site yapılandırmasından; yönlendirme CORS'u bozmasın).
+    Eski alan adı (forgeandplay.com) API'leri yönlendirmeden sunmaya devam eder. */
+const siteBase = () => (CLOUD.cfg && /^https:\/\/(koekip\.app|(www\.)?forgeandplay\.com)$/.test(CLOUD.cfg.site || '') ? CLOUD.cfg.site : SITE);
 const CLOUD = { ready: false, user: null, db: null, auth: null, cfg: null, last: { shared: '', chars: {} }, unsub: [], saving: false, imported: 0 };
 let LOCAL_DB = null; // exe: bu bilgisayardaki eski (yerel hesaplı) veri
 

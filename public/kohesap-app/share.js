@@ -19,7 +19,7 @@ function shCanvas() {
   // üst bilgi ve alt bilgi
   x.fillStyle = '#e3b554'; x.font = `700 30px ${SH_FONT}`; x.fillText('KO Ekip', 64, 76);
   x.fillStyle = 'rgba(255,255,255,.45)'; x.font = `500 22px ${SH_FONT}`; x.fillText('Knight Online ekip uygulaması', 64, 108);
-  x.fillStyle = 'rgba(255,255,255,.5)'; x.font = `600 22px ${SH_FONT}`; x.textAlign = 'right'; x.fillText('forgeandplay.com', SH_W - 64, SH_H - 44); x.textAlign = 'left';
+  x.fillStyle = 'rgba(255,255,255,.5)'; x.font = `600 22px ${SH_FONT}`; x.textAlign = 'right'; x.fillText('koekip.app', SH_W - 64, SH_H - 44); x.textAlign = 'left';
   return { c, x };
 }
 /** metni genişliğe sığdır (gerekirse … ile kes) */
@@ -60,7 +60,7 @@ async function sharePlan(p) {
     x.fillStyle = 'rgba(255,255,255,.85)'; x.fillText(shFit(x, (r.r.cn || teamMainName(r.m)) + (r.r.lv ? ' · Lv ' + r.r.lv : ''), 470), cx + 26, cy);
   });
   if (p.note) { x.fillStyle = 'rgba(255,255,255,.5)'; x.font = `500 22px ${SH_FONT}`; x.fillText(shFit(x, p.note, SH_W - 420), 64, SH_H - 44); }
-  await shShare(c, 'plan-' + shSlug(p.t), `📅 ${p.t} · ${epDayTime(p.at)} · ${going.length} geliyor${p.note ? '\n' + p.note : ''}\nKO Ekip · forgeandplay.com`);
+  await shShare(c, 'plan-' + shSlug(p.t), `📅 ${p.t} · ${epDayTime(p.at)} · ${going.length} geliyor${p.note ? '\n' + p.note : ''}\nKO Ekip · koekip.app`);
 }
 
 /* ---------- ekip kartı ---------- */
@@ -80,7 +80,7 @@ async function shareTeam() {
     x.fillStyle = 'rgba(255,255,255,.55)'; x.font = `500 20px ${SH_FONT}`;
     x.fillText(shFit(x, mc.level ? `Lv ${mc.level} · ${jobTitle(mc)}` : '', 470), cx + 22, cy + 18);
   });
-  await shShare(c, 'ekip-' + shSlug(TEAM.doc.name), `🛡️ ${TEAM.doc.name} · ${ms.length}/${TEAM_MAX} üye${avg ? ' · ort. Lv ' + fmtX(Math.round(avg * 10) / 10) : ''}\nKO Ekip · forgeandplay.com`);
+  await shShare(c, 'ekip-' + shSlug(TEAM.doc.name), `🛡️ ${TEAM.doc.name} · ${ms.length}/${TEAM_MAX} üye${avg ? ' · ort. Lv ' + fmtX(Math.round(avg * 10) / 10) : ''}\nKO Ekip · koekip.app`);
 }
 
 /* ---------- grind sonucu ---------- */
@@ -98,7 +98,7 @@ async function shareGrind(rec) {
   box('Net noah', net ? (net > 0 ? '+' : '') + fmtShort(net) : '—', 776, net >= 0 ? '#3fcf8e' : '#f26b6b');
   x.fillStyle = 'rgba(255,255,255,.55)'; x.font = `500 24px ${SH_FONT}`;
   x.fillText(shFit(x, `Lv ${rec.lv} %${fmtX(rec.a)} → ${rec.lv2 !== rec.lv ? 'Lv ' + rec.lv2 + ' ' : ''}%${fmtX(rec.b)}${rec.items ? ' · ' + rec.items : ''}`, SH_W - 420), 64, 530);
-  await shShare(c, 'grind', `⏱️ ${rec.place || 'Grind'} · ${grFmtH(rec.min * 60000)}${rec.exp && h ? ' · ' + fmtShort(rec.exp / h) + ' EXP/sa' : ''}${net ? ' · ' + fmtShort(net) + ' net' : ''}\nKO Ekip · forgeandplay.com`);
+  await shShare(c, 'grind', `⏱️ ${rec.place || 'Grind'} · ${grFmtH(rec.min * 60000)}${rec.exp && h ? ' · ' + fmtShort(rec.exp / h) + ' EXP/sa' : ''}${net ? ' · ' + fmtShort(net) + ' net' : ''}\nKO Ekip · koekip.app`);
 }
 
 /* ---------- düğmeler ---------- */

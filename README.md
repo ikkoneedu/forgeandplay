@@ -1,10 +1,10 @@
-# KO Ekip · forgeandplay.com
+# KO Ekip · koekip.app
 
 **Knight Online oyuncuları için ekip uygulaması.** Ekip kurma, sesli oda, boss alarmı, event takvimi,
 telefon bildirimleri, gelir–gider defteri, EXP / PUS / item basma hesapları ve canlı fiyatlar tek yerde.
 Tarayıcıda, telefonda (PWA) ve Windows'ta (KOEkip.exe) aynı hesapla çalışır.
 
-- **Site:** https://forgeandplay.com (tanıtım) · https://forgeandplay.com/app (uygulama)
+- **Site:** https://koekip.app (tanıtım) · https://koekip.app/app (uygulama)
 - **Stack:** Next.js 15 (yalnızca API + yönlendirme) · düz JS PWA · Firebase (Auth + Firestore) · Web Push · Cloudflare TURN · Go (Windows exe) · Vercel
 - **Kurulum:** `KURULUM.md` · **Yol haritası:** `ROADMAP.md` · **Yapılacaklar:** `TODO.md`
 

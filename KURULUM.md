@@ -1,6 +1,6 @@
 # KO Ekip kurulumu
 
-forgeandplay.com açılınca doğrudan **KO Ekip** gelir. Eski site sayfaları ana sayfaya yönlenir. Yalnızca gizlilik, kullanım şartları ve iletişim sayfaları kalır.
+koekip.app açılınca doğrudan **KO Ekip** gelir. Eski site sayfaları ana sayfaya yönlenir. Yalnızca gizlilik, kullanım şartları ve iletişim sayfaları kalır.
 
 Aşağıdaki adımlar bir kez yapılır. 1 ve 2 olmadan uygulama yine çalışır, ama boss sayaçları, bildirimler ve telefonda ses eksik kalır.
 
@@ -15,7 +15,16 @@ Elle yayınlamak gerekirse: Firebase Console → **Firestore Database → Rules*
 ## 2. Vercel ortam değişkenleri
 
 Proje Vercel'de **ikkoneedu (Pro)** ekibinde, adı `forgeandplay`. GitHub'daki `main` her push'ta otomatik yayınlanır; diğer branch'ler önizleme alır.
-Domain: `forgeandplay.com` esas adres, `www.forgeandplay.com` ona 308 ile yönlenir.
+Domain: `koekip.app` esas adres. `www.koekip.app`, `forgeandplay.com` ve `www.forgeandplay.com` sayfaları ona 308 ile yönlenir (`middleware.ts`).
+Eski alan adındaki `/api`, `/sw.js` ve `/downloads` yönlenmez: eski Windows uygulaması ve kurulu bildirimler çalışmaya devam eder.
+
+### Alan adı geçişi (forgeandplay.com → koekip.app)
+1. **Vercel → Domains → koekip.app → Connect** → proje `forgeandplay`. `www.koekip.app`'i de ekle.
+2. `forgeandplay.com` ve `www.forgeandplay.com` projede **bağlı kalsın** ve Vercel'de "Redirect to" ayarı **olmasın**. Yönlendirmeyi uygulama yapar; Vercel'de yapılırsa eski exe'nin API çağrıları da yönlenir.
+3. **Firebase Console → Authentication → Settings → Authorized domains** → `koekip.app` ekle. Eklenmezse Google ile giriş açılmaz.
+4. **Google Search Console** → `koekip.app` mülkünü ekle, `https://koekip.app/sitemap.xml` gönder. Eski mülkte **Adres değişikliği** aracını kullan.
+5. cron-job.org adresini `https://koekip.app/api/koekip/push/cron?key=…` yap (eskisi de çalışır).
+6. Telefonda ana ekrana eklenmiş eski uygulama yeni adrese yönlenir. Kullanıcı bir kez yeniden giriş yapmalı ve bildirimleri yeniden açmalı (tarayıcı verileri alan adına bağlıdır).
 
 Değişkenleri **Vercel → Proje → Settings → Environment Variables** sayfasına ekle (Production). Ekledikten sonra **Redeploy** yap. Tam liste: `.env.example`.
 
@@ -62,7 +71,7 @@ Vercel'in ücretsiz planı dakikada bir çalışan görev desteklemez. Bunun yer
 1. https://cron-job.org adresinde ücretsiz hesap aç.
 2. **Create cronjob**'a bas.
 3. Ayarları şöyle yap:
-   - URL: `https://forgeandplay.com/api/koekip/push/cron?key=CRON_SECRET` (sondaki `CRON_SECRET` yerine kendi değerini yaz)
+   - URL: `https://koekip.app/api/koekip/push/cron?key=CRON_SECRET` (sondaki `CRON_SECRET` yerine kendi değerini yaz)
    - Execution schedule: **Every 1 minute**
 4. Kaydet.
 
@@ -71,13 +80,13 @@ Kontrol etmek için KO Ekip'te admin olarak **Bildirimler** sayfasının altınd
 ## 4. Telefona kurulum (her üye)
 
 **Android (Chrome):**
-1. forgeandplay.com'u aç.
+1. koekip.app'i aç.
 2. Menüden (⋮) **Ana ekrana ekle / Uygulamayı yükle**'yi seç.
 3. KO Ekip'i ana ekrandan aç.
 4. **Bildirimler** sayfasında **Bildirimleri aç**'a bas.
 
 **iPhone (Safari, iOS 16.4+):**
-1. forgeandplay.com'u aç.
+1. koekip.app'i aç.
 2. **Paylaş → Ana Ekrana Ekle**'yi seç.
 3. Ana ekrandaki **KO Ekip** simgesinden aç.
 4. **Bildirimler** sayfasında **Bildirimleri aç**'a bas.

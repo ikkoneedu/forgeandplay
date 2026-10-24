@@ -3,7 +3,7 @@
    BİLDİRİMLER (telefon ana ekranı / masaüstü)
    - Uygulama telefona "ana ekrana ekle" ile kurulur (PWA); bildirim izni verilince
      cihaz aboneliği kohesapPush/{uid} belgesine yazılır.
-   - Sunucu (forgeandplay.com) dakikada bir kontrol eder ve uygulama kapalıyken bile
+   - Sunucu (koekip.app) dakikada bir kontrol eder ve uygulama kapalıyken bile
      gönderir: event başlamadan ve boss çıkmadan X dk önce.
    - Ekipten biri uygulamayı açınca diğer üyelere "çevrimiçi" bildirimi gider
      (aynı kişi için en fazla 30 dakikada bir).
@@ -178,9 +178,9 @@ function notifyBanner() {
 }
 function installCard() {
   if (isStandalone()) return `<div class="nt-step done"><span class="nt-n">✓</span><div><b>Ana ekranda kurulu</b><span class="mut">KO Ekip uygulama olarak açılıyor.</span></div></div>`;
-  if (typeof serverMode !== 'undefined' && serverMode) return `<div class="nt-step done"><span class="nt-n">✓</span><div><b>Windows uygulaması</b><span class="mut">Bilgisayarda bildirimler Windows bildirim merkezine gelir. Telefon için forgeandplay.com'u telefondan açıp ana ekrana ekle.</span></div></div>`;
+  if (typeof serverMode !== 'undefined' && serverMode) return `<div class="nt-step done"><span class="nt-n">✓</span><div><b>Windows uygulaması</b><span class="mut">Bilgisayarda bildirimler Windows bildirim merkezine gelir. Telefon için koekip.app'i telefondan açıp ana ekrana ekle.</span></div></div>`;
   const how = isIOS()
-    ? `<ol class="nt-ios"><li><b>Safari</b>'de forgeandplay.com'u aç</li><li>Alttaki <b>Paylaş</b> düğmesine dokun <span class="nt-share">⬆︎</span></li><li><b>Ana Ekrana Ekle</b>'yi seç</li><li>Ana ekrandaki <b>KO Ekip</b> simgesinden aç ve bu sayfaya dön</li></ol><span class="hint">iPhone'da bildirimler yalnızca ana ekrandan açılan uygulamada çalışır (iOS 16.4 ve üstü).</span>`
+    ? `<ol class="nt-ios"><li><b>Safari</b>'de koekip.app'i aç</li><li>Alttaki <b>Paylaş</b> düğmesine dokun <span class="nt-share">⬆︎</span></li><li><b>Ana Ekrana Ekle</b>'yi seç</li><li>Ana ekrandaki <b>KO Ekip</b> simgesinden aç ve bu sayfaya dön</li></ol><span class="hint">iPhone'da bildirimler yalnızca ana ekrandan açılan uygulamada çalışır (iOS 16.4 ve üstü).</span>`
     : NOTIF.installEvt ? `<button class="btn pri" data-act="nt-install">📲 Ana ekrana ekle</button>`
       : `<span class="mut">Chrome menüsünden (⋮) <b>Ana ekrana ekle</b> / <b>Uygulamayı yükle</b>'yi seç.</span>`;
   return `<div class="nt-step"><span class="nt-n">1</span><div><b>Ana ekrana ekle</b>${how}</div></div>`;

@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
     },
     exeVersion: KOHESAP_EXE_VERSION,
     exeUrl: KOHESAP_EXE_URL,
-    // asıl alan adı (forgeandplay.com ↔ www yönlendirmesinden sonra); exe API çağrılarını buraya yapar
-    site: `https://${req.headers.get("x-forwarded-host") || req.headers.get("host") || "forgeandplay.com"}`,
+    // asıl alan adı (koekip.app ↔ www yönlendirmesinden sonra); exe API çağrılarını buraya yapar
+    site: `https://${req.headers.get("x-forwarded-host") || req.headers.get("host") || "koekip.app"}`,
     push: {
       vapid: vapidPublic(),
       ready: !!(vapidPublic() && env("VAPID_PRIVATE_KEY")),

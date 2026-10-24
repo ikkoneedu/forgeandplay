@@ -1,7 +1,7 @@
 'use strict';
 /* ==========================================================================
    KO Ekip — Site İlanları (item + karakter), sunucu seçmeli, item aramalı
-   • Kopazar ve ByNoGame: forgeandplay.com sunucusu okur (/api/kohesap/ilan)
+   • Kopazar ve ByNoGame: koekip.app sunucusu okur (/api/kohesap/ilan)
    • Knightpin ve Oyuneks: bot koruması yüzünden yalnızca Windows uygulamasının
      tarayıcısıyla okunur; uygulama sonucu ekiple paylaşır (kohesapMarket/ilan-*),
      web / telefon aynı aramayı yapınca paylaşılan sonucu da gösterir.

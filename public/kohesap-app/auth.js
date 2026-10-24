@@ -76,7 +76,7 @@ function showAuth(mode, err = '') {
   const el = authEl();
   el.hidden = false; el.className = 'mode-' + mode;
   document.querySelector('.app').style.visibility = 'hidden';
-  el.innerHTML = `<div class="auth-bg"></div><div class="auth-wrap">${AUTH_VIEWS[mode]()}</div><div class="auth-foot">KO Ekip ${esc($('#ver').textContent)} · forgeandplay.com · kayıtların Google hesabınla tüm cihazlarında</div>`;
+  el.innerHTML = `<div class="auth-bg"></div><div class="auth-wrap">${AUTH_VIEWS[mode]()}</div><div class="auth-foot">KO Ekip ${esc($('#ver').textContent)} · koekip.app · kayıtların Google hesabınla tüm cihazlarında</div>`;
   // imleç yalnızca form ilk açıldığında ad kutusuna gider (sınıf/ırk değişince yazılan yer kaymasın)
   const f = el.querySelector('input:not([type=checkbox])');
   if (f && mode === 'charForm' && auth.lastMode !== 'charForm') setTimeout(() => { if (!el.contains(document.activeElement) || document.activeElement === document.body) f.focus(); }, 30);

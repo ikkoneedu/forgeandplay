@@ -89,7 +89,7 @@ async function team(req: NextRequest) {
     const day = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"][new Date(at + 3 * 3600e3).getUTCDay()];
     note = { title: `📅 Yeni plan: ${title}`, body: `${day} ${trClock(at)} · ${who} açtı · geliyor musun?`, tag: `plan-${code}-${at}`, kind: "plan", url: "/?p=planla" };
     pref = "ev";
-    discord = `📅 **${title}** · ${day} ${trClock(at)} — ${who} planladı. Katılım: <https://forgeandplay.com/app?p=planla>`;
+    discord = `📅 **${title}** · ${day} ${trClock(at)} — ${who} planladı. Katılım: <https://koekip.app/app?p=planla>`;
   } else {
     const boss = clean(body.boss, 40), server = clean(body.server, 24);
     if (!boss) return json(req, { error: "Boss adı yok" }, 400);

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 /** Herkese açık tanıtım sitesi sayfaları (public/site). Uygulama (/app) dizinlenmez. */
-const SITE_URL = "https://forgeandplay.com";
+const SITE_URL = "https://koekip.app";
 const UPDATED = new Date("2026-10-20");
 export default function sitemap(): MetadataRoute.Sitemap {
   const p = (path: string, priority: number, changeFrequency: "weekly" | "monthly" | "yearly", images: string[] = []) =>

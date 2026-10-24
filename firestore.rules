@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// KO Ekip (forgeandplay.com) — Firestore güvenlik kuralları
+// KO Ekip (koekip.app) — Firestore güvenlik kuralları
 // İlke: varsayılan KAPALI. Yalnızca Google ile giriş yapmış, e-postası doğrulanmış ve
 // admin onayı (ya da adminin açtığı süreli davet kodu) almış kullanıcılar veriye erişir.
 service cloud.firestore {

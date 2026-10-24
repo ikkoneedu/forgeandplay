@@ -4,7 +4,7 @@
 Hepsi `KURULUM.md`'de adım adım anlatılıyor:
 - [ ] Vercel ortam değişkenleri (`.env.example` listesi): Firebase, `FIREBASE_SERVICE_ACCOUNT`, VAPID, `CRON_SECRET`, TURN
 - [ ] cron-job.org → dakikada bir `/api/koekip/push/cron?key=CRON_SECRET`
-- [ ] Google Search Console'a `https://forgeandplay.com/sitemap.xml` gönder
+- [ ] Google Search Console'a `https://koekip.app/sitemap.xml` gönder
 
 - Firestore kuralları artık otomatik yayınlanıyor (KURULUM.md → 1).
 

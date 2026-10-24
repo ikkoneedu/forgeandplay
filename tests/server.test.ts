@@ -122,3 +122,24 @@ test("syncRules: izin hatası anlaşılır mesaj, 10 dk bekler, elle tetikleme b
   assert.ok(out.ok && out.released);
   delete process.env.VERCEL_ENV;
 });
+
+/* ---------- alan adı geçişi: forgeandplay.com → koekip.app ---------- */
+test("middleware: eski alan adı ve www sayfaları koekip.app'e yönlenir; API, sw.js ve indirmeler yönlenmez", async () => {
+  const { NextRequest } = await import("next/server");
+  const { default: middleware } = await import("../middleware");
+  const ua = "Mozilla/5.0 (Windows NT 10.0) Chrome/130";
+  const run = (url: string) => middleware(new NextRequest(url, { headers: { host: new URL(url).host, "user-agent": ua } }));
+  for (const [from, to] of [
+    ["https://forgeandplay.com/", "https://koekip.app/"],
+    ["https://www.forgeandplay.com/event-rehberi", "https://koekip.app/event-rehberi"],
+    ["https://forgeandplay.com/app?p=planla", "https://koekip.app/app?p=planla"],
+    ["https://www.koekip.app/gizlilik", "https://koekip.app/gizlilik"],
+  ]) {
+    const r = run(from);
+    assert.equal(r.status, 308, from);
+    assert.equal(r.headers.get("location"), to);
+  }
+  for (const u of ["https://forgeandplay.com/api/kohesap/config", "https://forgeandplay.com/sw.js", "https://forgeandplay.com/downloads/KOEkip.exe", "https://koekip.app/", "https://koekip.app/app"]) {
+    assert.notEqual(run(u).status, 308, u);
+  }
+});
