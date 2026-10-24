@@ -5,7 +5,7 @@
     if (a) document.body.classList.remove('nav-open');
   });
   var NAMES = {
-    ekip: 'Ekip kur, 8 kişi', sesli: 'Sesli ekip odası', boss: 'Boss alarmı', event: 'Event takvimi', bildirim: 'Telefon bildirimleri',
+    ekip: 'Ekip kur, 8 kişi', planla: 'Ekip planı, yoklama ve drop sırası', lfg: 'Ekip bul panosu', gunluk: 'Günlük görevler', grind: 'Grind takibi', hedef: 'Hedef listesi', sesli: 'Sesli ekip odası', boss: 'Boss alarmı', event: 'Event takvimi', bildirim: 'Telefon bildirimleri',
     kasa: 'Gelir–gider defteri', ticaret: 'Item ticareti ve drop payı', exp: 'EXP ve PUS hesabı', basma: 'Item basma simülatörü',
     gb: 'Canlı GB fiyatları', pazar: 'Canlı pazar', ilan: 'Site ilanları'
   };

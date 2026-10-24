@@ -1,21 +1,32 @@
-# KO Ekip 0.8.0 kurulumu
+# KO Ekip kurulumu
 
-forgeandplay.com açılınca doğrudan **KO Ekip** gelir. Eski site sayfaları ana sayfaya yönlenir. Yalnızca gizlilik, kullanım şartları ve iletişim sayfaları kalır.
+koekip.app açılınca doğrudan **KO Ekip** gelir. Eski site sayfaları ana sayfaya yönlenir. Yalnızca gizlilik, kullanım şartları ve iletişim sayfaları kalır.
 
 Aşağıdaki adımlar bir kez yapılır. 1 ve 2 olmadan uygulama yine çalışır, ama boss sayaçları, bildirimler ve telefonda ses eksik kalır.
 
-## 1. Firebase kuralları (zorunlu)
+## 1. Firebase kuralları (otomatik)
 
-Bu sürümde iki yeni alan var: boss sayaçları ve bildirim ayarları.
+Repodaki `firestore.rules`, Vercel'e her üretim yayınından sonra **sunucu tarafından otomatik yayınlanır**: zamanlayıcı (aşağıdaki 3. adım) her dakika repodaki kuralla Firebase'dekini karşılaştırır, farklıysa yayınlar. Admin olarak uygulamadaki **Şimdi yayınla** düğmesiyle beklemeden de yayınlayabilirsin.
 
-1. Firebase Console'da **Firestore Database → Rules** sekmesini aç.
-2. Oradaki metnin tamamını sil.
-3. Repodaki `firestore.rules` dosyasının tamamını yapıştır.
-4. **Publish**'e bas.
+Gerekenler: `FIREBASE_SERVICE_ACCOUNT` (2a) ve zamanlayıcı (3). Hizmet hesabının kural yayınlama izni yoksa uygulama bunu söyler; o zaman Google Cloud Console → **IAM** → `firebase-adminsdk-…` hesabına **Firebase Rules Admin** rolünü ekle.
+
+Elle yayınlamak gerekirse: Firebase Console → **Firestore Database → Rules** → repodaki `firestore.rules`'un tamamını yapıştır → **Publish**.
 
 ## 2. Vercel ortam değişkenleri
 
-Değişkenleri **Vercel → Proje → Settings → Environment Variables** sayfasına ekle (Production). Ekledikten sonra **Redeploy** yap.
+Proje Vercel'de **ikkoneedu (Pro)** ekibinde, adı `forgeandplay`. GitHub'daki `main` her push'ta otomatik yayınlanır; diğer branch'ler önizleme alır.
+Domain: `koekip.app` esas adres. `www.koekip.app`, `forgeandplay.com` ve `www.forgeandplay.com` sayfaları ona 308 ile yönlenir (`middleware.ts`).
+Eski alan adındaki `/api`, `/sw.js` ve `/downloads` yönlenmez: eski Windows uygulaması ve kurulu bildirimler çalışmaya devam eder.
+
+### Alan adı geçişi (forgeandplay.com → koekip.app)
+1. **Vercel → Domains → koekip.app → Connect** → proje `forgeandplay`. `www.koekip.app`'i de ekle.
+2. `forgeandplay.com` ve `www.forgeandplay.com` projede **bağlı kalsın** ve Vercel'de "Redirect to" ayarı **olmasın**. Yönlendirmeyi uygulama yapar; Vercel'de yapılırsa eski exe'nin API çağrıları da yönlenir.
+3. **Firebase Console → Authentication → Settings → Authorized domains** → `koekip.app` ve `www.koekip.app`. Eklenmezse Google ile giriş açılmaz. Üretimde zamanlayıcı bunları kendiliğinden ekler (`lib/auth-domains.ts`); hizmet hesabının yetkisi yetmezse hata `GET /api/kohesap/rules` → `authDomains` alanında görünür, o zaman elle ekle.
+4. **Google Search Console** → `koekip.app` mülkünü ekle, `https://koekip.app/sitemap.xml` gönder. Eski mülkte **Adres değişikliği** aracını kullan.
+5. cron-job.org adresini `https://koekip.app/api/koekip/push/cron?key=…` yap (eskisi de çalışır).
+6. Telefonda ana ekrana eklenmiş eski uygulama yeni adrese yönlenir. Kullanıcı bir kez yeniden giriş yapmalı ve bildirimleri yeniden açmalı (tarayıcı verileri alan adına bağlıdır).
+
+Değişkenleri **Vercel → Proje → Settings → Environment Variables** sayfasına ekle (Production). Ekledikten sonra **Redeploy** yap. Tam liste: `.env.example`.
 
 | Değişken | Ne işe yarar | Nereden |
 |---|---|---|
@@ -60,7 +71,7 @@ Vercel'in ücretsiz planı dakikada bir çalışan görev desteklemez. Bunun yer
 1. https://cron-job.org adresinde ücretsiz hesap aç.
 2. **Create cronjob**'a bas.
 3. Ayarları şöyle yap:
-   - URL: `https://forgeandplay.com/api/koekip/push/cron?key=CRON_SECRET` (sondaki `CRON_SECRET` yerine kendi değerini yaz)
+   - URL: `https://koekip.app/api/koekip/push/cron?key=CRON_SECRET` (sondaki `CRON_SECRET` yerine kendi değerini yaz)
    - Execution schedule: **Every 1 minute**
 4. Kaydet.
 
@@ -69,13 +80,13 @@ Kontrol etmek için KO Ekip'te admin olarak **Bildirimler** sayfasının altınd
 ## 4. Telefona kurulum (her üye)
 
 **Android (Chrome):**
-1. forgeandplay.com'u aç.
+1. koekip.app'i aç.
 2. Menüden (⋮) **Ana ekrana ekle / Uygulamayı yükle**'yi seç.
 3. KO Ekip'i ana ekrandan aç.
 4. **Bildirimler** sayfasında **Bildirimleri aç**'a bas.
 
 **iPhone (Safari, iOS 16.4+):**
-1. forgeandplay.com'u aç.
+1. koekip.app'i aç.
 2. **Paylaş → Ana Ekrana Ekle**'yi seç.
 3. Ana ekrandaki **KO Ekip** simgesinden aç.
 4. **Bildirimler** sayfasında **Bildirimleri aç**'a bas.
@@ -87,8 +98,9 @@ iPhone'da bildirim yalnızca ana ekrandan açılan uygulamada çalışır.
 - **Event öncesi:** Event Takvimi'nde açık olan eventler, seçilen süre kadar önce (varsayılan 10 dk).
 - **Boss alarmı:** Boss Alarmı sayfasında zili açık olan boss'lar için, çıkmadan 10 dk önce. Ekipten biri **☠ Öldü** işaretlediğinde sayaç kurulur. Sayaçlar ekip ve sunucu başına paylaşılır.
 - **📣 Çıktı:** Bir boss çıkınca ekibe anında bildirim gider ve sohbete bot mesajı düşer.
+- **📅 Ekip planı:** Biri plan açınca ekibe bildirim gider ve sohbete bot mesajı düşer. "Geliyorum" ya da "Belki" diyenlere başlamadan önce (boss sayfasındaki önceden haber süresi kadar) hatırlatılır. Event bildirimini kapatan bu hatırlatmaları da almaz.
 - **Ekip online:** Ekipten biri KO Ekip'i açınca diğerlerine bildirim gider. Aynı kişi için en fazla yarım saatte bir.
 
 ## Windows uygulaması
 
-`public/downloads/KOEkip.exe` (0.8.0) dosyası eski `KOHesap.exe`'nin yerini aldı. Eski exe "yeni sürüm" uyarısıyla bunu indirir. Kayıtlar aynı klasörde (`KOHesap-veri`) kalır.
+`public/downloads/KOEkip.exe` dosyası (sürümü `lib/kohesap.ts` → `KOHESAP_EXE_VERSION`) eski `KOHesap.exe`'nin yerini aldı. Eski exe "yeni sürüm" uyarısıyla bunu indirir. Kayıtlar aynı klasörde (`KOHesap-veri`) kalır.

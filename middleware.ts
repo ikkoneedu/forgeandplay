@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * forgeandplay.com → KO Ekip
+ * koekip.app → KO Ekip
+ *  0) Eski alan adı (forgeandplay.com, www dahil) ve www.koekip.app sayfaları koekip.app'e kalıcı yönlenir.
+ *     /api, /sw.js ve /downloads yönlenmez: eski Windows uygulaması ve kurulu bildirim abonelikleri çalışmaya devam eder.
  *  1) Herkese açık tanıtım sitesi (/, /exp-tablosu, /item-basma-oranlari, yasal sayfalar):
  *     arama motorları ve yapay zekâ ARAMA botları dizinler; yapay zekâ EĞİTİM tarayıcıları ve SEO kazıyıcıları engellenir.
  *  2) Uygulama (/app), API ve uygulama dosyaları: eskisi gibi tüm botlar engellenir (403), dizinlenmez.
@@ -11,7 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
  */
 // tanıtım sitesi sayfaları → public/site/*.html
 const SITE: Record<string, string> = {
-  "/": "index", "/exp-tablosu": "exp-tablosu", "/item-basma-oranlari": "item-basma-oranlari", "/yeni-sunucu": "yeni-sunucu",
+  "/": "index", "/exp-tablosu": "exp-tablosu", "/item-basma-oranlari": "item-basma-oranlari", "/yeni-sunucu": "yeni-sunucu", "/event-rehberi": "event-rehberi",
   "/kullanim-sartlari": "kullanim-sartlari", "/gizlilik": "gizlilik", "/iletisim": "iletisim",
 };
 // herkese açık dosyalar (tanıtım sitesinin kullandıkları)
@@ -37,8 +39,15 @@ const BLOCK = new RegExp([
 // İzin verilenler: bağlantı önizlemeleri (WhatsApp/Telegram/Discord), zamanlayıcı, kendi Windows uygulamamız
 const ALLOW = /WhatsApp|TelegramBot|Discordbot|cron-job\.org|KOHesap\/|KOEkip\//i;
 
+// asıl alan adı; bunlara gelen sayfa istekleri oraya yönlenir
+const CANONICAL = "koekip.app";
+const OLD_HOST = /^(www\.)?forgeandplay\.com$|^www\.koekip\.app$/i;
+const KEEP_ON_OLD = /^\/(api\/|sw\.js$|downloads\/)/;
+
 export default function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
+  const host = (req.headers.get("host") || "").replace(/:\d+$/, "");
+  if (OLD_HOST.test(host) && !KEEP_ON_OLD.test(pathname)) return NextResponse.redirect(`https://${CANONICAL}${pathname}${search}`, 308);
   const ua = req.headers.get("user-agent") || "";
   const local = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.get("host") || "");
   const page = SITE[pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname];

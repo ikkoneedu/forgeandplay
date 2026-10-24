@@ -162,7 +162,7 @@ Object.assign(ACTIONS, {
       if (String(($('#meDelTxt') || {}).value || '').trim().toLocaleUpperCase('tr') !== 'SİL') return toast('Onay için SİL yazmalısın', 'err');
       try {
         const base = typeof IS_EXE !== 'undefined' && IS_EXE ? siteBase() : '';
-        const r = await (await authFetch(base + '/api/kohesap/account', { method: 'DELETE' })).json();
+        const r = await apiJSON(await authFetch(base + '/api/kohesap/account', { method: 'DELETE' }));
         if (!r.ok) throw new Error(r.error || 'silinemedi');
         try { ['koekip.in', 'koekip.name', 'koekip.photo'].forEach(k => localStorage.removeItem(k)); } catch { }
         toast('Hesabın ve tüm verilerin silindi. Görüşmek üzere!', 'ok');

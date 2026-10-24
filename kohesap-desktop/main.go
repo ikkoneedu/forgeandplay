@@ -357,15 +357,15 @@ func handleBrowserFetch(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]any{"ok": true, "results": res})
 }
 
-// handleSiteConfig: forgeandplay.com'daki KO Hesap yapılandırmasını (Firebase
+// handleSiteConfig: koekip.app'teki KO Hesap yapılandırmasını (Firebase
 // ayarları, son exe sürümü) tarayıcı yerine program içinden alır; böylece
 // tarayıcının farklı-köken (CORS) kısıtına takılmaz. Son başarılı cevap
 // diske yazılır; internet yokken onunla açılır.
 func handleSiteConfig(w http.ResponseWriter, r *http.Request) {
 	cache := filepath.Join(dataDir, "site-config.json")
 	urls := []string{
-		"https://forgeandplay.com/api/kohesap/config",
-		"https://www.forgeandplay.com/api/kohesap/config",
+		"https://koekip.app/api/kohesap/config",
+		"https://forgeandplay.com/api/kohesap/config", // eski alan adı (yedek)
 		"https://forgeandplay.vercel.app/api/kohesap/config",
 	}
 	var lastErr error
@@ -399,7 +399,7 @@ func handleSiteConfig(w http.ResponseWriter, r *http.Request) {
 		w.Write(b)
 		return
 	}
-	msg := "forgeandplay.com'a ulaşılamadı"
+	msg := "koekip.app'e ulaşılamadı"
 	if lastErr != nil {
 		msg += ": " + lastErr.Error()
 	}

@@ -76,7 +76,7 @@ function showAuth(mode, err = '') {
   const el = authEl();
   el.hidden = false; el.className = 'mode-' + mode;
   document.querySelector('.app').style.visibility = 'hidden';
-  el.innerHTML = `<div class="auth-bg"></div><div class="auth-wrap">${AUTH_VIEWS[mode]()}</div><div class="auth-foot">KO Ekip ${esc($('#ver').textContent)} · forgeandplay.com · kayıtların Google hesabınla tüm cihazlarında</div>`;
+  el.innerHTML = `<div class="auth-bg"></div><div class="auth-wrap">${AUTH_VIEWS[mode]()}</div><div class="auth-foot">KO Ekip ${esc($('#ver').textContent)} · koekip.app · kayıtların Google hesabınla tüm cihazlarında</div>`;
   // imleç yalnızca form ilk açıldığında ad kutusuna gider (sınıf/ırk değişince yazılan yer kaymasın)
   const f = el.querySelector('input:not([type=checkbox])');
   if (f && mode === 'charForm' && auth.lastMode !== 'charForm') setTimeout(() => { if (!el.contains(document.activeElement) || document.activeElement === document.body) f.focus(); }, 30);
@@ -169,7 +169,7 @@ const AUTH_VIEWS = {
             ['📈', 'Canlı pazar', 'GB fiyatları, pazar ilanları, PUS ve EXP hesabı'],
           ].map(([i, t, d]) => `<div class="lf"><span class="lf-i">${i}</span><b>${t}</b><small>${d}</small></div>`).join('')}
         </div>
-        <div class="land-alt">Giriş yaparak <a href="${serverMode ? SITE : ''}/tr/kullanim-sartlari" target="_blank" rel="noopener">kullanım şartlarını</a> kabul etmiş olursun · <a href="${serverMode ? SITE : ''}/tr/gizlilik" target="_blank" rel="noopener">gizlilik</a></div>
+        <div class="land-alt">Giriş yaparak <a href="${serverMode ? SITE : ''}/kullanim-sartlari" target="_blank" rel="noopener">kullanım şartlarını</a> kabul etmiş olursun · <a href="${serverMode ? SITE : ''}/tr/gizlilik" target="_blank" rel="noopener">gizlilik</a></div>
       </div>
     </div>`,
   chars: () => {

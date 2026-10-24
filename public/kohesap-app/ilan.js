@@ -1,7 +1,7 @@
 'use strict';
 /* ==========================================================================
    KO Ekip — Site İlanları (item + karakter), sunucu seçmeli, item aramalı
-   • Kopazar ve ByNoGame: forgeandplay.com sunucusu okur (/api/kohesap/ilan)
+   • Kopazar ve ByNoGame: koekip.app sunucusu okur (/api/kohesap/ilan)
    • Knightpin ve Oyuneks: bot koruması yüzünden yalnızca Windows uygulamasının
      tarayıcısıyla okunur; uygulama sonucu ekiple paylaşır (kohesapMarket/ilan-*),
      web / telefon aynı aramayı yapınca paylaşılan sonucu da gösterir.
@@ -132,7 +132,7 @@ async function ilSearch() {
   jobs.push((async () => {
     try {
       const base = IS_EXE ? siteBase() : '';
-      const r = await (await authFetch(`${base}/api/kohesap/ilan?${new URLSearchParams({ kind, q, server: srv })}`)).json();
+      const r = await apiJSON(await authFetch(`${base}/api/kohesap/ilan?${new URLSearchParams({ kind, q, server: srv })}`));
       if (!r.ok) throw new Error(r.error || 'okunamadı');
       add(r.rows || [], { site: '_srv', ok: true, n: 0 });
       (r.sources || []).forEach(s => add([], s));

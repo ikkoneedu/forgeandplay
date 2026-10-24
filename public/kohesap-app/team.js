@@ -40,9 +40,10 @@ function rulesBox() {
   if (!isAdmin()) return `<div class="callout r" style="margin-bottom:16px"><b>Ekip özelliği henüz açılmadı.</b> Sunucu tarafındaki izin ayarı (Firebase kuralları) güncellenmemiş. Site yöneticisine haber ver.</div>`;
   return `<div class="card rules-box">
     <div class="card-h"><div><h3>Güncel Firebase kurallarını yayınla <span class="badge y">admin</span></h3>
-      <div class="sub">Bu sürümün kuralları Firebase'de henüz yayınlanmamış; ekip, sesli sohbet veya karakter görselleri "izin yok" hatası verebilir. Kurallar Vercel ile otomatik gitmez; her güncellemede bir kez elle yapıştırman gerekiyor.</div></div></div>
+      <div class="sub">Bu sürümün kuralları Firebase'de henüz yayınlanmamış; ekip, sesli sohbet veya karakter görselleri "izin yok" hatası verebilir. Sunucu yeni yayından sonra kuralları kendiliğinden yayınlar (zamanlayıcı her dakika kontrol eder). Beklemek istemezsen aşağıdaki düğmeye bas.</div></div></div>
+    <div class="row" style="margin:4px 0 10px;gap:8px"><button class="btn pri sm" data-act="rules-sync">Şimdi yayınla</button><span class="hint">Olmazsa elle: aşağıdaki adımlar</span></div>
     <ol class="rules-steps">
-      <li><button class="btn pri sm" data-act="rules-copy">Kuralları kopyala</button> (repodaki <code>firestore.rules</code> dosyasının tamamı)</li>
+      <li><button class="btn sm" data-act="rules-copy">Kuralları kopyala</button> (repodaki <code>firestore.rules</code> dosyasının tamamı)</li>
       <li>${pid ? `<a class="btn sm" href="https://console.firebase.google.com/project/${esc(pid)}/firestore/rules" target="_blank" rel="noopener">Firebase kural sayfasını aç ↗</a>` : 'Firebase Console → Firestore Database → Rules sekmesini aç'}</li>
       <li>Oradaki metnin tamamını sil, kopyaladığını yapıştır ve <b>Publish</b> de.</li>
       <li><button class="btn sm ghost" data-act="rules-recheck">Tekrar kontrol et</button></li>
@@ -177,8 +178,10 @@ function ekipBody() {
   const clsCount = Object.keys(CLASSES).map(k => [k, mains.filter(c => c.cls === k).length]);
   const avgLv = mains.length ? sum(mains, c => c.level) / mains.length : 0;
   const tips = [];
-  if (mains.length && !mains.some(c => c.cls === 'priest')) tips.push('Ana karakterler arasında Priest yok; farm ve savaşta en az bir Priest önerilir.');
-  if (mains.length >= 4 && !mains.some(c => c.cls === 'warrior' || c.cls === 'kurian')) tips.push('Ön safta Warrior veya Kurian/Portu yok.');
+  const altsOf = test => members.flatMap(m => (m.chars || []).filter(c => test(c.cls) && (!m.mainChar || c.id !== m.mainChar.id)).map(c => `${m.name}: ${c.name} (Lv ${c.level})`)).slice(0, 3);
+  const altTip = test => { const a = altsOf(test); return a.length ? ' Alt karakter olarak var: ' + a.join(', ') + '.' : ''; };
+  if (mains.length && !mains.some(c => c.cls === 'priest')) tips.push('Ana karakterler arasında Priest yok; farm ve savaşta en az bir Priest önerilir.' + altTip(c => c === 'priest'));
+  if (mains.length >= 4 && !mains.some(c => c.cls === 'warrior' || c.cls === 'kurian')) tips.push('Ön safta Warrior veya Kurian/Portu yok.' + altTip(c => c === 'warrior' || c === 'kurian'));
   const servers = [...new Set(mains.map(c => c.server).filter(Boolean))];
   if (servers.length > 1) tips.push('Ana karakterler farklı sunucularda: ' + servers.join(', ') + '.');
   const myEntry = members.find(m => m.uid === me);
@@ -208,7 +211,7 @@ function ekipBody() {
     </div>
     <div class="team-stats">
       <div><span>Üye</span><b>${members.length}/${TEAM_MAX}</b></div>
-      <div><span>Ortalama seviye</span><b>${avgLv ? nf2.format(avgLv) : '—'}</b></div>
+      <div><span>Ortalama seviye</span><b>${avgLv ? fmtX(Math.round(avgLv * 10) / 10) : '—'}</b></div>
       ${clsCount.map(([k, v]) => `<div class="tc" style="--cc:${CLASSES[k].color}"><span>${esc(k === 'kurian' ? 'Kurian/Portu' : CLASSES[k].label)}</span><b>${v}</b></div>`).join('')}
     </div>
     ${tips.length ? `<div class="callout y" style="margin-top:12px">${tips.map(esc).join('<br>')}</div>` : ''}
@@ -253,7 +256,7 @@ Object.assign(ACTIONS, {
     TEAM.busy = false; render();
   },
   'team-copy': () => {
-    const txt = `KO Ekip ekibimize katıl: "${TEAM.doc.name}" · kod ${TEAM.code} · forgeandplay.com → Ekip → Ekibe katıl`;
+    const txt = `KO Ekip ekibimize katıl: "${TEAM.doc.name}" · kod ${TEAM.code} · koekip.app → Ekip → Ekibe katıl`;
     (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Davet metni kopyalandı', 'ok')).catch(() => toast(TEAM.code));
   },
   'team-leave': () => confirmBox('Ekipten ayrıl', `<b>${esc(TEAM.doc.name)}</b> ekibinden ayrılacaksın.${TEAM.doc.owner === myUid() ? ' Liderlik sıradaki üyeye geçer; tek kişiysen ekip kapanır.' : ''}`, 'Ayrıl', () => {
@@ -272,6 +275,13 @@ Object.assign(ACTIONS, {
       await navigator.clipboard.writeText(txt);
       toast('Kurallar kopyalandı (' + txt.split('\n').length + ' satır). Firebase\'e yapıştır.', 'ok');
     } catch (e) { toast('Kopyalanamadı: ' + e.message, 'err'); }
+  },
+  'rules-sync': async () => {
+    try {
+      const j = await apiPost('/api/kohesap/rules');
+      toast(j.released ? 'Kurallar yayınlandı' : j.skipped || 'Kurallar zaten güncel', 'ok');
+      ACTIONS['rules-recheck']();
+    } catch (e) { toast('Yayınlanamadı: ' + e.message, 'err'); }
   },
   'rules-recheck': () => { TEAM.rulesChecked = false; TEAM.rulesMissing = false; teamRulesProbe().then(() => { toast(TEAM.rulesMissing ? 'Kurallar hâlâ eski görünüyor' : 'Kurallar yayınlanmış, her şey hazır', TEAM.rulesMissing ? 'err' : 'ok'); if (!TEAM.rulesMissing) artLoad(); render(); }); },
 });

@@ -11,9 +11,12 @@
 const FEATS = [
   { g: 'Ekip' },
   { id: 'ekip', n: 'Ekip sayfası', d: '8 kişilik ekip, karakterler, sınıf dağılımı', def: 'uye' },
+  { id: 'lfg', n: 'Ekip bul', d: 'Ekip arayan oyuncular ve üye arayan ekipler panosu', def: 'uye' },
   { id: 'ekipkur', n: 'Ekip kurma', d: 'Kendi ekibini kurup arkadaşlarını davet etme', def: 'uye', sub: true },
   { id: 'ses', n: 'Ekip yazışması', d: 'Ekip sohbeti ve bot (Ses & Sohbet sayfası)', def: 'uye' },
   { id: 'sesli', n: 'Sesli ekip odası', d: 'Bas-konuş, telefon ve PC arasında sesli oda', def: 'vip', sub: true },
+  { id: 'planla', n: 'Ekip planı', d: 'Etkinlik planlama, katılım ve hatırlatma', def: 'uye' },
+  { id: 'gunluk', n: 'Günlük görevler', d: 'Karakter başına günlük / haftalık yapılacaklar', def: 'uye' },
   { id: 'boss', n: 'Boss alarmı', d: 'Sunucuya göre boss sayaçları, ekip içinde paylaşılır', def: 'uye' },
   { id: 'event', n: 'Event takvimi', d: 'Haftalık event saatleri ve geri sayım', def: 'uye' },
   { id: 'yeni', n: 'Yeni sunucu haberleri', d: 'Geri sayım, resmî takvim ve canlı haberler', def: 'uye' },
@@ -22,6 +25,7 @@ const FEATS = [
   { id: 'panel', n: 'Panel', d: 'Aylık özet', def: 'uye' },
   { id: 'kasa', n: 'Gelir / Gider', d: 'Para hareketleri', def: 'uye' },
   { id: 'ticaret', n: 'Item ticareti', d: 'Alış – satış ve kâr takibi', def: 'uye' },
+  { id: 'grind', n: 'Grind takibi', d: 'Kasılma süresi, saatlik EXP ve noah, bölge karşılaştırması', def: 'uye' },
   { id: 'parti', n: 'Parti & Drop', d: 'Drop ve pay dağılımı', def: 'uye' },
   { g: 'Canlı veri' },
   { id: 'gb', n: 'Canlı GB fiyatları', d: 'Sitelerin sunucu bazında GB alış / satış fiyatları', def: 'vip' },
@@ -31,6 +35,7 @@ const FEATS = [
   { id: 'pus', n: 'PUS hesabı', d: 'KC → TL → GB maliyeti', def: 'uye' },
   { id: 'exp', n: 'EXP hesabı', d: 'Seviye aralığı, süre ve maliyet', def: 'uye' },
   { id: 'basma', n: 'Item basma', d: 'Örs simülasyonu, maliyet, günlük', def: 'uye' },
+  { id: 'hedef', n: 'Hedef listesi', d: 'Alınacak set / itemler, toplam maliyet ve eksik para', def: 'uye' },
   { id: 'fiyat', n: 'Fiyat listesi', d: 'Kendi item fiyat listen', def: 'uye' },
 ];
 const FEAT = Object.fromEntries(FEATS.filter(f => f.id).map(f => [f.id, f]));

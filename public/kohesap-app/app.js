@@ -1261,7 +1261,7 @@ VIEWS.ayar = () => {
       <div class="card-h"><h3>Google hesabı</h3><span class="badge g">senkron açık</span></div>
       <div class="row" style="margin-bottom:14px">${CLOUD.user && CLOUD.user.photoURL ? `<img src="${esc(CLOUD.user.photoURL)}" width="40" height="40" style="border-radius:50%" alt="" referrerpolicy="no-referrer">` : ''}<div><b>${esc(CUR.acc ? (CUR.acc.name || CUR.acc.user) : '')}</b><div class="hint">${esc(CUR.acc ? CUR.acc.user : '')} · ${CUR.acc ? CUR.acc.chars.length : 0} / 4 karakter</div></div></div>
       <div class="row"><button class="btn" data-act="logout">Çıkış yap</button><button class="btn danger" data-act="acc-del">${ICON.del} KO Ekip verilerimi sil</button></div>
-      <div class="hint" style="margin-top:10px">Kayıtların Google hesabına bağlı olarak saklanır; ${serverMode ? 'web sürümünde (forgeandplay.com)' : 'Windows uygulamasında'} aynı hesapla girince hepsi gelir.</div>
+      <div class="hint" style="margin-top:10px">Kayıtların Google hesabına bağlı olarak saklanır; ${serverMode ? 'web sürümünde (koekip.app)' : 'Windows uygulamasında'} aynı hesapla girince hepsi gelir.</div>
     </div>
     <div class="card">
       <div class="card-h"><h3>Bildirim ve güncelleme</h3></div>

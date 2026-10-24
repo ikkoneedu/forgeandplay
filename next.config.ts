@@ -1,11 +1,10 @@
 import type { NextConfig } from "next";
-import createNextIntlPlugin from "next-intl/plugin";
-
-const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
-  images: {
-    formats: ["image/avif", "image/webp"],
+  // Firestore kuralları sunucudan otomatik yayınlanır (lib/rules-sync.ts); dosya bu rotalarla birlikte taşınır
+  outputFileTracingIncludes: {
+    "/api/koekip/push/[action]": ["./firestore.rules"],
+    "/api/kohesap/rules": ["./firestore.rules"],
   },
   async rewrites() {
     return {
@@ -48,4 +47,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+export default nextConfig;

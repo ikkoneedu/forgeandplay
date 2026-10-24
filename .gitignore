@@ -29,3 +29,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# firebase emülatörü
+*-debug.log
+.firebase/

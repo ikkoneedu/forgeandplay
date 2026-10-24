@@ -134,7 +134,8 @@ export function trAt(y: number, m: number, day: number, hhmm: string): number {
 export const trClock = (ms: number) => new Date(ms + TR_OFFSET).toISOString().slice(11, 16);
 
 /* ---------------- zamanlayıcı hesabı (saf fonksiyon; test edilebilir) ---------------- */
-export type BossMap = Record<string, { k?: number; iv?: number; n?: string }>;
+/** dv: ekibin gördüğü gerçek çıkışın tahminden sapması (dk) — pencere ve erken alarm için */
+export type BossMap = Record<string, { k?: number; iv?: number; n?: string; dv?: number[] }>;
 /**
  * Bu dakikada (fromB..nowB dakika aralığı) gönderilmesi gereken bildirimler.
  * Bildirim anı = başlangıç − öne alma süresi (lead).
@@ -170,11 +171,32 @@ export function dueNotes(p: PushDoc & { bossAll?: boolean }, boss: BossMap, now:
     for (const [bid, r] of Object.entries(boss || {})) {
       if (!r || !r.k || !r.iv || (ids && !ids.has(bid))) continue;
       const at = r.k + r.iv * 1000;
-      if (at > now && due(at - lead)) {
-        const mins = Math.max(1, Math.round((at - now) / 60e3));
-        out.push({ title: "🐉 Boss alarmı", body: `${r.n || bid} ${mins} dk sonra çıkıyor (~${trClock(at)} · ${p.server || ""})`, tag: `b-${bid}-${at}`, kind: "boss", url: "/?p=boss" });
+      const dv = Array.isArray(r.dv) ? r.dv.filter((x) => typeof x === "number" && Math.abs(x) <= 90) : [];
+      const lo = at + Math.min(0, ...dv) * 60e3, hi = at + Math.max(0, ...dv) * 60e3; // ekip verisinden pencere
+      if (lo > now && due(lo - lead)) {
+        const mins = Math.max(1, Math.round((lo - now) / 60e3));
+        const when = hi - lo >= 60e3 ? `${trClock(lo)}–${trClock(hi)}` : `~${trClock(at)}`;
+        out.push({ title: "🐉 Boss alarmı", body: `${r.n || bid} ${mins} dk sonra çıkabilir (${when} · ${p.server || ""})`, tag: `b-${bid}-${at}`, kind: "boss", url: "/?p=boss" });
       }
     }
+  }
+  return out;
+}
+
+/** Ekip planı: kohesapTeams/{kod}/plans/{id} */
+export type TeamPlan = { id: string; t?: string; at?: number; note?: string; rsvp?: Record<string, { s?: string }> };
+/** Planda "geliyorum" ya da "belki" diyen kullanıcıya, başlamadan lead dakika önce hatırlatma. */
+export function planNotes(uid: string, p: PushDoc, plans: TeamPlan[], now: number, fromB: number, nowB: number): Note[] {
+  if (p.ev === false) return [];
+  const lead = Math.min(60, Math.max(1, Number(p.lead) || 10)) * 60e3;
+  const out: Note[] = [];
+  for (const pl of plans) {
+    const at = Number(pl.at) || 0, s = pl.rsvp && pl.rsvp[uid] && pl.rsvp[uid].s;
+    if (at <= now || (s !== "y" && s !== "m")) continue;
+    const b = Math.floor((at - lead) / 60e3);
+    if (b < fromB || b > nowB) continue;
+    const mins = Math.max(1, Math.round((at - now) / 60e3));
+    out.push({ title: `📅 ${String(pl.t || "Ekip planı").slice(0, 60)}`, body: `${mins} dk sonra (${trClock(at)})${pl.note ? " · " + String(pl.note).slice(0, 80) : ""}`, tag: `p-${pl.id}`, kind: "plan", url: "/?p=planla" });
   }
   return out;
 }
@@ -187,3 +209,22 @@ export async function requireMember(req: Request, headers: Record<string, string
   if (!(await hasAccess(u))) return new Response(JSON.stringify({ ok: false, error: "Onay gerekli" }), { status: 403, headers: h });
   return null;
 }
+
+/* ---------------- Discord köprüsü ---------------- */
+/** Yalnızca Discord webhook adresleri (SSRF'e karşı katı desen) */
+export const DISCORD_WEBHOOK_RE = /^https:\/\/(?:ptb\.|canary\.)?discord(?:app)?\.com\/api\/webhooks\/\d{5,25}\/[A-Za-z0-9_-]{20,100}$/;
+export type DiscordCfg = { url?: string; plan?: boolean; boss?: boolean };
+/** Ekibin Discord kanalına mesaj (kohesapTeams/{kod}/private/discord). kind verilirse o tür kapalıysa gönderilmez. */
+export async function discordPost(db: Firestore, team: string, content: string, kind?: "plan" | "boss"): Promise<boolean> {
+  const s = await db.doc(`kohesapTeams/${team}/private/discord`).get().catch(() => null);
+  const c = (s && s.exists ? s.data() : null) as DiscordCfg | null;
+  if (!c || !c.url || !DISCORD_WEBHOOK_RE.test(c.url) || (kind && c[kind] === false)) return false;
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 5000);
+  try {
+    const r = await fetch(c.url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: content.slice(0, 1900), username: "KO Ekip", allowed_mentions: { parse: [] } }), signal: ctl.signal, redirect: "error" });
+    return r.ok;
+  } catch {
+    return false;
+  } finally { clearTimeout(t); }
+}
+

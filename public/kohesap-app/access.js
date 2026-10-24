@@ -1,7 +1,7 @@
 'use strict';
 /* ==========================================================================
    DAVETLE ERİŞİM
-   forgeandplay.com'a herkes üye olabilir; KO Ekip'e yalnızca davet koduyla
+   koekip.app'e herkes üye olabilir; KO Ekip'e yalnızca davet koduyla
    (ya da yöneticinin onayıyla) girilir. Kurallar Firestore'da da uygulanır:
      kohesapAdmin/invite      → { code }            yalnızca admin okur/yazar
      kohesapAccess/{uid}      → erişim kaydı         kullanıcı geçerli kodla kendisi oluşturur; admin yönetir
@@ -174,7 +174,7 @@ Object.assign(ACTIONS, {
   },
   'acc-codeoff': () => FB.setDoc(inviteRef(), { enabled: false, exp: 0 }, { merge: true }).then(() => toast('Davet kodu kapatıldı · giriş yalnızca onayla', 'ok')).catch(e => toast(e.message, 'err')),
   'acc-copy': () => {
-    const txt = `KO Ekip davet kodu: ${ACC.admin.invite.code} (24 saat geçerli)\nforgeandplay.com → Google ile giriş yap → kodu gir.`;
+    const txt = `KO Ekip davet kodu: ${ACC.admin.invite.code} (24 saat geçerli)\nkoekip.app → Google ile giriş yap → kodu gir.`;
     (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Davet metni kopyalandı', 'ok')).catch(() => toast(ACC.admin.invite.code));
   },
   'acc-approve': el => {

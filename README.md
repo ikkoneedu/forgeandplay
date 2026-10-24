@@ -1,51 +1,53 @@
-# Forge&Play
+# KO Ekip · koekip.app
 
-AI destekli **oyun arkadaşı platformu** (LFG / maç çağrısı) + **anında oynanan oyun portalı**.
-Steam / Epic / Xbox / PS5 / PC oyuncuları için takım bulma, canlı sohbet ve her yaşa uygun mini oyunlar.
+**Knight Online oyuncuları için ekip uygulaması.** Ekip kurma, sesli oda, boss alarmı, event takvimi,
+telefon bildirimleri, gelir–gider defteri, EXP / PUS / item basma hesapları ve canlı fiyatlar tek yerde.
+Tarayıcıda, telefonda (PWA) ve Windows'ta (KOEkip.exe) aynı hesapla çalışır.
 
-- **Site:** https://forgeandplay.com
-- **Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS · Firebase · Vercel · Claude AI
-- **Diller:** Türkçe · English · Español · 中文 (next-intl, `/tr /en /es /zh`)
+- **Site:** https://koekip.app (tanıtım) · https://koekip.app/app (uygulama)
+- **Stack:** Next.js 15 (yalnızca API + yönlendirme) · düz JS PWA · Firebase (Auth + Firestore) · Web Push · Cloudflare TURN · Go (Windows exe) · Vercel
+- **Kurulum:** `KURULUM.md` · **Yol haritası:** `ROADMAP.md` · **Yapılacaklar:** `TODO.md`
 
 ## Geliştirme
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000  → /tr adresine yönlenir
-npm run build    # üretim derlemesi
+npm run dev      # http://localhost:3000 → tanıtım sitesi, /app → uygulama
+npm run build
 ```
 
-## Ortam değişkenleri
+Ortam değişkenleri için `.env.example` → `.env.local`.
 
-`.env.example` dosyasını `.env.local` olarak kopyalayıp doldurun (Vercel'de
-**Settings → Environment Variables**):
+## Test
 
-- `NEXT_PUBLIC_SITE_URL`
-- `NEXT_PUBLIC_FIREBASE_*` — Firebase istemci yapılandırması
-- `ANTHROPIC_API_KEY` — Claude AI (sunucu tarafı)
+```bash
+npm run typecheck   # TypeScript
+npm run test:unit   # sunucu: bildirim zamanlaması, boss penceresi, kural eşitleme
+npm run test:ui     # arayüz duman testi (Chromium; CHROMIUM_PATH ya da `npx playwright-core install chromium`)
+npm run test:rules  # Firestore kuralları (emülatör; Java 11+)
+npm run guides      # /event-rehberi sayfasını guide-data.js'ten yeniden üret
+```
+
+Her PR'da `.github/workflows/ci.yml` bunların hepsini ve `next build`'i çalıştırır.
 
 ## Yapı
 
 ```
-app/[locale]/       lokalize sayfalar (ana sayfa)
-app/robots.ts       robots.txt
-app/sitemap.ts      çok dilli sitemap (hreflang)
-app/manifest.ts     PWA manifest
-components/home/     ana sayfa (sinematik + 3D AI eşleştirme kartı)
-i18n/                next-intl yapılandırması
-messages/            tr / en / es / zh çevirileri
-lib/                 site sabitleri, firebase, seo (JSON-LD)
+middleware.ts            yönlendirme + bot kapısı: "/" ve tanıtım sayfaları → public/site, "/app" → public/kohesap-app
+public/site/             herkese açık tanıtım sitesi (statik HTML, SEO, JSON-LD)
+public/kohesap-app/      uygulamanın TEK kaynağı (web, PWA ve exe aynı dosyaları kullanır)
+public/downloads/        KOEkip.exe
+app/api/kohesap/*        config, account (hesap silme), plan (VIP), turn (ses), news, market, ilan, kc, item, img, proxy, rates
+app/api/koekip/push/*    Web Push abonelik + cron (event / boss / ekip bildirimleri)
+app/robots.ts, sitemap.ts
+lib/                     sunucu yardımcıları (koekip-server, kohesap, ko-news, ilan, kc-price, …)
+kohesap-desktop/         Windows exe (Go): yerel sunucu, bas-konuş, canlı pazar tarayıcısı
+firestore.rules          Firestore güvenlik kuralları (sunucu üretim yayınından sonra kendiliğinden yayınlar)
+tests/                   birim, arayüz ve kural testleri
 ```
 
-## Yol Haritası
+## Sürüm çıkarma (exe)
 
-Detaylı plan için `ROADMAP.md` dosyasına bakın (Faz 1–6: temel → oyun portalı →
-LFG + sohbet → AI katmanı → topluluk → gelir).
-
-## Faz 1 (bu sürüm)
-
-- [x] Next.js + TS + Tailwind sinematik tema
-- [x] i18n (tr/en/es/zh) + lokalize yönlendirme
-- [x] Ana sayfa (hero, canlı istatistik, AI eşleştirme kartı, oyun vitrini, premium)
-- [x] SEO temeli: metadata, canonical + hreflang, sitemap, robots, JSON-LD, OG
-- [x] Firebase istemci yapılandırma iskeleti
+1. `kohesap-desktop/main.go` → `appVersion` ve `lib/kohesap.ts` → `KOHESAP_EXE_VERSION` aynı değere çekilir.
+2. `cd kohesap-desktop && ./build.sh` → `public/downloads/KOEkip.exe`.
+3. Uygulama dosyası değiştiyse `public/site/*.html` ve `index.html` içindeki `?v=` sürümleri artırılır.
